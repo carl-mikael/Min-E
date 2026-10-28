@@ -1,0 +1,20 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "xmake: build",
+            "type": "shell",
+            "command": "xmake",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "xmake: build & run",
+            "type": "shell",
+            "command": "xmake run Min-E",
+            "dependsOn": "xmake: build",
+            "problemMatcher": [],
+            "group": { "kind": "build", "isDefault": true },
+            "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+        }
+    ]
+}
