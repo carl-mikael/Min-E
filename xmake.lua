@@ -1,5 +1,12 @@
 add_rules("mode.debug", "mode.release")
 
+option("log")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Should log?")
+    add_defines("MINE_LOG")
+option_end()
+
 -- OpenGL Version
 local GL_MAJOR_VERSION = 4
 local GL_MINOR_VERSION = 6
@@ -31,6 +38,8 @@ target("Min-E")
     add_files("src/*.cpp")
 
     add_packages("glfw", "glad")
+    add_options("log")
+
 
 --
 -- If you want to known more usage about xmake, please see https://xmake.io
