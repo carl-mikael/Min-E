@@ -4,6 +4,9 @@ add_rules("mode.debug", "mode.release")
 local GL_MAJOR_VERSION = 4
 local GL_MINOR_VERSION = 6
 
+add_defines("GL_MAJOR_V=" .. GL_MAJOR_VERSION, "GL_MINOR_V=" .. GL_MINOR_VERSION)
+add_defines("GLSL_VERSION=" .. GL_MAJOR_VERSION .. GL_MINOR_VERSION .. "0")
+
 -- OpenGL Extensions
 local glad_extensions = {
 }
