@@ -1,8 +1,33 @@
 add_rules("mode.debug", "mode.release")
 
+-- OpenGL Version
+local GL_MAJOR_VERSION = 4
+local GL_MINOR_VERSION = 6
+
+-- OpenGL Extensions
+local glad_extensions = {
+}
+
+-- OpenGL Loader
+local gl_api = "gl=" .. GL_MAJOR_VERSION .. "." .. GL_MINOR_VERSION
+
+add_requires("glfw")
+
+add_requires("glad v0.1.36", {configs = {
+    spec = "gl",
+    api = gl_api,
+    profile = "core",
+    extensions = table.concat(glad_extensions, ","),
+    generator = "c",
+    loader = true,
+}})
+
 target("Min-E")
+    set_languages("c++20")
     set_kind("binary")
     add_files("src/*.cpp")
+
+    add_packages("glfw", "glad")
 
 --
 -- If you want to known more usage about xmake, please see https://xmake.io
