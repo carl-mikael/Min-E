@@ -6,23 +6,27 @@ kanban-plugin: board
 
 ## Backlog
 
-- [ ] Ensure you can explain the n0-help example
-- [ ] Add teachers to git repo
-- [ ] Vulkan triangle?
+- [ ] use EBO and 1 draw call for the rectangle
+- [ ] debug function that only executes in debug mode, and prints the function it's in
 - [ ] Learn RenderDoc
 
 
 ## Next
 
-- [ ] Render House
+- [ ] Ensure you can explain the n0-help example
 
 
 ## Now
 
+- [ ] glGetError: https://learnopengl.com/In-Practice/Debugging
 
 
 ## Done
 
+- [ ] Render House
+- [ ] draw_triangle
+- [ ] draw_rectangle
+- [ ] Add teachers to git repo
 
 
 
