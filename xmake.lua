@@ -13,6 +13,7 @@ local GL_MINOR_VERSION = 6
 
 add_defines("GL_MAJOR_V=" .. GL_MAJOR_VERSION, "GL_MINOR_V=" .. GL_MINOR_VERSION)
 add_defines("GLSL_VERSION=" .. GL_MAJOR_VERSION .. GL_MINOR_VERSION .. "0")
+add_defines("LOG_SIZE=" .. 512)
 
 -- OpenGL Extensions
 local glad_extensions = {
