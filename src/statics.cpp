@@ -1,12 +1,11 @@
 #include "statics.h"
+#include "glm/ext/vector_float3.hpp"
 #include "macros.h"
 
 #include <fstream>
 #include <glad/glad.h>
-#include <glm/glm.hpp>
 #include <iostream>
 #include <iterator>
-#include <string>
 
 namespace statics
 {
@@ -105,13 +104,12 @@ bool create_shader_program(unsigned int *out_shader_program,
 	return true;
 }
 
-void create_triangle_vao(unsigned int *out_vao, const glm::vec2 size)
+triangle create_triangle(const glm::vec2 size)
 {
 	float vertices[]{0.0f, 0.0f, 0.0f, 0.0f, size.y, 0.0f, size.x, 0.0f, 0.0f};
 
-	glGenVertexArrays(1, out_vao);
-
-	GLuint vbo, vao{*out_vao};
+	GLuint vbo, vao;
+	glGenVertexArrays(1, &vao);
 
 	// Create and get buffer handle
 	// then 'upload' vertex data. 0 as flag because it shouldn't be read/written
@@ -133,6 +131,8 @@ void create_triangle_vao(unsigned int *out_vao, const glm::vec2 size)
 	glBindVertexBuffer(SLOT, vbo, 0, 3 * sizeof(float));
 
 	glBindVertexArray(0);
+
+	return triangle{.vao = vao, .size = size};
 }
 
 void draw_triangle(const unsigned int program, const unsigned int vao)
@@ -142,30 +142,63 @@ void draw_triangle(const unsigned int program, const unsigned int vao)
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void draw_rectangle(const unsigned int program, const unsigned int vao,
-                    const glm::vec2 triangle_size)
+void draw_rectangle(const unsigned int program, const triangle tri,
+                    const glm::vec2 offset, const glm::vec2 scale,
+                    const glm::vec3 color)
 {
 	int offset_location = glGetUniformLocation(program, "offset");
 	glUseProgram(program);
 
-	glm::vec2 offset{0, 0};
 	glUniform2fv(offset_location, 1, &offset[0]);
 
 	int scale_location = glGetUniformLocation(program, "scale");
-	glm::vec2 scale{1.f, 1.f};
 	glUniform2fv(scale_location, 1, &scale[0]);
 
 	int color_location = glGetUniformLocation(program, "color");
-	glm::vec3 color{1.f, 1.f, 1.f};
 	glUniform3fv(color_location, 1, &color[0]);
 
-	draw_triangle(program, vao);
+	draw_triangle(program, tri.vao);
 
-	glUniform2fv(scale_location, 1, &glm::vec2{-1.f, -1.f}[0]);
-	glUniform2fv(offset_location, 1, &glm::vec2{triangle_size * -1.0f}[0]);
-	glUniform3fv(color_location, 1, &glm::vec3{0.15f, 0.65f, 0.84f}[0]);
+	glUniform2fv(scale_location, 1, &glm::vec2{scale * -1.0f}[0]);
+	glUniform2fv(offset_location, 1, &glm::vec2{tri.size * -1.0f - offset}[0]);
 
-	draw_triangle(program, vao);
+	draw_triangle(program, tri.vao);
+}
+
+void draw_house(const unsigned int program, const triangle tri,
+                const glm::vec3 roof_color)
+{
+	// Wall
+	statics::draw_rectangle(program, tri,
+	                        glm::vec2{0.0f, -0.15f} - tri.size / 2.0f,
+	                        glm::vec2{3.0f, 2.5f}, glm::vec3{0.0f});
+
+	// Roof
+	int offset_location = glGetUniformLocation(program, "offset");
+	glUseProgram(program);
+
+	glm::vec2 offset{0 - tri.size.x / 2.0f, 0.185f};
+	glUniform2fv(offset_location, 1, &offset[0]);
+
+	int scale_location = glGetUniformLocation(program, "scale");
+	glm::vec2 scale{3.5f, 1.25f};
+	glUniform2fv(scale_location, 1, &scale[0]);
+
+	int color_location = glGetUniformLocation(program, "color");
+	glUniform3fv(color_location, 1, &roof_color[0]);
+
+	statics::draw_triangle(program, tri.vao);
+
+	// Door
+	statics::draw_rectangle(program, tri, glm::vec2{-.25f, -1.f},
+	                        glm::vec2{0.50f, 1.}, glm::vec3{0, 0, 1});
+
+	// Left Window
+	statics::draw_rectangle(program, tri, glm::vec2{-1.0f, -0.65f},
+	                        glm::vec2{0.50f, 0.5f}, glm::vec3{0, 0, 1});
+	// Right Window
+	statics::draw_rectangle(program, tri, glm::vec2{1.0f - tri.size.x, -0.65f},
+	                        glm::vec2{0.50f, 0.5f}, glm::vec3{0, 0, 1});
 }
 
 } // namespace statics

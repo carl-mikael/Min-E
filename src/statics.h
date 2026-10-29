@@ -1,10 +1,17 @@
 #pragma once
 
-#include "glm/ext/vector_float2.hpp"
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 #include <string>
 
 namespace statics
 {
+struct triangle
+{
+	unsigned int vao;
+	glm::vec2 size;
+};
+
 bool read_file(const char *file_path, std::string &out_content);
 
 bool could_compile(unsigned int shader, const char *shader_path);
@@ -16,10 +23,14 @@ bool create_shader_program(unsigned int *out_program_id,
                            const unsigned int vertex_shader_id,
                            const unsigned int fragment_shader_id);
 
-void create_triangle_vao(unsigned int *out_vao, const glm::vec2 size);
+triangle create_triangle(const glm::vec2 size);
 
 void draw_triangle(const unsigned int program, const unsigned int vao);
-void draw_rectangle(const unsigned int program, const unsigned int vao,
-                    const glm::vec2 triangle_size);
+void draw_rectangle(const unsigned int program, const triangle,
+                    const glm::vec2 offset, const glm::vec2 scale,
+                    const glm::vec3 color);
+
+void draw_house(const unsigned int program, const triangle tri,
+                const glm::vec3 roof_color);
 
 }; // namespace statics

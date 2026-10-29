@@ -1,5 +1,6 @@
 #pragma once
 
+#include "glm/ext/vector_float3.hpp"
 #include "macros.h"
 #include "statics.h"
 #include <GLFW/glfw3.h>
@@ -50,7 +51,7 @@ int main(int argc, char **argv)
 	GLuint vao, shader_program, vertex_shader, fragment_shader;
 
 	glm::vec2 triangle_size{0.5f, 0.5f};
-	statics::create_triangle_vao(&vao, triangle_size);
+	auto basic_triangle = statics::create_triangle(triangle_size);
 
 	const char *vertex_shader_path{"shader/basic.vs"};
 	const char *fragment_shader_path{"shader/basic.fs"};
@@ -68,27 +69,15 @@ int main(int argc, char **argv)
 	glDeleteShader(fragment_shader);
 #pragma endregion
 
-	int offset_location = glGetUniformLocation(shader_program, "offset");
-	glUseProgram(shader_program);
-
-	glm::vec2 offset{-.2, -.5};
-	glUniform2fv(offset_location, 1, &offset[0]);
-
-	int scale_location = glGetUniformLocation(shader_program, "scale");
-	glm::vec2 scale{0.25f, 0.25f};
-	glUniform2fv(scale_location, 1, &scale[0]);
-
-	int color_location = glGetUniformLocation(shader_program, "color");
-	glm::vec3 color{1.f, 1.f, 1.f};
-	glUniform3fv(color_location, 1, &color[0]);
-
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 	glfwSetFramebufferSizeCallback(window,
 	                               [](GLFWwindow *window, int width, int height)
 	                               { glViewport(0, 0, width, height); });
 
-	glClearColor(.85, 0.2, 0.205, 1);
+	glClearColor(1, 1, 1, 1);
+
+	glm::vec3 roof_color{1, 0, 0};
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -101,12 +90,12 @@ int main(int argc, char **argv)
 		if (glfwGetKey(window, GLFW_KEY_SPACE))
 		{
 			std::cout << "Space!" << std::endl;
+			roof_color = {0, 1, 0};
 		}
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// statics::draw_triangle(shader_program, vao);
-		statics::draw_rectangle(shader_program, vao, triangle_size);
+		statics::draw_house(shader_program, basic_triangle, roof_color);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
