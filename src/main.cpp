@@ -4,6 +4,7 @@
 #include "statics.h"
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 #include <iostream>
 
 int main(int argc, char **argv)
@@ -65,6 +66,20 @@ int main(int argc, char **argv)
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
 #pragma endregion
+
+	int offset_location = glGetUniformLocation(shader_program, "offset");
+	glUseProgram(shader_program);
+
+	glm::vec2 offset{-.2, -.5};
+	glUniform2fv(offset_location, 1, &offset[0]);
+
+	int scale_location = glGetUniformLocation(shader_program, "scale");
+	glm::vec2 scale{0.25f, 0.25f};
+	glUniform2fv(scale_location, 1, &scale[0]);
+
+	int color_location = glGetUniformLocation(shader_program, "color");
+	glm::vec3 color{1.f, 1.f, 1.f};
+	glUniform3fv(color_location, 1, &color[0]);
 
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
