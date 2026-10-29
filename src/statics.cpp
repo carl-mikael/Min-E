@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 #include <iostream>
 #include <iterator>
 #include <string>
@@ -104,9 +105,9 @@ bool create_shader_program(unsigned int *out_shader_program,
 	return true;
 }
 
-void create_triangle_vao(unsigned int *out_vao)
+void create_triangle_vao(unsigned int *out_vao, const glm::vec2 size)
 {
-	float vertices[]{0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.5f, 0.0f, 0.0f};
+	float vertices[]{0.0f, 0.0f, 0.0f, 0.0f, size.y, 0.0f, size.x, 0.0f, 0.0f};
 
 	glGenVertexArrays(1, out_vao);
 
@@ -139,6 +140,32 @@ void draw_triangle(const unsigned int program, const unsigned int vao)
 	glUseProgram(program);
 	glBindVertexArray(vao);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+}
+
+void draw_rectangle(const unsigned int program, const unsigned int vao,
+                    const glm::vec2 triangle_size)
+{
+	int offset_location = glGetUniformLocation(program, "offset");
+	glUseProgram(program);
+
+	glm::vec2 offset{0, 0};
+	glUniform2fv(offset_location, 1, &offset[0]);
+
+	int scale_location = glGetUniformLocation(program, "scale");
+	glm::vec2 scale{1.f, 1.f};
+	glUniform2fv(scale_location, 1, &scale[0]);
+
+	int color_location = glGetUniformLocation(program, "color");
+	glm::vec3 color{1.f, 1.f, 1.f};
+	glUniform3fv(color_location, 1, &color[0]);
+
+	draw_triangle(program, vao);
+
+	glUniform2fv(scale_location, 1, &glm::vec2{-1.f, -1.f}[0]);
+	glUniform2fv(offset_location, 1, &glm::vec2{triangle_size * -1.0f}[0]);
+	glUniform3fv(color_location, 1, &glm::vec3{0.15f, 0.65f, 0.84f}[0]);
+
+	draw_triangle(program, vao);
 }
 
 } // namespace statics

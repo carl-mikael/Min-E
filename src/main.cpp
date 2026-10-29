@@ -49,7 +49,8 @@ int main(int argc, char **argv)
 
 	GLuint vao, shader_program, vertex_shader, fragment_shader;
 
-	statics::create_triangle_vao(&vao);
+	glm::vec2 triangle_size{0.5f, 0.5f};
+	statics::create_triangle_vao(&vao, triangle_size);
 
 	const char *vertex_shader_path{"shader/basic.vs"};
 	const char *fragment_shader_path{"shader/basic.fs"};
@@ -104,7 +105,8 @@ int main(int argc, char **argv)
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		statics::draw_triangle(shader_program, vao);
+		// statics::draw_triangle(shader_program, vao);
+		statics::draw_rectangle(shader_program, vao, triangle_size);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
