@@ -39,6 +39,11 @@ target("Min-E")
 
     add_packages("glfw", "glad")
     add_options("log")
+    add_defines("GLFW_INCLUDE_NONE")
+
+    after_build(function (target) 
+        os.cp("$(projectdir)/src/shader", target:targetdir())
+    end)
 
 
 --
@@ -109,4 +114,3 @@ target("Min-E")
 --
 -- @endcode
 --
-
