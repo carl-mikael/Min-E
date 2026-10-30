@@ -1,4 +1,5 @@
 #pragma once
+
 // Turns x into string
 #define STR_DEF_(x) #x
 // Gets x's value, passes to STR_DEF_ (with only STR_DEF_ it would make the name
@@ -10,7 +11,15 @@
 									  "#line 1\n"
 
 #ifdef MINE_LOG
-#define LOG(msg) std::cout << msg << std::endl
+#define LOG(msg)                                                               \
+	std::cout << __FILE__ << "::" << __func__ << ": " << msg << std::endl
 #else
 #define LOG(msg)
+#endif
+
+#ifdef _DEBUG
+#include "glError.h" // IWYU pragma: keep
+#define glCheckError() glCheckError_(__FILE__, __LINE__)
+#else
+#define glCheckError()
 #endif
