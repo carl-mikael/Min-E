@@ -8,3 +8,9 @@
 #define GLSL_HEADER                                                            \
 	"#version " STR_DEF(GLSL_VERSION) " core\n"                                \
 									  "#line 1\n"
+
+#ifdef MINE_LOG
+#define LOG(msg) std::cout << msg << std::endl
+#else
+#define LOG(msg)
+#endif

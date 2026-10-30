@@ -10,9 +10,6 @@
 
 int main(int argc, char **argv)
 {
-	std::cout << "hello world!" << std::endl;
-	std::cout << "GLSL Header: " << GLSL_HEADER << std::endl;
-
 	if (!glfwInit())
 	{
 		std::cerr << "Failed Init" << std::endl;
@@ -39,15 +36,11 @@ int main(int argc, char **argv)
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
-		std::cout << "Failed to initialize GLAD" << std::endl;
+		std::cerr << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
 
 #pragma region triangle
-#ifdef MINE_LOG
-	std::cout << "Making Triangle" << std::endl;
-#endif
-
 	GLuint vao, shader_program, vertex_shader, fragment_shader;
 
 	glm::vec2 triangle_size{0.5f, 0.5f};
@@ -89,7 +82,7 @@ int main(int argc, char **argv)
 
 		if (glfwGetKey(window, GLFW_KEY_SPACE))
 		{
-			std::cout << "Space!" << std::endl;
+			LOG("Space!");
 			roof_color = {0, 1, 0};
 		}
 

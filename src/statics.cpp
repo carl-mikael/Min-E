@@ -11,9 +11,7 @@ namespace statics
 {
 bool read_file(const char *file_path, std::string &out_content)
 {
-#ifdef MINE_LOG
-	std::cout << "Opening file" << std::endl;
-#endif
+	LOG("Opening file: " << file_path);
 
 	std::ifstream file(file_path);
 	if (!file.is_open())
@@ -41,9 +39,7 @@ bool could_compile(unsigned int shader, const char *shader_path)
 		return false;
 	}
 
-#ifdef MINE_LOG
-	std::cout << "Successfully compiled: " << shader_path << std::endl;
-#endif
+	LOG("Successfully compiled: " << shader_path);
 
 	return true;
 }
