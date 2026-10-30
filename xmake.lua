@@ -1,4 +1,6 @@
 add_rules("mode.debug", "mode.release")
+---@diagnostic disable-next-line
+add_rules("plugin.compile_commands.autoupdate", { outputdir = ".zed" })
 
 option("log")
     set_default(false)
@@ -24,14 +26,14 @@ local gl_api = "gl=" .. GL_MAJOR_VERSION .. "." .. GL_MINOR_VERSION
 
 add_requires("glfw", "glm")
 
-add_requires("glad v0.1.36", {configs = {
+add_requires("glad v0.1.36", { configs = {
     spec = "gl",
     api = gl_api,
     profile = "core",
     extensions = table.concat(glad_extensions, ","),
     generator = "c",
     loader = true,
-}})
+} })
 
 target("Min-E")
     set_languages("c++20")
@@ -42,7 +44,7 @@ target("Min-E")
     add_options("log")
     add_defines("GLFW_INCLUDE_NONE")
 
-    after_build(function (target) 
+    after_build( function (target)
         os.cp("$(projectdir)/src/shader", target:targetdir())
     end)
 
