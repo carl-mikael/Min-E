@@ -9,6 +9,10 @@ build/
 .vscode/.cache/
 .vscode/compile_commands.json
 
+# zed
+.zed/.cache/
+.zed/compile_commands.json
+
 # Obsidian
 VaultEngineCourse/.obsidian/workspace*.json
 VaultEngineCourse/.obsidian/plugins/
