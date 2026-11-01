@@ -1,0 +1,14 @@
+// Project-local debug tasks
+//
+// For more documentation on how to configure debug tasks,
+// see: https://zed.dev/docs/debugger
+[
+  {
+    "label": "Start debugger config",
+    "adapter": "CodeLLDB",
+    "request": "launch",
+    "program": "build\\windows\\x64\\debug\\Min-E.exe",
+    "cwd": "build\\windows\\x64\\debug\\",
+    "build": "Min-E Build",
+  },
+]

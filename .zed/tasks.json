@@ -3,9 +3,9 @@
 // Example:
 [
   {
-    "label": "xmake: run Min-E",
+    "label": "Min-E Build",
     "command": "xmake",
-    "args": ["run", "Min-E"],
+    "args": ["build", "Min-E"],
   },
   // {
   //   "label": "Example task",
