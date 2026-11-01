@@ -44,6 +44,10 @@ target("Min-E")
     add_options("log")
     add_defines("GLFW_INCLUDE_NONE")
 
+    if is_mode("debug") then
+        add_defines("DEBUG")
+    end
+
     after_build( function (target)
         os.cp("$(projectdir)/src/shader", target:targetdir())
     end)

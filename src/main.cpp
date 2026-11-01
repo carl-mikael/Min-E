@@ -23,6 +23,10 @@ int main(int argc, char **argv)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_MINOR_V);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+#ifdef DEBUG
+	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#endif
+
 	GLFWwindow *window =
 		glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "MinE", nullptr, nullptr);
 	if (!window)
@@ -39,6 +43,22 @@ int main(int argc, char **argv)
 		std::cerr << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
+
+#ifdef DEBUG
+// Yoinked from: https://learnopengl.com/In-Practice/Debugging
+#pragma region debug_callback
+	int flags;
+	glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
+	if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
+	{
+		glEnable(GL_DEBUG_OUTPUT);
+		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+		glDebugMessageCallback(gl_debug_callback, nullptr);
+		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0,
+		                      nullptr, GL_TRUE);
+	}
+#pragma endregion
+#endif
 
 #pragma region triangle
 	GLuint vao, shader_program, vertex_shader, fragment_shader;

@@ -17,8 +17,12 @@
 #define LOG(msg)
 #endif
 
-#ifdef _DEBUG
+#ifdef DEBUG
 #include "glError.h" // IWYU pragma: keep
+/*
+ * Not really needed, configured debug output for error callbacks:
+ * https://learnopengl.com/In-Practice/Debugging#:~:text=your%20debugging%20toolkit.-,Debug%20output,-A%20less%20common
+ */
 #define glCheckError() glCheckError_(__FILE__, __LINE__)
 #else
 #define glCheckError()
