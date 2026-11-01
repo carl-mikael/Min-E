@@ -19,6 +19,7 @@ kanban-plugin: board
 ## Now
 
 - [ ] glGetError: https://learnopengl.com/In-Practice/Debugging
+	Use Debug Output instead
 
 
 ## Done
