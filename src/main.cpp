@@ -90,8 +90,11 @@ int main(int argc, char **argv)
 
 	glClearColor(1, 1, 1, 1);
 
-	glm::vec3 roof_color{1, 0, 0};
+	constexpr float roof_swap_cooldown = 0.2f;
+	double last_roof_swap_time{-roof_swap_cooldown};
 
+	glm::vec3 roof_color1{1, 0, 0}, roof_color2{0, 1, 0};
+	glm::vec3 roof_color = roof_color1;
 	while (!glfwWindowShouldClose(window))
 	{
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE))
@@ -102,8 +105,15 @@ int main(int argc, char **argv)
 
 		if (glfwGetKey(window, GLFW_KEY_SPACE))
 		{
-			LOG("Space!");
-			roof_color = {0, 1, 0};
+			if ((glfwGetTime() - last_roof_swap_time) > roof_swap_cooldown)
+			{
+				LOG("Space!");
+
+				roof_color =
+					roof_color == roof_color1 ? roof_color2 : roof_color1;
+
+				last_roof_swap_time = glfwGetTime();
+			}
 		}
 
 		glClear(GL_COLOR_BUFFER_BIT);
