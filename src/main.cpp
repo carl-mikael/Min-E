@@ -78,6 +78,9 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	glDetachShader(shader_program, vertex_shader);
+	glDetachShader(shader_program, fragment_shader);
+
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
 #pragma endregion
