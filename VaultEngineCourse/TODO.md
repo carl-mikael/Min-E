@@ -6,31 +6,35 @@ kanban-plugin: board
 
 ## Backlog
 
-- [ ] use EBO and 1 draw call for the rectangle
-- [ ] debug function that only executes in debug mode, and prints the function it's in
 - [ ] Learn RenderDoc
 
 
 ## Next
 
-- [ ] Ensure you can explain the n0-help example
+- [ ] Watch linear transforms and matrices: https://www.youtube.com/watch?v=kYB8IZa5AuE&list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab&index=4
+- [ ] Watch matrix multiplication as composition: https://youtu.be/XkY2DOUCWMU?si=MHkV9EOWBNw5a-mF
 
 
 ## Now
 
-- [ ] glGetError: https://learnopengl.com/In-Practice/Debugging
-	Use Debug Output instead
 
 
 ## Done
 
+
+
+***
+
+## Archive
+
+- [ ] Ensure you can explain the n0-help example
+- [ ] glGetError: https://learnopengl.com/In-Practice/Debugging
+	Use Debug Output instead
 - [ ] Render House
 - [ ] draw_triangle
 - [ ] draw_rectangle
 - [ ] Add teachers to git repo
-
-
-
+- [ ] debug function that only executes in debug mode, and prints the function it's in
 
 %% kanban:settings
 ```
