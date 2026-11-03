@@ -9,6 +9,10 @@ option("log")
     add_defines("MINE_LOG")
 option_end()
 
+if is_mode("debug") or has_config("log") then
+    add_defines("MINE_LOG");
+end
+
 -- OpenGL Version
 local GL_MAJOR_VERSION = 4
 local GL_MINOR_VERSION = 6
@@ -43,10 +47,6 @@ target("Min-E")
     add_packages("glfw", "glad", "glm")
     add_options("log")
     add_defines("GLFW_INCLUDE_NONE")
-
-    if is_mode("debug") then
-        add_defines("DEBUG")
-    end
 
     after_build( function (target)
         os.cp("$(projectdir)/src/shader", target:targetdir())
