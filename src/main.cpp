@@ -140,7 +140,8 @@ int main(int argc, char **argv)
 		glBindVertexArray(cube.vao);
 		glUseProgram(shader_program);
 		constexpr void *offset = (void *)0;
-		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, offset);
+		constexpr int indices = 6 * 6;
+		glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, offset);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

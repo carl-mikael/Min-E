@@ -199,8 +199,24 @@ void draw_house(const unsigned int program, const triangle tri,
 
 cuboid create_cube(float size)
 {
-	float vertices[]{0.0f, 0.0f, 0.0f, size, 0.0f, 0.0f, 0.0f, size, 0.0f};
-	unsigned int indices[]{0, 1, 2};
+	glm::vec3 vertices[4 * 2]{{0.0f, 0.0f, 0.0f},
+	                          {size, 0.0f, 0.0f},
+	                          {0.0f, size, 0.0f},
+	                          {size, size, 0.0f}};
+
+	for (int i{0}; i < 4; ++i)
+	{
+		vertices[i + 4] = vertices[i] + glm::vec3{0, 0, size};
+	}
+
+	unsigned int indices[]{
+		0, 1, 2, 2, 1, 3, // Front side
+		4, 0, 6, 6, 0, 2, // Left side
+		1, 5, 3, 3, 5, 7, // Right side
+		5, 4, 7, 7, 4, 6, // Back side
+		2, 3, 6, 6, 3, 7, // Top side
+		4, 5, 0, 0, 5, 1  // Bottom side
+	};
 
 	GLuint vbo, vao, ebo;
 	glGenVertexArrays(1, &vao);
