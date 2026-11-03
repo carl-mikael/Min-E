@@ -13,6 +13,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <iostream>
+#include <string>
 
 int main(int argc, char **argv)
 {
@@ -66,11 +67,11 @@ int main(int argc, char **argv)
 #pragma endregion
 #endif
 
-	GLuint vao, shader_program, vertex_shader, fragment_shader;
+	GLuint shader_program, vertex_shader, fragment_shader;
 
-	glm::vec2 triangle_size{0.5f, 0.5f};
 	constexpr float cube_size = 0.5f;
 	auto cube = statics::create_cube(cube_size);
+	auto sphere = statics::create_sphere();
 
 	const char *vertex_shader_path{"shader/basic.vert"};
 	const char *fragment_shader_path{"shader/basic.frag"};
@@ -98,8 +99,8 @@ int main(int argc, char **argv)
 
 	glClearColor(1, 1, 1, 1);
 
-	constexpr float roof_swap_cooldown = 0.2f;
-	double last_roof_swap_time{-roof_swap_cooldown};
+	constexpr float space_cooldown = 0.2f;
+	double last_space_click{-space_cooldown};
 
 #pragma region view
 	glm::vec3 view_pos{0, 0, 3.0f};
@@ -127,21 +128,25 @@ int main(int argc, char **argv)
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, uniform_matrices_object);
 #pragma endregion
 
-#pragma region cube_uniforms
 	glUseProgram(shader_program);
+	int model_location = glGetUniformLocation(shader_program, "model");
+	int color_location = glGetUniformLocation(shader_program, "color");
 
 	glm::mat4 cube_model{1};
-	int model_location = glGetUniformLocation(shader_program, "model");
-
 	cube_model = glm::translate(cube_model, glm::vec3{-0.25f, 0, 0});
-	glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(cube_model));
+	// glUniformMatrix4fv(model_location, 1, GL_FALSE,
+	// glm::value_ptr(cube_model)); glUniform3fv(color_location, 1,
+	// &glm::vec3{1, 0, 1}[0]);
 
-	int color_location = glGetUniformLocation(shader_program, "color");
-	glUniform3fv(color_location, 1, &glm::vec3{1, 0, 1}[0]);
-#pragma endregion
+	glm::mat4 sphere_model{1};
+	sphere_model = glm::scale(sphere_model, glm::vec3{0.25});
+	sphere_model = glm::translate(sphere_model, glm::vec3{-4.f, 0, 0});
+	// glUniformMatrix4fv(model_location, 1, GL_FALSE,
+	// glm::value_ptr(sphere_model));
 
-	glm::vec3 roof_color1{1, 0, 0}, roof_color2{0, 1, 0};
-	glm::vec3 roof_color = roof_color1;
+	glm::vec3 color = glm::vec3{0.5f, 0.f, 0.945f};
+	glUniform3fv(color_location, 1, &color[0]);
+
 	while (!glfwWindowShouldClose(window))
 	{
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE))
@@ -152,33 +157,37 @@ int main(int argc, char **argv)
 
 		if (glfwGetKey(window, GLFW_KEY_SPACE))
 		{
-			if ((glfwGetTime() - last_roof_swap_time) > roof_swap_cooldown)
+			if ((glfwGetTime() - last_space_click) > space_cooldown)
 			{
 				LOG("Space!");
-
-				roof_color =
-					roof_color == roof_color1 ? roof_color2 : roof_color1;
-
-				last_roof_swap_time = glfwGetTime();
+				last_space_click = glfwGetTime();
 			}
 		}
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
-#pragma region render-cube
 		glUseProgram(shader_program);
+		constexpr void *offset = (void *)0;
 
+#pragma region render-cube
 		constexpr float rotation_rate = 0.01f;
 		cube_model = glm::rotate(cube_model, rotation_rate, glm::vec3{1, 1, 0});
 
 		glUniformMatrix4fv(model_location, 1, GL_FALSE,
 		                   glm::value_ptr(cube_model));
 
-		constexpr void *offset = (void *)0;
 		constexpr int indices = 6 * 6;
-
 		glBindVertexArray(cube.vao);
 		glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, offset);
+#pragma endregion
+
+#pragma region render-sphere
+		glUniformMatrix4fv(model_location, 1, GL_FALSE,
+		                   glm::value_ptr(sphere_model));
+
+		glBindVertexArray(sphere.vao);
+		glDrawElements(GL_TRIANGLES, sphere.nr_indices, GL_UNSIGNED_INT,
+		               offset);
 #pragma endregion
 
 		glfwSwapBuffers(window);

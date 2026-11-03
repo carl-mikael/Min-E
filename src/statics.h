@@ -19,6 +19,12 @@ struct cuboid
 	glm::vec3 size;
 };
 
+struct sphere
+{
+	unsigned int vao;
+	unsigned long long nr_indices;
+};
+
 bool read_file(const char *file_path, std::string &out_content);
 
 bool could_compile(unsigned int shader, const char *shader_path);
@@ -41,5 +47,11 @@ void draw_house(const unsigned int program, const triangle tri,
                 const glm::vec3 roof_color);
 
 cuboid create_cube(float size);
+
+bool generate_sort_of_sphere(std::vector<float> &vertices,
+                             std::vector<unsigned int> &indices, int rings,
+                             int slices);
+
+sphere create_sphere();
 
 }; // namespace statics

@@ -2,10 +2,13 @@
 #include "glm/ext/vector_float3.hpp"
 #include "macros.h"
 
+#include <array>
+#include <exception>
 #include <fstream>
 #include <glad/glad.h>
 #include <iostream>
 #include <iterator>
+#include <vector>
 
 namespace statics
 {
@@ -250,6 +253,150 @@ cuboid create_cube(float size)
 	glBindVertexArray(0);
 
 	return cuboid{.vao = vao, .size = glm::vec3{size}};
+}
+
+// By teacher(s), modified by me to use LOG macro and return bool
+// It's not the nicest sphere, nor the nicest code, but it sort of works.
+bool generate_sort_of_sphere(std::vector<float> &out_vertices,
+                             std::vector<unsigned int> &out_indices, int rings,
+                             int slices)
+{
+	if (rings < 3)
+	{
+		LOG("no sphere generated. rings value < 3");
+		return false;
+	}
+
+	if (slices < 4)
+	{
+		LOG("no sphere generated. slices value < 4");
+		return false;
+	}
+
+	float PIE = 3.1415f;
+
+	out_vertices.clear();
+	out_indices.clear();
+
+	float angle_step = 360.0f / slices;
+	float current_angle = 0.0f;
+
+	// out_vertices
+	float y_step = 2.0f / (rings - 1);
+	float y_pos = 1.0f;
+
+	for (int ring = 0; ring < rings; ring++)
+	{
+		int iteration_slices = slices;
+		if (ring == 0 || ring == rings - 1)
+		{
+			iteration_slices = 1;
+		}
+
+		for (int i = 0; i < iteration_slices; i++)
+		{
+			float radius = sinf(acos(y_pos));
+
+			float x_pos = cosf(current_angle * PIE / 180) * radius;
+			float z_pos = sinf(current_angle * PIE / 180) * radius;
+
+			out_vertices.push_back(x_pos);
+			out_vertices.push_back(y_pos);
+			out_vertices.push_back(z_pos);
+
+			current_angle += angle_step;
+		}
+
+		y_pos -= y_step;
+		current_angle = 0.0f;
+	}
+
+	LOG("Sphere vertex count:" << out_vertices.size() / 3);
+
+	// out_indices
+	unsigned int top_most_index = 0;
+	unsigned int bottom_most_index = out_vertices.size() / 3 - 1;
+
+	for (int i = 0; i < rings - 1; i++)
+	{
+		for (int j = 0; j < slices; j++)
+		{
+			unsigned int tl_index = (i - 1) * slices + j + 1;
+			unsigned int tr_index = (i - 1) * slices + j + 1 + 1;
+			unsigned int bl_index = (i + 0) * slices + j + 1;
+			unsigned int br_index = (i + 0) * slices + j + 1 + 1;
+
+			if (j == slices - 1)
+			{ // For the seam
+				tr_index = (i - 2) * slices + j + 1 + 1;
+				br_index = (i - 1) * slices + j + 1 + 1;
+			}
+
+			if (i == 0)
+			{ // First ring
+				out_indices.push_back(top_most_index);
+				out_indices.push_back(br_index);
+				out_indices.push_back(bl_index);
+			}
+			else if (i == rings - 2)
+			{ // Last ring
+				out_indices.push_back(tr_index);
+				out_indices.push_back(bottom_most_index);
+				out_indices.push_back(tl_index);
+			}
+			else
+			{
+				out_indices.push_back(tl_index);
+				out_indices.push_back(br_index);
+				out_indices.push_back(bl_index);
+
+				out_indices.push_back(tl_index);
+				out_indices.push_back(tr_index);
+				out_indices.push_back(br_index);
+			}
+		}
+	}
+
+	LOG("Sphere triangle count:" << out_indices.size() / 3);
+	return true;
+}
+
+sphere create_sphere()
+{
+	std::vector<float> vertices{};
+	std::vector<unsigned int> indices{};
+
+	if (!generate_sort_of_sphere(vertices, indices, 10, 10))
+	{
+		throw new std::exception{"Failed generating sphere"};
+	}
+
+	GLuint vao, vbo, ebo;
+
+	glGenVertexArrays(1, &vao);
+
+	glCreateBuffers(1, &vbo);
+	glNamedBufferStorage(vbo, sizeof(float) * vertices.size(), vertices.data(),
+	                     0);
+
+	glCreateBuffers(1, &ebo);
+	glNamedBufferStorage(ebo, sizeof(unsigned int) * indices.size(),
+	                     indices.data(), 0);
+
+	glBindVertexArray(vao);
+
+	glVertexArrayElementBuffer(vao, ebo);
+
+	constexpr int POS_ATTRIB = 0;
+	constexpr int SLOT = 0;
+	glVertexAttribFormat(POS_ATTRIB, 3, GL_FLOAT, false, 0);
+	glEnableVertexAttribArray(POS_ATTRIB);
+	glVertexAttribBinding(POS_ATTRIB, SLOT);
+	glBindVertexBuffer(SLOT, vbo, 0, 3 * sizeof(float));
+
+	glBindVertexArray(0);
+
+	return {.vao = vao, .nr_indices = indices.size()};
 }
 
 } // namespace statics
