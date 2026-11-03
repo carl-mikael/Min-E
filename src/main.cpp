@@ -1,5 +1,6 @@
 #pragma once
 
+#include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float3.hpp"
@@ -130,8 +131,9 @@ int main(int argc, char **argv)
 	glUseProgram(shader_program);
 
 	glm::mat4 cube_model{1};
-	cube_model = glm::rotate(cube_model, 3.14f / 4.0f, glm::vec3(1, 1, 0));
 	int model_location = glGetUniformLocation(shader_program, "model");
+
+	cube_model = glm::translate(cube_model, glm::vec3{-0.25f, 0, 0});
 	glUniformMatrix4fv(model_location, 1, GL_FALSE, glm::value_ptr(cube_model));
 
 	int color_location = glGetUniformLocation(shader_program, "color");
@@ -163,12 +165,21 @@ int main(int argc, char **argv)
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// statics::draw_triangle(shader_program, cube.vao);
-		glBindVertexArray(cube.vao);
+#pragma region render-cube
 		glUseProgram(shader_program);
+
+		constexpr float rotation_rate = 0.01f;
+		cube_model = glm::rotate(cube_model, rotation_rate, glm::vec3{1, 1, 0});
+
+		glUniformMatrix4fv(model_location, 1, GL_FALSE,
+		                   glm::value_ptr(cube_model));
+
 		constexpr void *offset = (void *)0;
 		constexpr int indices = 6 * 6;
+
+		glBindVertexArray(cube.vao);
 		glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, offset);
+#pragma endregion
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
