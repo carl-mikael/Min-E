@@ -1,5 +1,6 @@
 #pragma once
 
+#include "glm/ext/vector_float3.hpp"
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <string>
@@ -10,6 +11,12 @@ struct triangle
 {
 	unsigned int vao;
 	glm::vec2 size;
+};
+
+struct cuboid
+{
+	unsigned int vao;
+	glm::vec3 size;
 };
 
 bool read_file(const char *file_path, std::string &out_content);
@@ -32,5 +39,7 @@ void draw_rectangle(const unsigned int program, const triangle,
 
 void draw_house(const unsigned int program, const triangle tri,
                 const glm::vec3 roof_color);
+
+cuboid create_cube(float size);
 
 }; // namespace statics

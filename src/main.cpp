@@ -1,5 +1,6 @@
 #pragma once
 
+#include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "macros.h"
 #include "statics.h"
@@ -60,11 +61,11 @@ int main(int argc, char **argv)
 #pragma endregion
 #endif
 
-#pragma region triangle
 	GLuint vao, shader_program, vertex_shader, fragment_shader;
 
 	glm::vec2 triangle_size{0.5f, 0.5f};
-	auto basic_triangle = statics::create_triangle(triangle_size);
+	constexpr float cube_size = 0.5f;
+	auto cube = statics::create_cube(cube_size);
 
 	const char *vertex_shader_path{"shader/basic.vs"};
 	const char *fragment_shader_path{"shader/basic.fs"};
@@ -83,6 +84,20 @@ int main(int argc, char **argv)
 
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
+
+#pragma region cube_uniforms
+	glUseProgram(shader_program);
+
+	int offset_location = glGetUniformLocation(shader_program, "offset");
+
+	glUniform2fv(offset_location, 1, &glm::vec2{0}[0]);
+
+	int scale_location = glGetUniformLocation(shader_program, "scale");
+	glUniform2fv(scale_location, 1, &glm::vec2{0.5f}[0]);
+
+	int color_location = glGetUniformLocation(shader_program, "color");
+	glUniform3fv(color_location, 1, &glm::vec3{1, 0, 1}[0]);
+
 #pragma endregion
 
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -121,7 +136,11 @@ int main(int argc, char **argv)
 
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		statics::draw_house(shader_program, basic_triangle, roof_color);
+		// statics::draw_triangle(shader_program, cube.vao);
+		glBindVertexArray(cube.vao);
+		glUseProgram(shader_program);
+		constexpr void *offset = (void *)0;
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, offset);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

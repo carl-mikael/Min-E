@@ -197,4 +197,43 @@ void draw_house(const unsigned int program, const triangle tri,
 	                        glm::vec2{0.50f, 0.5f}, glm::vec3{0, 0, 1});
 }
 
+cuboid create_cube(float size)
+{
+	float vertices[]{0.0f, 0.0f, 0.0f, size, 0.0f, 0.0f, 0.0f, size, 0.0f};
+	unsigned int indices[]{0, 1, 2};
+
+	GLuint vbo, vao, ebo;
+	glGenVertexArrays(1, &vao);
+
+	// Create and get buffer handle
+	// then 'upload' vertex data. 0 as flag because it shouldn't be read/written
+	// to from cpu again
+	glCreateBuffers(1, &vbo);
+	glNamedBufferStorage(vbo, sizeof(vertices), vertices, 0);
+
+	glCreateBuffers(1, &ebo);
+	glNamedBufferStorage(ebo, sizeof(indices), indices, 0);
+
+	glBindVertexArray(vao);
+
+	// The vao is created the first time it's bound.
+	// Can't call this before the vao's first glBindVertexArray.
+	glVertexArrayElementBuffer(vao, ebo);
+
+	constexpr int POS_ATTRIB = 0;
+	constexpr int SLOT = 0;
+	// Set attribute format
+	// Enable attribute
+	// Set slot to use
+	// Define slot
+	glVertexAttribFormat(POS_ATTRIB, 3, GL_FLOAT, false, 0);
+	glEnableVertexAttribArray(POS_ATTRIB);
+	glVertexAttribBinding(POS_ATTRIB, SLOT);
+	glBindVertexBuffer(SLOT, vbo, 0, 3 * sizeof(float));
+
+	glBindVertexArray(0);
+
+	return cuboid{.vao = vao, .size = glm::vec3{size}};
+}
+
 } // namespace statics
