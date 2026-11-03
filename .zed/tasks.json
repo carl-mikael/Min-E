@@ -3,6 +3,10 @@
 // Example:
 [
   {
+    "label": "Min-E Debug+Logs",
+    "command": "xmake f -m debug --log=y",
+  },
+  {
     "label": "Min-E Build",
     "command": "xmake",
     "args": ["build", "Min-E"],
