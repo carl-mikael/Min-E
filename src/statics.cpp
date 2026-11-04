@@ -2,7 +2,6 @@
 #include "glm/ext/vector_float3.hpp"
 #include "macros.h"
 
-#include <array>
 #include <exception>
 #include <fstream>
 #include <glad/glad.h>
@@ -209,7 +208,6 @@ cuboid create_cube(float size)
 
 	for (int i{0}; i < 4; ++i)
 	{
-		vertices[i + 4] = vertices[i] + glm::vec3{0, 0, size};
 		vertices[i + 4] = vertices[i] + glm::vec3{0, 0, -size};
 	}
 
@@ -336,26 +334,21 @@ bool generate_sort_of_sphere(std::vector<float> &out_vertices,
 			if (i == 0)
 			{ // First ring
 				out_indices.push_back(top_most_index);
-				out_indices.push_back(br_index);
 				out_indices.push_back(bl_index);
 				out_indices.push_back(br_index);
 			}
 			else if (i == rings - 2)
 			{ // Last ring
-				out_indices.push_back(tr_index);
-				out_indices.push_back(bottom_most_index);
 				out_indices.push_back(tl_index);
 				out_indices.push_back(bottom_most_index);
 				out_indices.push_back(tr_index);
 			}
 			else
 			{
-				out_indices.push_back(tl_index);
 				out_indices.push_back(br_index);
 				out_indices.push_back(tl_index);
 				out_indices.push_back(bl_index);
 
-				out_indices.push_back(tl_index);
 				out_indices.push_back(tr_index);
 				out_indices.push_back(tl_index);
 				out_indices.push_back(br_index);
@@ -403,6 +396,41 @@ sphere create_sphere()
 	glBindVertexArray(0);
 
 	return {.vao = vao, .nr_indices = indices.size()};
+}
+
+pyramid create_pyramid()
+{
+	glm::vec3 vertices[]{
+		{0, 0, 0}, {1, 0, 0}, {1, 0, -1}, {0, 0, -1}, {0.5f, 1, -0.5f}};
+	unsigned int indices[]{
+		0, 1, 4, 1, 2, 4, 2, 3, 4, 3, 0, 4, // Sides
+		0, 2, 1, 0, 3, 2,                   // Bottom square
+	};
+
+	GLuint vao, vbo, ebo;
+
+	glGenVertexArrays(1, &vao);
+
+	glCreateBuffers(1, &vbo);
+	glNamedBufferStorage(vbo, sizeof(vertices), vertices, 0);
+
+	glCreateBuffers(1, &ebo);
+	glNamedBufferStorage(ebo, sizeof(indices), indices, 0);
+
+	glBindVertexArray(vao);
+
+	glVertexArrayElementBuffer(vao, ebo);
+
+	constexpr int POS_ATTRIB = 0;
+	constexpr int SLOT = 0;
+	glVertexAttribFormat(POS_ATTRIB, 3, GL_FLOAT, false, 0);
+	glEnableVertexAttribArray(POS_ATTRIB);
+	glVertexAttribBinding(POS_ATTRIB, SLOT);
+	glBindVertexBuffer(SLOT, vbo, 0, 3 * sizeof(float));
+
+	glBindVertexArray(0);
+
+	return {.vao = vao, .indices = (sizeof(indices) / sizeof(indices[0]))};
 }
 
 } // namespace statics

@@ -25,6 +25,12 @@ struct sphere
 	unsigned long long nr_indices;
 };
 
+struct pyramid
+{
+	unsigned int vao;
+	unsigned int indices;
+};
+
 bool read_file(const char *file_path, std::string &out_content);
 
 bool could_compile(unsigned int shader, const char *shader_path);
@@ -53,5 +59,7 @@ bool generate_sort_of_sphere(std::vector<float> &vertices,
                              int slices);
 
 sphere create_sphere();
+
+pyramid create_pyramid();
 
 }; // namespace statics

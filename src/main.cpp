@@ -2,10 +2,8 @@
 
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
-#include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/fwd.hpp"
-#include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "macros.h"
 #include "statics.h"
@@ -13,7 +11,6 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <iostream>
-#include <string>
 
 int main(int argc, char **argv)
 {
@@ -72,6 +69,7 @@ int main(int argc, char **argv)
 	constexpr float cube_size = 0.5f;
 	auto cube = statics::create_cube(cube_size);
 	auto sphere = statics::create_sphere();
+	auto pyramid = statics::create_pyramid();
 
 	const char *vertex_shader_path{"shader/basic.vert"};
 	const char *fragment_shader_path{"shader/basic.frag"};
@@ -144,8 +142,19 @@ int main(int argc, char **argv)
 	// glUniformMatrix4fv(model_location, 1, GL_FALSE,
 	// glm::value_ptr(sphere_model));
 
+	glm::mat4 original_pyramid_model{1};
+	original_pyramid_model =
+		glm::scale(original_pyramid_model, glm::vec3{0.5f});
+	original_pyramid_model =
+		glm::translate(original_pyramid_model, glm::vec3{1.85f, -0.25f, 0});
+
 	glm::vec3 color = glm::vec3{0.5f, 0.f, 0.945f};
 	glUniform3fv(color_location, 1, &color[0]);
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+
+	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -164,7 +173,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glUseProgram(shader_program);
 		constexpr void *offset = (void *)0;
@@ -190,6 +199,15 @@ int main(int argc, char **argv)
 		glBindVertexArray(sphere.vao);
 		glDrawElements(GL_TRIANGLES, sphere.nr_indices, GL_UNSIGNED_INT,
 		               offset);
+#pragma endregion
+
+#pragma region render-pyramid
+		glBindVertexArray(pyramid.vao);
+		const float scale = std::lerp(0.15f, 2.0f, sin(glfwGetTime()));
+		glUniformMatrix4fv(model_location, 1, GL_FALSE,
+		                   glm::value_ptr(glm::scale(original_pyramid_model,
+		                                             glm::vec3{scale})));
+		glDrawElements(GL_TRIANGLES, pyramid.indices, GL_UNSIGNED_INT, offset);
 #pragma endregion
 
 		glfwSwapBuffers(window);
