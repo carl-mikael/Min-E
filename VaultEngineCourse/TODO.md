@@ -16,8 +16,6 @@ kanban-plugin: board
 
 ## Next
 
-- [ ] Render pyramid
-- [ ] Size pyramid over time/frames
 - [ ] Possible to duplicate the shapes with an offset using a geometry shader?
 - [ ] Render 2 spheres, 2 pyramids, and 2 cubes
 - [ ] Change between perspective and orthographic view on space
@@ -25,16 +23,18 @@ kanban-plugin: board
 
 ## Now
 
-- [ ] Render sphere
-- [ ] Move sphere around over time/frames
 
 
 ## Done
 
+- [ ] Size pyramid over time/frames
+- [ ] Render pyramid
+- [ ] Move sphere around over time/frames
 - [ ] Impl matrices and use uniform buffer for perspective & view: https://learnopengl.com/Advanced-OpenGL/Advanced-GLSL
 - [ ] Watch linear transforms and matrices: https://www.youtube.com/watch?v=kYB8IZa5AuE&list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab&index=4
 - [ ] Watch matrix multiplication as composition: https://youtu.be/XkY2DOUCWMU?si=MHkV9EOWBNw5a-mF
 - [ ] Spin cube over time/frames
+- [ ] Render sphere
 
 
 ***
