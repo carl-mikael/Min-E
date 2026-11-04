@@ -210,6 +210,7 @@ cuboid create_cube(float size)
 	for (int i{0}; i < 4; ++i)
 	{
 		vertices[i + 4] = vertices[i] + glm::vec3{0, 0, size};
+		vertices[i + 4] = vertices[i] + glm::vec3{0, 0, -size};
 	}
 
 	unsigned int indices[]{
