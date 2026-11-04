@@ -182,6 +182,8 @@ int main(int argc, char **argv)
 #pragma endregion
 
 #pragma region render-sphere
+		sphere_model = glm::translate(
+			sphere_model, glm::vec3{0, sin(glfwGetTime() * 2.5f), 0} * 0.025f);
 		glUniformMatrix4fv(model_location, 1, GL_FALSE,
 		                   glm::value_ptr(sphere_model));
 
