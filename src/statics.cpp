@@ -338,21 +338,26 @@ bool generate_sort_of_sphere(std::vector<float> &out_vertices,
 				out_indices.push_back(top_most_index);
 				out_indices.push_back(br_index);
 				out_indices.push_back(bl_index);
+				out_indices.push_back(br_index);
 			}
 			else if (i == rings - 2)
 			{ // Last ring
 				out_indices.push_back(tr_index);
 				out_indices.push_back(bottom_most_index);
 				out_indices.push_back(tl_index);
+				out_indices.push_back(bottom_most_index);
+				out_indices.push_back(tr_index);
 			}
 			else
 			{
 				out_indices.push_back(tl_index);
 				out_indices.push_back(br_index);
+				out_indices.push_back(tl_index);
 				out_indices.push_back(bl_index);
 
 				out_indices.push_back(tl_index);
 				out_indices.push_back(tr_index);
+				out_indices.push_back(tl_index);
 				out_indices.push_back(br_index);
 			}
 		}
