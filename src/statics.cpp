@@ -36,7 +36,8 @@ bool could_compile(unsigned int shader, const char *shader_path)
 	if (!success)
 	{
 		glGetShaderInfoLog(shader, sizeof(info_log), nullptr, info_log);
-		std::cerr << "Failed to compile shader: " << shader_path << std::endl;
+		std::cerr << "Failed to compile shader: " << shader_path
+		          << " info_log: " << info_log << std::endl;
 
 		return false;
 	}
@@ -80,13 +81,20 @@ bool create_shader(unsigned int *out_shader, const char *shader_path,
 
 bool create_shader_program(unsigned int *out_shader_program,
                            const unsigned int vertex_shader,
-                           const unsigned int fragment_shader)
+                           const unsigned int fragment_shader,
+                           const unsigned int geometry_shader)
 {
 	*out_shader_program = glCreateProgram();
 	unsigned int program = *out_shader_program;
 
 	glAttachShader(program, vertex_shader);
 	glAttachShader(program, fragment_shader);
+
+	if (geometry_shader != -1)
+	{
+		glAttachShader(program, geometry_shader);
+	}
+
 	glLinkProgram(program);
 
 	int success;
@@ -95,7 +103,8 @@ bool create_shader_program(unsigned int *out_shader_program,
 	if (!success)
 	{
 		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
-		std::cerr << "Failed to compile shader program" << std::endl;
+		std::cerr << "Failed to compile shader program: " << info_log
+		          << std::endl;
 		return false;
 	}
 

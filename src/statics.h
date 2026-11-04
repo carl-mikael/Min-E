@@ -40,7 +40,8 @@ bool create_shader(unsigned int *out_shader_id, const char *shader_path,
 
 bool create_shader_program(unsigned int *out_program_id,
                            const unsigned int vertex_shader_id,
-                           const unsigned int fragment_shader_id);
+                           const unsigned int fragment_shader_id,
+                           const unsigned int geometry_shader = -1);
 
 triangle create_triangle(const glm::vec2 size);
 

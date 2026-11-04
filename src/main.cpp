@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 #pragma endregion
 #endif
 
-	GLuint shader_program, vertex_shader, fragment_shader;
+	GLuint shader_program, vertex_shader, fragment_shader, geometry_shader;
 
 	constexpr float cube_size = 0.5f;
 	auto cube = statics::create_cube(cube_size);
@@ -73,21 +73,27 @@ int main(int argc, char **argv)
 
 	const char *vertex_shader_path{"shader/basic.vert"};
 	const char *fragment_shader_path{"shader/basic.frag"};
+	const char *geometry_shader_path{"shader/duplication.geom"};
+
 	if (!statics::create_shader(&vertex_shader, vertex_shader_path,
 	                            GL_VERTEX_SHADER) ||
 	    !statics::create_shader(&fragment_shader, fragment_shader_path,
 	                            GL_FRAGMENT_SHADER) ||
+	    !statics::create_shader(&geometry_shader, geometry_shader_path,
+	                            GL_GEOMETRY_SHADER) ||
 	    !statics::create_shader_program(&shader_program, vertex_shader,
-	                                    fragment_shader))
+	                                    fragment_shader, geometry_shader))
 	{
 		return -1;
 	}
 
 	glDetachShader(shader_program, vertex_shader);
 	glDetachShader(shader_program, fragment_shader);
+	glDetachShader(shader_program, geometry_shader);
 
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
+	glDeleteShader(geometry_shader);
 
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -130,6 +136,9 @@ int main(int argc, char **argv)
 	int model_location = glGetUniformLocation(shader_program, "model");
 	int color_location = glGetUniformLocation(shader_program, "color");
 
+	int duplication_model_matrix_loc =
+		glGetUniformLocation(shader_program, "duplication_model_matrix");
+
 	glm::mat4 cube_model{1};
 	cube_model = glm::translate(cube_model, glm::vec3{-0.25f, 0, 0});
 	// glUniformMatrix4fv(model_location, 1, GL_FALSE,
@@ -139,8 +148,6 @@ int main(int argc, char **argv)
 	glm::mat4 sphere_model{1};
 	sphere_model = glm::scale(sphere_model, glm::vec3{0.25});
 	sphere_model = glm::translate(sphere_model, glm::vec3{-4.f, 0, 0});
-	// glUniformMatrix4fv(model_location, 1, GL_FALSE,
-	// glm::value_ptr(sphere_model));
 
 	glm::mat4 original_pyramid_model{1};
 	original_pyramid_model =
@@ -185,6 +192,10 @@ int main(int argc, char **argv)
 		glUniformMatrix4fv(model_location, 1, GL_FALSE,
 		                   glm::value_ptr(cube_model));
 
+		glUniformMatrix4fv(duplication_model_matrix_loc, 1, GL_FALSE,
+		                   glm::value_ptr(glm::translate(
+							   cube_model, glm::vec3{-0.5f, -0.15f, 0.0f})));
+
 		constexpr int indices = 6 * 6;
 		glBindVertexArray(cube.vao);
 		glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, offset);
@@ -196,6 +207,10 @@ int main(int argc, char **argv)
 		glUniformMatrix4fv(model_location, 1, GL_FALSE,
 		                   glm::value_ptr(sphere_model));
 
+		glUniformMatrix4fv(duplication_model_matrix_loc, 1, GL_FALSE,
+		                   glm::value_ptr(glm::translate(
+							   sphere_model, glm::vec3{3.33f, -3.25f, 0.0f})));
+
 		glBindVertexArray(sphere.vao);
 		glDrawElements(GL_TRIANGLES, sphere.nr_indices, GL_UNSIGNED_INT,
 		               offset);
@@ -204,9 +219,16 @@ int main(int argc, char **argv)
 #pragma region render-pyramid
 		glBindVertexArray(pyramid.vao);
 		const float scale = std::lerp(0.15f, 2.0f, sin(glfwGetTime()));
+		glm::mat4 pyramid_model =
+			glm::scale(original_pyramid_model, glm::vec3{scale});
+
 		glUniformMatrix4fv(model_location, 1, GL_FALSE,
+		                   glm::value_ptr(pyramid_model));
+
+		glUniformMatrix4fv(duplication_model_matrix_loc, 1, GL_FALSE,
 		                   glm::value_ptr(glm::scale(original_pyramid_model,
-		                                             glm::vec3{scale})));
+		                                             glm::vec3{-scale})));
+
 		glDrawElements(GL_TRIANGLES, pyramid.indices, GL_UNSIGNED_INT, offset);
 #pragma endregion
 
