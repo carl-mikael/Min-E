@@ -16,17 +16,19 @@ kanban-plugin: board
 
 ## Next
 
-- [ ] Possible to duplicate the shapes with an offset using a geometry shader?
-- [ ] Render 2 spheres, 2 pyramids, and 2 cubes
-- [ ] Change between perspective and orthographic view on space
 
 
 ## Now
 
+- [ ] Try instancing
 
 
 ## Done
 
+- [ ] Don't use geom shader for duplication
+- [ ] Change between perspective and orthographic view on space
+- [ ] Render 2 spheres, 2 pyramids, and 2 cubes
+- [ ] Possible to duplicate the shapes with an offset using a geometry shader?
 - [ ] Size pyramid over time/frames
 - [ ] Render pyramid
 - [ ] Move sphere around over time/frames
