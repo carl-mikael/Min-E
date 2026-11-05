@@ -37,7 +37,7 @@ bool could_compile(unsigned int shader, const char *shader_path)
 	{
 		glGetShaderInfoLog(shader, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader: " << shader_path
-		          << " info_log: " << info_log << std::endl;
+				  << " info_log: " << info_log << std::endl;
 
 		return false;
 	}
@@ -104,7 +104,7 @@ bool create_shader_program(unsigned int *out_shader_program,
 	{
 		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader program: " << info_log
-		          << std::endl;
+				  << std::endl;
 		return false;
 	}
 
@@ -343,23 +343,23 @@ bool generate_sort_of_sphere(std::vector<float> &out_vertices,
 			if (i == 0)
 			{ // First ring
 				out_indices.push_back(top_most_index);
-				out_indices.push_back(bl_index);
 				out_indices.push_back(br_index);
+				out_indices.push_back(bl_index);
 			}
 			else if (i == rings - 2)
 			{ // Last ring
-				out_indices.push_back(tl_index);
 				out_indices.push_back(bottom_most_index);
+				out_indices.push_back(tl_index);
 				out_indices.push_back(tr_index);
 			}
 			else
 			{
-				out_indices.push_back(br_index);
 				out_indices.push_back(tl_index);
+				out_indices.push_back(br_index);
 				out_indices.push_back(bl_index);
 
-				out_indices.push_back(tr_index);
 				out_indices.push_back(tl_index);
+				out_indices.push_back(tr_index);
 				out_indices.push_back(br_index);
 			}
 		}
