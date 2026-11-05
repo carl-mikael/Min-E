@@ -114,9 +114,19 @@ int main(int argc, char **argv)
 #pragma endregion
 
 #pragma region uniform-matrices-buffer
-	glm::mat4 projection = glm::perspective(
-		glm::radians(45.0f), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f,
-		100.0f);
+
+	constexpr float aspect = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
+	constexpr float near{0.1f}, far{100.0f};
+	glm::mat4 perspective =
+		glm::perspective(glm::radians(45.0f), aspect, near, far);
+
+	constexpr float ortho_near_height = 5.0f;
+	constexpr float ortho_near_width = ortho_near_height * aspect;
+	glm::mat4 orthographic =
+		glm::ortho(-ortho_near_width, ortho_near_width, -ortho_near_height,
+	               ortho_near_height, near, far);
+
+	glm::mat4 projection = perspective;
 
 	GLuint uniform_matrices_object;
 	glCreateBuffers(1, &uniform_matrices_object);
@@ -176,6 +186,12 @@ int main(int argc, char **argv)
 			if ((glfwGetTime() - last_space_click) > space_cooldown)
 			{
 				LOG("Space!");
+
+				projection =
+					projection == perspective ? orthographic : perspective;
+				glNamedBufferSubData(uniform_matrices_object, 0,
+				                     sizeof(glm::mat4), &projection[0]);
+
 				last_space_click = glfwGetTime();
 			}
 		}
