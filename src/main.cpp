@@ -81,7 +81,7 @@ int main(int argc, char **argv)
 	    !statics::create_shader(&fragment_shader, fragment_shader_path,
 	                            GL_FRAGMENT_SHADER) ||
 	    // !statics::create_shader(&geometry_shader, geometry_shader_path,
-		// GL_GEOMETRY_SHADER) ||
+	    // GL_GEOMETRY_SHADER) ||
 	    !statics::create_shader_program(&shader_program, vertex_shader,
 	                                    fragment_shader /* , geometry_shader*/))
 	{
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 	glm::vec3 view_pos{0, 0, 3.0f};
 	glm::vec3 view_target{0, 0, 0};
 	glm::vec3 view_up_axis{0, 1, 0};
-	glm::mat4 view = glm::lookAt(view_pos, view_target, view_up_axis);
+	glm::mat4 camera = glm::lookAt(view_pos, view_target, view_up_axis);
 #pragma endregion
 
 #pragma region uniform-matrices-buffer
@@ -125,22 +125,27 @@ int main(int argc, char **argv)
 	constexpr float ortho_near_width = ortho_near_height * aspect;
 	glm::mat4 orthographic =
 		glm::ortho(-ortho_near_width, ortho_near_width, -ortho_near_height,
-		           ortho_near_height, near, far);
-
-	glm::mat4 projection = perspective;
+	               ortho_near_height, near, far);
 
 	GLuint uniform_matrices_object;
 	glCreateBuffers(1, &uniform_matrices_object);
+
+	struct
+	{
+		alignas(16) glm::mat4 projection;
+		alignas(16) glm::mat4 view;
+	} ubo_data;
+
+	ubo_data.projection = perspective;
+	ubo_data.view = camera;
+
 	glNamedBufferStorage(uniform_matrices_object, 2 * sizeof(glm::mat4),
-	                     nullptr, GL_DYNAMIC_STORAGE_BIT);
+	                     &ubo_data, GL_DYNAMIC_STORAGE_BIT);
 
-	glNamedBufferSubData(uniform_matrices_object, 0, sizeof(glm::mat4),
-	                     &projection[0]);
-
-	glNamedBufferSubData(uniform_matrices_object, sizeof(glm::mat4),
-	                     sizeof(glm::mat4), &view[0]);
-
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, uniform_matrices_object);
+	// This is the binding index specified in the uniform block which must match
+	// each other
+	constexpr int BINDING_POINT = 0;
+	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT, uniform_matrices_object);
 #pragma endregion
 
 	glUseProgram(shader_program);
@@ -188,10 +193,13 @@ int main(int argc, char **argv)
 			{
 				LOG("Space!");
 
-				projection =
-					projection == perspective ? orthographic : perspective;
+				ubo_data.projection = ubo_data.projection == perspective
+				                          ? orthographic
+				                          : perspective;
+
 				glNamedBufferSubData(uniform_matrices_object, 0,
-				                     sizeof(glm::mat4), &projection[0]);
+				                     sizeof(glm::mat4),
+				                     &ubo_data.projection[0]);
 
 				last_space_click = glfwGetTime();
 			}

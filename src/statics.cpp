@@ -37,7 +37,7 @@ bool could_compile(unsigned int shader, const char *shader_path)
 	{
 		glGetShaderInfoLog(shader, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader: " << shader_path
-		          << " info_log: " << info_log << std::endl;
+				  << " info_log: " << info_log << std::endl;
 
 		return false;
 	}
@@ -104,7 +104,7 @@ bool create_shader_program(unsigned int *out_shader_program,
 	{
 		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader program: " << info_log
-		          << std::endl;
+				  << std::endl;
 		return false;
 	}
 
