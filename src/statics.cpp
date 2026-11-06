@@ -37,7 +37,7 @@ bool could_compile(unsigned int shader, const char *shader_path)
 	{
 		glGetShaderInfoLog(shader, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader: " << shader_path
-				  << " info_log: " << info_log << std::endl;
+		          << " info_log: " << info_log << std::endl;
 
 		return false;
 	}
@@ -104,7 +104,7 @@ bool create_shader_program(unsigned int *out_shader_program,
 	{
 		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader program: " << info_log
-				  << std::endl;
+		          << std::endl;
 		return false;
 	}
 
@@ -440,6 +440,34 @@ pyramid create_pyramid()
 	glBindVertexArray(0);
 
 	return {.vao = vao, .indices = (sizeof(indices) / sizeof(indices[0]))};
+}
+
+instanced_cube create_instanced_cubes()
+{
+	cuboid cube = create_cube(0.5f);
+
+	glm::vec3 instance_offsets[] = {glm::vec3{-0.5f, 0.5f, 0.0f},
+	                                glm::vec3{0.5f, -0.5f, 0.0f}};
+
+	GLuint instance_offset_buffer;
+	glCreateBuffers(1, &instance_offset_buffer);
+	glNamedBufferStorage(instance_offset_buffer, sizeof(instance_offsets),
+	                     instance_offsets, 0);
+
+	glBindVertexArray(cube.vao);
+
+	constexpr int ioffset_attrib_idx = 1;
+	constexpr int SLOT_NEW = 1;
+	glVertexAttribFormat(ioffset_attrib_idx, 3, GL_FLOAT, GL_FALSE, 0);
+	glVertexAttribBinding(ioffset_attrib_idx, SLOT_NEW);
+	glEnableVertexAttribArray(ioffset_attrib_idx);
+	glBindVertexBuffer(SLOT_NEW, instance_offset_buffer, 0, 3 * sizeof(float));
+
+	glVertexArrayBindingDivisor(cube.vao, SLOT_NEW, 1);
+
+	glBindVertexArray(0);
+
+	return {.vao = cube.vao};
 }
 
 } // namespace statics

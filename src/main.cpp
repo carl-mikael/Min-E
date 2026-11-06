@@ -70,6 +70,7 @@ int main(int argc, char **argv)
 	auto cube = statics::create_cube(cube_size);
 	auto sphere = statics::create_sphere();
 	auto pyramid = statics::create_pyramid();
+	auto icubes = statics::create_instanced_cubes();
 
 	const char *vertex_shader_path{"shader/basic.vert"};
 	const char *fragment_shader_path{"shader/basic.frag"};
@@ -80,7 +81,7 @@ int main(int argc, char **argv)
 	    !statics::create_shader(&fragment_shader, fragment_shader_path,
 	                            GL_FRAGMENT_SHADER) ||
 	    // !statics::create_shader(&geometry_shader, geometry_shader_path,
-	    // GL_GEOMETRY_SHADER) ||
+		// GL_GEOMETRY_SHADER) ||
 	    !statics::create_shader_program(&shader_program, vertex_shader,
 	                                    fragment_shader /* , geometry_shader*/))
 	{
@@ -124,7 +125,7 @@ int main(int argc, char **argv)
 	constexpr float ortho_near_width = ortho_near_height * aspect;
 	glm::mat4 orthographic =
 		glm::ortho(-ortho_near_width, ortho_near_width, -ortho_near_height,
-	               ortho_near_height, near, far);
+		           ortho_near_height, near, far);
 
 	glm::mat4 projection = perspective;
 
@@ -200,6 +201,18 @@ int main(int argc, char **argv)
 
 		glUseProgram(shader_program);
 		constexpr void *offset = (void *)0;
+
+#pragma region instanced-cubes
+		constexpr int indices_per_cube = 36;
+		constexpr int nr_instances = 2;
+		glBindVertexArray(icubes.vao);
+
+		glUniformMatrix4fv(model_location, 1, GL_FALSE,
+		                   glm::value_ptr(cube_model));
+
+		glDrawElementsInstanced(GL_TRIANGLES, indices_per_cube, GL_UNSIGNED_INT,
+		                        offset, nr_instances);
+#pragma endregion
 
 #pragma region render-cube
 		constexpr float rotation_rate = 0.01f;

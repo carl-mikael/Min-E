@@ -31,6 +31,11 @@ struct pyramid
 	unsigned int indices;
 };
 
+struct instanced_cube
+{
+	unsigned int vao;
+};
+
 bool read_file(const char *file_path, std::string &out_content);
 
 bool could_compile(unsigned int shader, const char *shader_path);
@@ -62,5 +67,7 @@ bool generate_sort_of_sphere(std::vector<float> &vertices,
 sphere create_sphere();
 
 pyramid create_pyramid();
+
+instanced_cube create_instanced_cubes();
 
 }; // namespace statics
