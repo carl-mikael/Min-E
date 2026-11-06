@@ -8,14 +8,14 @@ kanban-plugin: board
 
 - [ ] Learn RenderDoc
 - [ ] Understand the offsets/padding for std140: https://learnopengl.com/Advanced-OpenGL/Advanced-GLSL
-- [ ] Go over the code line by line
-- [ ] Ensure you can explain the webgl cubes: https://webglfundamentals.org/webgl/lessons/resources/webgl-state-diagram.html?exampleId=triangle#no-help
-- [ ] Ensure you understand all the matrices
-- [ ] Is there a better way of creating the uniform buffer? Right now it's using GL_DYNAMIC_STORAGE_BIT
 
 
 ## Next
 
+- [ ] Instance a struct with alignas and upload directly, the first time, instead of using sub-data. For the ubo
+- [ ] Ensure you understand all the matrices
+- [ ] Ensure you can explain the webgl cubes: https://webglfundamentals.org/webgl/lessons/resources/webgl-state-diagram.html?exampleId=triangle#no-help
+- [ ] Go over the code line by line
 
 
 ## Now
@@ -37,6 +37,7 @@ kanban-plugin: board
 - [ ] Watch matrix multiplication as composition: https://youtu.be/XkY2DOUCWMU?si=MHkV9EOWBNw5a-mF
 - [ ] Spin cube over time/frames
 - [ ] Render sphere
+- [ ] Is there a better way of creating the uniform buffer? Right now it's using GL_DYNAMIC_STORAGE_BIT
 
 
 ***

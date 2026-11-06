@@ -11,3 +11,5 @@ Boom!
 - Accidentally used -z for camera pos and was confused to why the cube was off center to the right when I only used positive vertices for it and didn't translate it to the left. I had forgotten -z is "into" the screen and +z "out of" the screen.
 
 - AAAAGH, I was stuck for so long using sizeof() on the vector. It doesn't return the size it holds, only how big the vector type is, I think. Replaced it with sizeof(whatever the vector holds) * vector.size()
+
+- glVertexAttribDivisor(idx, divisor) changes the slot it reads from to idx as well, meaning it only works if slot_idx == attrib_idx == layout_idx. Use glVertexArrayBindingDivisor(vao, slot, divisor) instead, to avoid bs.
