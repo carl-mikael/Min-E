@@ -470,7 +470,7 @@ instanced_cube create_instanced_cubes()
 	return {.vao = cube.vao};
 }
 
-void create_indirect()
+indirect_draw_info create_indirect()
 {
 
 #pragma region cube
@@ -516,10 +516,10 @@ void create_indirect()
 	indirect_command draw_commands[]{
 		{
 			// Cube
-			.count = nr_cube_indices, // Nr of cube indices
+			.count = nr_cube_indices,
 			.instance_count = nr_cube_instances_to_draw,
-			.first_index = 0, // Offset to the first index stored in the ebo
-			.base_vertex = 0,
+			.first_index = 0,   // Offset to the first index stored in the ebo
+			.base_vertex = 0,   // The offset in the vbo
 			.base_instance = 0, // What's the first index of offsets for this
 	                            // instance in the instance offset buffer
 		},
@@ -529,13 +529,13 @@ void create_indirect()
 			.instance_count = nr_sphers_instances_to_draw,
 			.first_index =
 				nr_cube_indices, // Indices for a cube is stored first
-			.base_vertex = nr_cube_vertices, // Vertices are stored after the
-	                                         // vertices for the cube
+			.base_vertex =
+				nr_cube_vertices, // Cube vertices are stored first. This is the
+	                              // offset in the vbo to the sphere vertices
 			.base_instance =
-				nr_cube_instances_to_draw, // cube instance offset(s) are stored
-	                                       // first. If you decide to draw more
-	                                       // cube instances you need to
-	                                       // increase this.
+				nr_cube_instances_to_draw, // Cube offsets are stored first.
+	                                       // This is an offset in the
+	                                       // instance_offsets buffer
 		},
 	};
 #pragma endregion
@@ -552,6 +552,7 @@ void create_indirect()
 	glCreateBuffers(nr_handles, buffer_handles);
 
 	constexpr unsigned int vbo_slot{0}, offsets_slot{1};
+	constexpr int pos_attrib{0}, offset_attrib{1};
 
 	// vertices
 	glNamedBufferStorage(vbo,
@@ -560,34 +561,50 @@ void create_indirect()
 	                     nullptr, GL_DYNAMIC_STORAGE_BIT);
 
 	glVertexArrayVertexBuffer(vao, vbo_slot, vbo, 0, 3 * sizeof(float));
-
 	glNamedBufferSubData(vbo, 0, sizeof(cube_vertices), cube_vertices);
 	glNamedBufferSubData(vbo, sizeof(cube_vertices),
 	                     sphere_vertices.size() * sizeof(sphere_vertices[0]),
-	                     &sphere_vertices);
+	                     sphere_vertices.data());
+
+	glVertexArrayAttribFormat(vao, pos_attrib, 3, GL_FLOAT, GL_FALSE, 0);
+	glEnableVertexArrayAttrib(vao, pos_attrib);
+	glVertexArrayAttribBinding(vao, pos_attrib, vbo_slot);
 
 	// indices
 	glNamedBufferStorage(ebo,
 	                     sizeof(cube_indices) +
-	                         sphere_indices.size() * sizeof(sphere_indices),
+	                         sphere_indices.size() * sizeof(sphere_indices[0]),
 	                     nullptr, GL_DYNAMIC_STORAGE_BIT);
 
 	glVertexArrayElementBuffer(vao, ebo);
 
 	glNamedBufferSubData(ebo, 0, sizeof(cube_indices), cube_indices);
 	glNamedBufferSubData(ebo, sizeof(cube_indices),
-	                     sphere_indices.size() * sizeof(sphere_indices),
-	                     &sphere_indices);
+	                     sphere_indices.size() * sizeof(sphere_indices[0]),
+	                     sphere_indices.data());
 
 	// instance offsets
-	glm::vec3 offsets[] = {glm::vec3{0}, glm::vec3{-1.75f, 1.643f, 0}};
+	glm::vec3 offsets[] = {glm::vec3{0}, glm::vec3{-3.75f, 1.643f, 0}};
 	glNamedBufferStorage(instance_offsets, sizeof(offsets), offsets, 0);
+
+	glVertexArrayVertexBuffer(vao, offsets_slot, instance_offsets, 0,
+	                          3 * sizeof(float));
+
+	glVertexArrayAttribFormat(vao, offset_attrib, 3, GL_FLOAT, false, 0);
+	glEnableVertexArrayAttrib(vao, offset_attrib);
+	glVertexArrayAttribBinding(vao, offset_attrib, offsets_slot);
+
+	glVertexArrayBindingDivisor(vao, offsets_slot, 1);
 
 	// draw commands
 	glNamedBufferStorage(indirect_commands, sizeof(draw_commands),
 	                     draw_commands, 0);
 
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirect_commands);
+
+	return {.vao = vao,
+	        .draw_count = sizeof(draw_commands) / sizeof(draw_commands[0]),
+	        .command_stride = sizeof(draw_commands[0])};
 }
 
 } // namespace statics

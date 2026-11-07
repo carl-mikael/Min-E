@@ -174,6 +174,8 @@ int main(int argc, char **argv)
 	glm::vec3 color = glm::vec3{0.5f, 0.f, 0.945f};
 	glUniform3fv(color_location, 1, &color[0]);
 
+	auto indirect_info = statics::create_indirect();
+
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 
@@ -212,10 +214,11 @@ int main(int argc, char **argv)
 
 #pragma region multi-draw-indirect
 
-		GLsizei draw_count = 2;
-		GLsizei command_stride = 0; // Tightly packed
-		// glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, offset,
-		// draw_count, command_stride);
+		glBindVertexArray(indirect_info.vao);
+		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, offset,
+		                            indirect_info.draw_count,
+		                            indirect_info.command_stride);
+		glBindVertexArray(0);
 #pragma endregion
 
 #pragma region instanced-cubes

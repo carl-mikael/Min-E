@@ -47,6 +47,13 @@ struct indirect_command
 	unsigned int base_instance;
 };
 
+struct indirect_draw_info
+{
+	unsigned int vao;
+	int draw_count;
+	int command_stride;
+};
+
 bool read_file(const char *file_path, std::string &out_content);
 
 bool could_compile(unsigned int shader, const char *shader_path);
@@ -80,5 +87,7 @@ sphere create_sphere();
 pyramid create_pyramid();
 
 instanced_cube create_instanced_cubes();
+
+indirect_draw_info create_indirect();
 
 }; // namespace statics
