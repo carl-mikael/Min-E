@@ -36,6 +36,17 @@ struct instanced_cube
 	unsigned int vao;
 };
 
+struct indirect_command
+{
+	unsigned int count;
+	unsigned int instance_count;
+	unsigned int first_index;
+	int base_vertex; // Weird that this would be normal int, right? But,
+	                 // followed this:
+	                 // https://registry.khronos.org/OpenGL-Refpages/gl4/html/glMultiDrawElementsIndirect.xhtml
+	unsigned int base_instance;
+};
+
 bool read_file(const char *file_path, std::string &out_content);
 
 bool could_compile(unsigned int shader, const char *shader_path);
