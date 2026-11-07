@@ -148,7 +148,6 @@ int main(int argc, char **argv)
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT, uniform_matrices_object);
 #pragma endregion
 
-	glUseProgram(shader_program);
 	int model_location = glGetUniformLocation(shader_program, "model");
 	int color_location = glGetUniformLocation(shader_program, "color");
 
@@ -172,7 +171,7 @@ int main(int argc, char **argv)
 		glm::translate(original_pyramid_model, glm::vec3{1.85f, -0.25f, 0});
 
 	glm::vec3 color = glm::vec3{0.5f, 0.f, 0.945f};
-	glUniform3fv(color_location, 1, &color[0]);
+	glProgramUniform3fv(shader_program, color_location, 1, &color[0]);
 
 	auto indirect_info = statics::create_indirect();
 
