@@ -50,6 +50,7 @@ struct indirect_command
 struct indirect_draw_info
 {
 	unsigned int vao;
+	unsigned int commands_handle;
 	int draw_count;
 	int command_stride;
 };

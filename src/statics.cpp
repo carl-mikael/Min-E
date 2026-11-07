@@ -472,7 +472,6 @@ instanced_cube create_instanced_cubes()
 
 indirect_draw_info create_indirect()
 {
-
 #pragma region cube
 	glm::vec3 cube_vertices[4 * 2]{{0.0f, 0.0f, 0.0f},
 	                               {1.0f, 0.0f, 0.0f},
@@ -518,10 +517,13 @@ indirect_draw_info create_indirect()
 			// Cube
 			.count = nr_cube_indices,
 			.instance_count = nr_cube_instances_to_draw,
-			.first_index = 0,   // Offset to the first index stored in the ebo
-			.base_vertex = 0,   // The offset in the vbo
-			.base_instance = 0, // What's the first index of offsets for this
-	                            // instance in the instance offset buffer
+			.first_index = 0, // Offset to the first index stored in the ebo
+			.base_vertex = 0, // The offset in the vbo
+			.base_instance =
+				0, // I like to think of this value as an element offset into
+	               // the instance offset buffer. Buut it's actually how much to
+	               // add to the result of the instance divisor result.
+	               // (gl_InstanceID/divisor) + base_instance
 		},
 		{
 			// Sphere
@@ -532,10 +534,7 @@ indirect_draw_info create_indirect()
 			.base_vertex =
 				nr_cube_vertices, // Cube vertices are stored first. This is the
 	                              // offset in the vbo to the sphere vertices
-			.base_instance =
-				nr_cube_instances_to_draw, // Cube offsets are stored first.
-	                                       // This is an offset in the
-	                                       // instance_offsets buffer
+			.base_instance = nr_cube_instances_to_draw,
 		},
 	};
 #pragma endregion
@@ -600,9 +599,8 @@ indirect_draw_info create_indirect()
 	glNamedBufferStorage(indirect_commands, sizeof(draw_commands),
 	                     draw_commands, 0);
 
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirect_commands);
-
 	return {.vao = vao,
+	        .commands_handle = indirect_commands,
 	        .draw_count = sizeof(draw_commands) / sizeof(draw_commands[0]),
 	        .command_stride = sizeof(draw_commands[0])};
 }

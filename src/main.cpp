@@ -215,6 +215,7 @@ int main(int argc, char **argv)
 #pragma region multi-draw-indirect
 
 		glBindVertexArray(indirect_info.vao);
+		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirect_info.commands_handle);
 		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, offset,
 		                            indirect_info.draw_count,
 		                            indirect_info.command_stride);
