@@ -233,9 +233,8 @@ int main(int argc, char **argv)
 		glUniformMatrix4fv(model_location, 1, GL_FALSE,
 		                   glm::value_ptr(cube_model));
 
-		// glDrawElementsInstanced(GL_TRIANGLES, indices_per_cube,
-		// GL_UNSIGNED_INT,
-		//                         offset, nr_instances);
+		glDrawElementsInstanced(GL_TRIANGLES, indices_per_cube, GL_UNSIGNED_INT,
+		                        offset, nr_instances);
 #pragma endregion
 
 #pragma region render-cube
@@ -247,13 +246,13 @@ int main(int argc, char **argv)
 
 		constexpr int indices = 6 * 6;
 		glBindVertexArray(cube.vao);
-		// glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, offset);
+		glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, offset);
 
 		glUniformMatrix4fv(model_location, 1, GL_FALSE,
 		                   glm::value_ptr(glm::translate(
 							   cube_model, glm::vec3{-0.5f, -0.15f, 0.0f})));
 
-		// glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, offset);
+		glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, offset);
 #pragma endregion
 
 #pragma region render-sphere
@@ -263,15 +262,15 @@ int main(int argc, char **argv)
 		                   glm::value_ptr(sphere_model));
 
 		glBindVertexArray(sphere.vao);
-		// glDrawElements(GL_TRIANGLES, sphere.nr_indices, GL_UNSIGNED_INT,
-		// offset);
+		glDrawElements(GL_TRIANGLES, sphere.nr_indices, GL_UNSIGNED_INT,
+		               offset);
 
 		glUniformMatrix4fv(model_location, 1, GL_FALSE,
 		                   glm::value_ptr(glm::translate(
 							   sphere_model, glm::vec3{3.33f, -3.25f, 0.0f})));
 
-		// glDrawElements(GL_TRIANGLES, sphere.nr_indices, GL_UNSIGNED_INT,
-		// offset);
+		glDrawElements(GL_TRIANGLES, sphere.nr_indices, GL_UNSIGNED_INT,
+		               offset);
 #pragma endregion
 
 #pragma region render-pyramid
@@ -283,15 +282,13 @@ int main(int argc, char **argv)
 		glUniformMatrix4fv(model_location, 1, GL_FALSE,
 		                   glm::value_ptr(pyramid_model));
 
-		// glDrawElements(GL_TRIANGLES, pyramid.indices, GL_UNSIGNED_INT,
-		// offset);
+		glDrawElements(GL_TRIANGLES, pyramid.indices, GL_UNSIGNED_INT, offset);
 
 		glUniformMatrix4fv(model_location, 1, GL_FALSE,
 		                   glm::value_ptr(glm::scale(original_pyramid_model,
 		                                             glm::vec3{-scale})));
 
-		// glDrawElements(GL_TRIANGLES, pyramid.indices, GL_UNSIGNED_INT,
-		// offset);
+		glDrawElements(GL_TRIANGLES, pyramid.indices, GL_UNSIGNED_INT, offset);
 #pragma endregion
 
 		glfwSwapBuffers(window);
