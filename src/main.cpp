@@ -5,6 +5,7 @@
 #include "glm/ext/vector_float3.hpp"
 #include "glm/fwd.hpp"
 #include "glm/gtc/type_ptr.hpp"
+#include "glslSemantics.h"
 #include "macros.h"
 #include "statics.h"
 #include <GLFW/glfw3.h>
@@ -72,14 +73,17 @@ int main(int argc, char **argv)
 	auto pyramid = statics::create_pyramid();
 	auto icubes = statics::create_instanced_cubes();
 
+	std::string glsl_semantics{};
+	statics::read_file(GLSL_SEMANTICS_STR, glsl_semantics);
+
 	const char *vertex_shader_path{"shader/basic.vert"};
 	const char *fragment_shader_path{"shader/basic.frag"};
 	// const char *geometry_shader_path{"shader/duplication.geom"};
 
 	if (!statics::create_shader(&vertex_shader, vertex_shader_path,
-	                            GL_VERTEX_SHADER) ||
+	                            GL_VERTEX_SHADER, glsl_semantics) ||
 	    !statics::create_shader(&fragment_shader, fragment_shader_path,
-	                            GL_FRAGMENT_SHADER) ||
+	                            GL_FRAGMENT_SHADER, glsl_semantics) ||
 	    // !statics::create_shader(&geometry_shader, geometry_shader_path,
 	    // GL_GEOMETRY_SHADER) ||
 	    !statics::create_shader_program(&shader_program, vertex_shader,
@@ -144,7 +148,7 @@ int main(int argc, char **argv)
 
 	// This is the binding index specified in the uniform block which must match
 	// each other
-	constexpr int BINDING_POINT = 0;
+	constexpr int BINDING_POINT = BLOCK_MATRICES;
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT, uniform_matrices_object);
 #pragma endregion
 

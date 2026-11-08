@@ -60,7 +60,7 @@ bool read_file(const char *file_path, std::string &out_content);
 bool could_compile(unsigned int shader, const char *shader_path);
 
 bool create_shader(unsigned int *out_shader_id, const char *shader_path,
-                   const unsigned long type);
+                   const unsigned long type, const std::string &glsl_semantics);
 
 bool create_shader_program(unsigned int *out_program_id,
                            const unsigned int vertex_shader_id,

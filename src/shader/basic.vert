@@ -1,6 +1,6 @@
-layout(location = 0) in vec3 pos;
-layout(location = 1) in vec3 instance_offset;
-layout(std140, binding = 0) uniform Matrices {
+layout(location = ATTR_POS) in vec3 pos;
+layout(location = ATTR_INST_OFFSET) in vec3 instance_offset;
+layout(std140, binding = BLOCK_MATRICES) uniform Matrices {
     mat4 projection;
     mat4 view;
 };

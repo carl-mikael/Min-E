@@ -1,5 +1,6 @@
 #include "statics.h"
 #include "glm/ext/vector_float3.hpp"
+#include "glslSemantics.h"
 #include "macros.h"
 
 #include <exception>
@@ -48,7 +49,7 @@ bool could_compile(unsigned int shader, const char *shader_path)
 }
 
 bool create_shader(unsigned int *out_shader, const char *shader_path,
-                   const unsigned long type)
+                   const unsigned long type, const std::string &glsl_semantics)
 {
 	if (!out_shader)
 	{
@@ -65,7 +66,7 @@ bool create_shader(unsigned int *out_shader, const char *shader_path,
 		return false;
 	}
 
-	shader_str = GLSL_HEADER + shader_str;
+	shader_str = GLSL_HEADER(glsl_semantics) + shader_str;
 
 	const char *shader_src = shader_str.c_str();
 
@@ -126,15 +127,14 @@ triangle create_triangle(const glm::vec2 size)
 
 	glBindVertexArray(vao);
 
-	constexpr int POS_ATTRIB = 0;
 	constexpr int SLOT = 0;
 	// Set attribute format
 	// Enable attribute
 	// Set slot to use
 	// Define slot
-	glVertexAttribFormat(POS_ATTRIB, 3, GL_FLOAT, false, 0);
-	glEnableVertexAttribArray(POS_ATTRIB);
-	glVertexAttribBinding(POS_ATTRIB, SLOT);
+	glVertexAttribFormat(ATTR_POS, 3, GL_FLOAT, false, 0);
+	glEnableVertexAttribArray(ATTR_POS);
+	glVertexAttribBinding(ATTR_POS, SLOT);
 	glBindVertexBuffer(SLOT, vbo, 0, 3 * sizeof(float));
 
 	glBindVertexArray(0);
@@ -247,15 +247,14 @@ cuboid create_cube(float size)
 	// Can't call this before the vao's first glBindVertexArray.
 	glVertexArrayElementBuffer(vao, ebo);
 
-	constexpr int POS_ATTRIB = 0;
 	constexpr int SLOT = 0;
 	// Set attribute format
 	// Enable attribute
 	// Set slot to use
 	// Define slot
-	glVertexAttribFormat(POS_ATTRIB, 3, GL_FLOAT, false, 0);
-	glEnableVertexAttribArray(POS_ATTRIB);
-	glVertexAttribBinding(POS_ATTRIB, SLOT);
+	glVertexAttribFormat(ATTR_POS, 3, GL_FLOAT, false, 0);
+	glEnableVertexAttribArray(ATTR_POS);
+	glVertexAttribBinding(ATTR_POS, SLOT);
 	glBindVertexBuffer(SLOT, vbo, 0, 3 * sizeof(float));
 
 	glBindVertexArray(0);
@@ -395,11 +394,10 @@ sphere create_sphere()
 
 	glVertexArrayElementBuffer(vao, ebo);
 
-	constexpr int POS_ATTRIB = 0;
 	constexpr int SLOT = 0;
-	glVertexAttribFormat(POS_ATTRIB, 3, GL_FLOAT, false, 0);
-	glEnableVertexAttribArray(POS_ATTRIB);
-	glVertexAttribBinding(POS_ATTRIB, SLOT);
+	glVertexAttribFormat(ATTR_POS, 3, GL_FLOAT, false, 0);
+	glEnableVertexAttribArray(ATTR_POS);
+	glVertexAttribBinding(ATTR_POS, SLOT);
 	glBindVertexBuffer(SLOT, vbo, 0, 3 * sizeof(float));
 
 	glBindVertexArray(0);
@@ -430,11 +428,10 @@ pyramid create_pyramid()
 
 	glVertexArrayElementBuffer(vao, ebo);
 
-	constexpr int POS_ATTRIB = 0;
 	constexpr int SLOT = 0;
-	glVertexAttribFormat(POS_ATTRIB, 3, GL_FLOAT, false, 0);
-	glEnableVertexAttribArray(POS_ATTRIB);
-	glVertexAttribBinding(POS_ATTRIB, SLOT);
+	glVertexAttribFormat(ATTR_POS, 3, GL_FLOAT, false, 0);
+	glEnableVertexAttribArray(ATTR_POS);
+	glVertexAttribBinding(ATTR_POS, SLOT);
 	glBindVertexBuffer(SLOT, vbo, 0, 3 * sizeof(float));
 
 	glBindVertexArray(0);
@@ -456,11 +453,11 @@ instanced_cube create_instanced_cubes()
 
 	glBindVertexArray(cube.vao);
 
-	constexpr int ioffset_attrib_idx = 1;
+	constexpr int iATTR_INST_OFFSET_idx = 1;
 	constexpr int SLOT_NEW = 1;
-	glVertexAttribFormat(ioffset_attrib_idx, 3, GL_FLOAT, GL_FALSE, 0);
-	glVertexAttribBinding(ioffset_attrib_idx, SLOT_NEW);
-	glEnableVertexAttribArray(ioffset_attrib_idx);
+	glVertexAttribFormat(iATTR_INST_OFFSET_idx, 3, GL_FLOAT, GL_FALSE, 0);
+	glVertexAttribBinding(iATTR_INST_OFFSET_idx, SLOT_NEW);
+	glEnableVertexAttribArray(iATTR_INST_OFFSET_idx);
 	glBindVertexBuffer(SLOT_NEW, instance_offset_buffer, 0, 3 * sizeof(float));
 
 	glVertexArrayBindingDivisor(cube.vao, SLOT_NEW, 1);
@@ -551,7 +548,6 @@ indirect_draw_info create_indirect()
 	glCreateBuffers(nr_handles, buffer_handles);
 
 	constexpr unsigned int vbo_slot{0}, offsets_slot{1};
-	constexpr int pos_attrib{0}, offset_attrib{1};
 
 	// vertices
 	glNamedBufferStorage(vbo,
@@ -565,9 +561,9 @@ indirect_draw_info create_indirect()
 	                     sphere_vertices.size() * sizeof(sphere_vertices[0]),
 	                     sphere_vertices.data());
 
-	glVertexArrayAttribFormat(vao, pos_attrib, 3, GL_FLOAT, GL_FALSE, 0);
-	glEnableVertexArrayAttrib(vao, pos_attrib);
-	glVertexArrayAttribBinding(vao, pos_attrib, vbo_slot);
+	glVertexArrayAttribFormat(vao, ATTR_POS, 3, GL_FLOAT, GL_FALSE, 0);
+	glEnableVertexArrayAttrib(vao, ATTR_POS);
+	glVertexArrayAttribBinding(vao, ATTR_POS, vbo_slot);
 
 	// indices
 	glNamedBufferStorage(ebo,
@@ -589,9 +585,9 @@ indirect_draw_info create_indirect()
 	glVertexArrayVertexBuffer(vao, offsets_slot, instance_offsets, 0,
 	                          3 * sizeof(float));
 
-	glVertexArrayAttribFormat(vao, offset_attrib, 3, GL_FLOAT, false, 0);
-	glEnableVertexArrayAttrib(vao, offset_attrib);
-	glVertexArrayAttribBinding(vao, offset_attrib, offsets_slot);
+	glVertexArrayAttribFormat(vao, ATTR_INST_OFFSET, 3, GL_FLOAT, false, 0);
+	glEnableVertexArrayAttrib(vao, ATTR_INST_OFFSET);
+	glVertexArrayAttribBinding(vao, ATTR_INST_OFFSET, offsets_slot);
 
 	glVertexArrayBindingDivisor(vao, offsets_slot, 1);
 

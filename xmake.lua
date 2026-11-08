@@ -21,6 +21,9 @@ add_defines("GL_MAJOR_V=" .. GL_MAJOR_VERSION, "GL_MINOR_V=" .. GL_MINOR_VERSION
 add_defines("GLSL_VERSION=" .. GL_MAJOR_VERSION .. GL_MINOR_VERSION .. "0")
 add_defines("LOG_SIZE=" .. 512)
 
+local GLSL_SEMANTICS = "glslSemantics.h"
+add_defines("GLSL_SEMANTICS=" .. GLSL_SEMANTICS)
+
 -- OpenGL Extensions
 local glad_extensions = {
 }
@@ -54,6 +57,7 @@ target("Min-E")
 
     after_build( function (target)
         os.cp("$(projectdir)/src/shader", target:targetdir())
+        os.cp("$(projectdir)/src/" .. GLSL_SEMANTICS, target:targetdir())
     end)
 
 

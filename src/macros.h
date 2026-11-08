@@ -6,9 +6,10 @@
 // a string, not the value)
 #define STR_DEF(x) STR_DEF_(x)
 
-#define GLSL_HEADER                                                            \
-	"#version " STR_DEF(GLSL_VERSION) " core\n"                                \
-									  "#line 1\n"
+#define GLSL_SEMANTICS_STR STR_DEF(GLSL_SEMANTICS)
+
+#define GLSL_HEADER(semantics)                                                 \
+	"#version " STR_DEF(GLSL_VERSION) " core\n" + semantics + "#line 1\n"
 
 #ifdef MINE_LOG
 #define LOG(msg)                                                               \
