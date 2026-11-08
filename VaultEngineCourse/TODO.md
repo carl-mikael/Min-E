@@ -8,11 +8,12 @@ kanban-plugin: board
 
 - [ ] Learn RenderDoc
 - [ ] Understand the offsets/padding for std140: https://learnopengl.com/Advanced-OpenGL/Advanced-GLSL
+- [ ] Use 2 back frame buffers to avoid capping tick rate to monitor hz and still allow for vsync
+- [ ] Spriv-cross for shader reflection
 
 
 ## Next
 
-- [ ] Instance a struct with alignas and upload directly, the first time, instead of using sub-data. For the ubo
 - [ ] Ensure you understand all the matrices
 - [ ] Ensure you can explain the webgl cubes: https://webglfundamentals.org/webgl/lessons/resources/webgl-state-diagram.html?exampleId=triangle#no-help
 - [ ] Go over the code line by line
@@ -20,11 +21,13 @@ kanban-plugin: board
 
 ## Now
 
-- [ ] Try instancing
 
 
 ## Done
 
+- [ ] Try indirect multidraw
+- [ ] Instance a struct with alignas and upload directly, the first time, instead of using sub-data. For the ubo
+- [ ] Try instancing
 - [ ] Don't use geom shader for duplication
 - [ ] Change between perspective and orthographic view on space
 - [ ] Render 2 spheres, 2 pyramids, and 2 cubes
