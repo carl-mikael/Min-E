@@ -9,6 +9,7 @@
 #include "macros.h"
 #include "statics.h"
 #include <GLFW/glfw3.h>
+#include <cmath>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <iostream>
@@ -78,27 +79,27 @@ int main(int argc, char **argv)
 
 	const char *vertex_shader_path{"shader/basic.vert"};
 	const char *fragment_shader_path{"shader/basic.frag"};
-	// const char *geometry_shader_path{"shader/duplication.geom"};
+	const char *geometry_shader_path{"shader/duplication.geom"};
 
 	if (!statics::create_shader(&vertex_shader, vertex_shader_path,
 	                            GL_VERTEX_SHADER, glsl_semantics) ||
 	    !statics::create_shader(&fragment_shader, fragment_shader_path,
 	                            GL_FRAGMENT_SHADER, glsl_semantics) ||
-	    // !statics::create_shader(&geometry_shader, geometry_shader_path,
-	    // GL_GEOMETRY_SHADER) ||
+	    !statics::create_shader(&geometry_shader, geometry_shader_path,
+	                            GL_GEOMETRY_SHADER, glsl_semantics) ||
 	    !statics::create_shader_program(&shader_program, vertex_shader,
-	                                    fragment_shader /* , geometry_shader*/))
+	                                    fragment_shader, geometry_shader))
 	{
 		return -1;
 	}
 
 	glDetachShader(shader_program, vertex_shader);
 	glDetachShader(shader_program, fragment_shader);
-	// glDetachShader(shader_program, geometry_shader);
+	glDetachShader(shader_program, geometry_shader);
 
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
-	// glDeleteShader(geometry_shader);
+	glDeleteShader(geometry_shader);
 
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -158,6 +159,13 @@ int main(int argc, char **argv)
 	int duplication_model_matrix_loc =
 		glGetUniformLocation(shader_program, "duplication_model_matrix");
 
+	glm::mat4 duplication_matrix{1};
+	duplication_matrix =
+		glm::translate(duplication_matrix, glm::vec3{0.33f, 0.145f, 0.14f});
+
+	glProgramUniformMatrix4fv(shader_program, duplication_model_matrix_loc, 1,
+	                          GL_FALSE, glm::value_ptr(duplication_matrix));
+
 	glm::mat4 cube_model{1};
 	cube_model = glm::translate(cube_model, glm::vec3{-0.25f, 0, 0});
 	// glUniformMatrix4fv(model_location, 1, GL_FALSE,
@@ -179,10 +187,14 @@ int main(int argc, char **argv)
 
 	auto indirect_info = statics::create_indirect();
 
+	glm::mat4 multi_draw_model_matrix{1};
+	multi_draw_model_matrix =
+		glm::scale(multi_draw_model_matrix, glm::vec3{0.25f});
+
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 
-	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -216,6 +228,19 @@ int main(int argc, char **argv)
 		constexpr void *offset = (void *)0;
 
 #pragma region multi-draw-indirect
+
+		constexpr float rotation_rate_mdmm = 2.02f;
+		glm::mat4 new_mdmm{1};
+		new_mdmm = glm::rotate(multi_draw_model_matrix, rotation_rate_mdmm,
+		                       glm::vec3(std::cos(glfwGetTime()), 1.0f, 0.0f));
+
+		new_mdmm = glm::translate(
+			new_mdmm, glm::vec3{0.0f, 0.0f,
+		                        static_cast<float>(std::lerp(
+									-8.0f, 10.0f, sin(glfwGetTime() * 0.5f)))});
+
+		glUniformMatrix4fv(model_location, 1, GL_FALSE,
+		                   glm::value_ptr(new_mdmm));
 
 		glBindVertexArray(indirect_info.vao);
 		glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirect_info.commands_handle);

@@ -1,6 +1,6 @@
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 6) out;
-layout(std140, binding = 0) uniform Matrices {
+layout(std140, binding = BLOCK_MATRICES) uniform Matrices {
     mat4 projection;
     mat4 view;
 };
@@ -21,7 +21,7 @@ void main()
     // Copied with dub_offset
     for (int i = 0; i < 3; i++)
     {
-        gl_Position = projection * view * duplication_model_matrix * gl_in[i].gl_Position;
+        gl_Position = projection * view * duplication_model_matrix * model * gl_in[i].gl_Position;
         EmitVertex();
     }
     EndPrimitive();
