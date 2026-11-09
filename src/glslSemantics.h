@@ -14,4 +14,5 @@
 //  2. A program can max reference a tot of 70 blocks.
 //  3. The same block reference in different shaders of the same program count
 //  as different references towards the tot.
+// Binding point
 #define BLOCK_MATRICES 0

@@ -38,7 +38,7 @@ bool could_compile(unsigned int shader, const char *shader_path)
 	{
 		glGetShaderInfoLog(shader, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader: " << shader_path
-				  << " info_log: " << info_log << std::endl;
+		          << " info_log: " << info_log << std::endl;
 
 		return false;
 	}
@@ -105,7 +105,7 @@ bool create_shader_program(unsigned int *out_shader_program,
 	{
 		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader program: " << info_log
-				  << std::endl;
+		          << std::endl;
 		return false;
 	}
 
@@ -518,9 +518,9 @@ indirect_draw_info create_indirect()
 			.base_vertex = 0, // The offset in the vbo
 			.base_instance =
 				0, // I like to think of this value as an element offset into
-	               // the instance offset buffer. Buut it's actually how much to
-	               // add to the result of the instance divisor result.
-	               // (gl_InstanceID/divisor) + base_instance
+				   // the instance offset buffer. Buut it's actually how much to
+				   // add to the result of the instance divisor result.
+				   // (gl_InstanceID/divisor) + base_instance
 		},
 		{
 			// Sphere
@@ -530,7 +530,7 @@ indirect_draw_info create_indirect()
 				nr_cube_indices, // Indices for a cube is stored first
 			.base_vertex =
 				nr_cube_vertices, // Cube vertices are stored first. This is the
-	                              // offset in the vbo to the sphere vertices
+				                  // offset in the vbo to the sphere vertices
 			.base_instance = nr_cube_instances_to_draw,
 		},
 	};
