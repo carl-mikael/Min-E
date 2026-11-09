@@ -6,17 +6,13 @@ kanban-plugin: board
 
 ## Backlog
 
-- [ ] Learn RenderDoc
 - [ ] Understand the offsets/padding for std140: https://learnopengl.com/Advanced-OpenGL/Advanced-GLSL
 - [ ] Use 2 back frame buffers to avoid capping tick rate to monitor hz and still allow for vsync
-- [ ] Spriv-cross for shader reflection
+- [ ] Slang as shader language. For shader lang features and reflection. https://shader-slang.org/
 
 
 ## Next
 
-- [ ] Ensure you understand all the matrices
-- [ ] Ensure you can explain the webgl cubes: https://webglfundamentals.org/webgl/lessons/resources/webgl-state-diagram.html?exampleId=triangle#no-help
-- [ ] Go over the code line by line
 
 
 ## Now
@@ -25,6 +21,16 @@ kanban-plugin: board
 
 ## Done
 
+
+
+***
+
+## Archive
+
+- [ ] Learn RenderDoc
+- [ ] Go over the code line by line
+- [ ] Ensure you can explain the webgl cubes: https://webglfundamentals.org/webgl/lessons/resources/webgl-state-diagram.html?exampleId=triangle#no-help
+- [ ] Ensure you understand all the matrices
 - [ ] Try indirect multidraw
 - [ ] Instance a struct with alignas and upload directly, the first time, instead of using sub-data. For the ubo
 - [ ] Try instancing
@@ -41,12 +47,6 @@ kanban-plugin: board
 - [ ] Spin cube over time/frames
 - [ ] Render sphere
 - [ ] Is there a better way of creating the uniform buffer? Right now it's using GL_DYNAMIC_STORAGE_BIT
-
-
-***
-
-## Archive
-
 - [ ] Ensure you can explain the n0-help example
 - [ ] glGetError: https://learnopengl.com/In-Practice/Debugging
 	Use Debug Output instead
