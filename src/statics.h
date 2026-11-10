@@ -3,6 +3,8 @@
 #include "glm/ext/vector_float3.hpp"
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+#include <optional>
+#include <span>
 #include <string>
 
 namespace statics
@@ -45,6 +47,12 @@ struct indirect_command
 	                 // followed this:
 	                 // https://registry.khronos.org/OpenGL-Refpages/gl4/html/glMultiDrawElementsIndirect.xhtml
 	unsigned int base_instance;
+};
+
+struct dynamic_multi_draw
+{
+	unsigned int vao;
+	unsigned int command_buffer_handle;
 };
 
 struct indirect_draw_info
@@ -90,5 +98,10 @@ pyramid create_pyramid();
 instanced_cube create_instanced_cubes();
 
 indirect_draw_info create_indirect();
+
+dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
+                                  std::span<float> vertices,
+                                  std::span<unsigned int> indices,
+                                  std::optional<std::span<glm::vec3>> offsets);
 
 }; // namespace statics

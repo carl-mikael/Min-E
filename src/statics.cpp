@@ -3,6 +3,10 @@
 #include "glslSemantics.h"
 #include "macros.h"
 
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
+#include <cassert>
 #include <exception>
 #include <fstream>
 #include <glad/glad.h>
@@ -38,7 +42,7 @@ bool could_compile(unsigned int shader, const char *shader_path)
 	{
 		glGetShaderInfoLog(shader, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader: " << shader_path
-		          << " info_log: " << info_log << std::endl;
+				  << " info_log: " << info_log << std::endl;
 
 		return false;
 	}
@@ -105,7 +109,7 @@ bool create_shader_program(unsigned int *out_shader_program,
 	{
 		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader program: " << info_log
-		          << std::endl;
+				  << std::endl;
 		return false;
 	}
 
@@ -518,9 +522,9 @@ indirect_draw_info create_indirect()
 			.base_vertex = 0, // The offset in the vbo
 			.base_instance =
 				0, // I like to think of this value as an element offset into
-				   // the instance offset buffer. Buut it's actually how much to
-				   // add to the result of the instance divisor result.
-				   // (gl_InstanceID/divisor) + base_instance
+	               // the instance offset buffer. Buut it's actually how much to
+	               // add to the result of the instance divisor result.
+	               // (gl_InstanceID/divisor) + base_instance
 		},
 		{
 			// Sphere
@@ -530,7 +534,7 @@ indirect_draw_info create_indirect()
 				nr_cube_indices, // Indices for a cube is stored first
 			.base_vertex =
 				nr_cube_vertices, // Cube vertices are stored first. This is the
-				                  // offset in the vbo to the sphere vertices
+	                              // offset in the vbo to the sphere vertices
 			.base_instance = nr_cube_instances_to_draw,
 		},
 	};
@@ -599,6 +603,96 @@ indirect_draw_info create_indirect()
 	        .commands_handle = indirect_commands,
 	        .draw_count = sizeof(draw_commands) / sizeof(draw_commands[0]),
 	        .command_stride = sizeof(draw_commands[0])};
+}
+
+bool load_asset(const char *file)
+{
+	Assimp::Importer importer;
+	constexpr unsigned int process_flags =
+		aiProcess_Triangulate | aiProcess_OptimizeMeshes |
+		aiProcess_OptimizeGraph | aiProcess_JoinIdenticalVertices |
+		aiProcess_FindInvalidData | aiProcess_ValidateDataStructure;
+	if (!importer.ValidateFlags(process_flags))
+	{
+		std::cerr << "process flags for importing are invalid" << std::endl;
+		return false;
+	}
+
+	const aiScene *scene_node = importer.ReadFile(file, process_flags);
+	std::string error = importer.GetErrorString();
+	if (scene_node == nullptr)
+	{
+		std::cerr << "Error reading file: " << error << std::endl;
+		return false;
+	}
+
+	aiMesh *aiMesh = *scene_node->mMeshes;
+
+	return true;
+}
+
+dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
+                                  std::span<float> vertices,
+                                  std::span<GLuint> indices,
+                                  std::optional<std::span<glm::vec3>> offsets)
+{
+	GLuint vao;
+	glCreateVertexArrays(1, &vao);
+
+	constexpr int nr_handles = 4;
+	GLuint buffer_handles[nr_handles];
+	GLuint &vbo = buffer_handles[0];
+	GLuint &ebo = buffer_handles[1];
+	GLuint &instance_offsets = buffer_handles[2];
+	GLuint &indirect_commands = buffer_handles[3];
+	glCreateBuffers(nr_handles, buffer_handles);
+
+	constexpr unsigned int vbo_slot{0}, offsets_slot{1};
+
+	// 0 = can't interact with it again from client side.
+	constexpr GLbitfield no_client_side_access = 0;
+
+	// vertices
+	glNamedBufferStorage(vbo, vertices.size_bytes(), vertices.data(),
+	                     no_client_side_access);
+
+	constexpr GLintptr position_offset = 0;
+	constexpr GLint positions_per_vertex = 3;
+	constexpr GLsizei position_stride = positions_per_vertex * sizeof(float);
+	glVertexArrayVertexBuffer(vao, vbo_slot, vbo, position_offset,
+	                          position_stride);
+
+	glEnableVertexArrayAttrib(vao, ATTR_POS);
+	glVertexArrayAttribFormat(vao, ATTR_POS, positions_per_vertex, GL_FLOAT,
+	                          GL_FALSE, no_client_side_access);
+	glVertexArrayAttribBinding(vao, ATTR_POS, vbo_slot);
+
+	// indices
+	glNamedBufferStorage(ebo, indices.size_bytes(), indices.data(), 0);
+	glVertexArrayElementBuffer(vao, ebo);
+
+	if (offsets.has_value())
+	{
+		glNamedBufferStorage(instance_offsets, offsets->size_bytes(),
+		                     offsets->data(), 0);
+		glVertexArrayVertexBuffer(vao, offsets_slot, instance_offsets, 0,
+		                          3 * sizeof(float));
+
+		constexpr GLuint divisor = 1; // Update offset every new instance
+		glVertexArrayBindingDivisor(vao, offsets_slot, divisor);
+
+		glVertexArrayAttribFormat(vao, ATTR_INST_OFFSET, 3, GL_FLOAT, false, 0);
+		glEnableVertexArrayAttrib(vao, ATTR_INST_OFFSET);
+		glVertexArrayAttribBinding(vao, ATTR_INST_OFFSET, offsets_slot);
+	}
+
+	// upload draw commands
+	glNamedBufferStorage(indirect_commands, commands.size_bytes(),
+	                     commands.data(),
+	                     GL_DYNAMIC_STORAGE_BIT); // Dynamic so the client can
+	                                              // change the draw commands
+
+	return {.vao = vao, .command_buffer_handle = indirect_commands};
 }
 
 } // namespace statics

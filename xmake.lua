@@ -31,7 +31,7 @@ local glad_extensions = {
 -- OpenGL Loader
 local gl_api = "gl=" .. GL_MAJOR_VERSION .. "." .. GL_MINOR_VERSION
 
-add_requires("glfw", "glm")
+add_requires("glfw", "glm", "assimp")
 
 add_requires("glad v0.1.36", { configs = {
     spec = "gl",
@@ -47,7 +47,7 @@ target("Min-E")
     set_kind("binary")
     add_files("src/*.cpp")
 
-    add_packages("glfw", "glad", "glm")
+    add_packages("glfw", "glad", "glm", "assimp")
     add_options("log")
     add_defines("GLFW_INCLUDE_NONE")
 
