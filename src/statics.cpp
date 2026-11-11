@@ -606,7 +606,7 @@ indirect_draw_info create_indirect()
 	        .command_stride = sizeof(draw_commands[0])};
 }
 
-bool load_asset(const char *file, std::vector<float> &out_vertices,
+bool load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
                 std::vector<unsigned int> &out_indices)
 {
 	Assimp::Importer importer;
@@ -636,14 +636,14 @@ bool load_asset(const char *file, std::vector<float> &out_vertices,
 	int vertex_offset = out_vertices.size();
 	int index_offset = out_indices.size();
 
-	out_vertices.resize(out_vertices.size() + (size_t)aiMesh->mNumVertices * 3);
+	out_vertices.resize(out_vertices.size() + (size_t)aiMesh->mNumVertices);
 	LOG("Vertices size: " << out_vertices.size());
 
 	out_indices.resize(out_indices.size() + aiMesh->mNumFaces * 3);
 	LOG("Indices size: " << out_indices.size());
 
 	std::memcpy(out_vertices.data() + vertex_offset, aiMesh->mVertices,
-	            aiMesh->mNumVertices * sizeof(float) * 3);
+	            aiMesh->mNumVertices * sizeof(out_vertices[0]));
 
 	for (int i{0}; i < aiMesh->mNumFaces; ++i)
 	{
@@ -658,7 +658,7 @@ bool load_asset(const char *file, std::vector<float> &out_vertices,
 }
 
 dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
-                                  std::span<float> vertices,
+                                  std::span<glm::vec3> vertices,
                                   std::span<GLuint> indices,
                                   std::optional<std::span<glm::vec3>> offsets)
 {

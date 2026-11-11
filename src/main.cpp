@@ -150,10 +150,8 @@ int main(int argc, char **argv)
 #pragma endregion
 
 #pragma region load-objects
-	std::vector<float> vertices;
-	vertices.reserve(500);
-	std::vector<unsigned int> indices;
-	indices.reserve(1000);
+	std::vector<glm::vec3> vertices{};
+	std::vector<unsigned int> indices{};
 
 	static_assert(std::is_same_v<ai_real, float>,
 	              "Assimp isn't built using float");
@@ -172,10 +170,8 @@ int main(int argc, char **argv)
 		statics::indirect_command{(unsigned int)indices.size(), 1, 0, 0, 0},
 	};
 
-	std::span<float> vertex_span{vertices};
-	std::span<GLuint> index_span{indices};
 	statics::dynamic_multi_draw multi_draw_info =
-		statics::upload_objects(commands, vertex_span, index_span, {});
+		statics::upload_objects(commands, {vertices}, {indices}, {});
 
 	glm::mat4 model{1};
 
