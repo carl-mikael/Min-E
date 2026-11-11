@@ -160,16 +160,18 @@ int main(int argc, char **argv)
 	              "Assimp vector doesn't match 3 floats");
 
 	const char *cube_file = "asset/cube.obj";
-
 	const char *tree_file = "asset/tree.obj";
-	if (!statics::load_asset(tree_file, vertices, indices))
+	auto o_command = statics::load_asset(tree_file, vertices, indices);
+	if (!o_command)
 	{
 		return -1;
 	}
+	statics::indirect_command command = o_command.value();
 
 #pragma endregion
 	statics::indirect_command commands[5]{
-		statics::indirect_command{(unsigned int)indices.size(), 1, 0, 0, 0},
+		// statics::indirect_command{(unsigned int)indices.size(), 1, 0, 0, 0},
+		command,
 	};
 
 	statics::dynamic_multi_draw multi_draw_info =

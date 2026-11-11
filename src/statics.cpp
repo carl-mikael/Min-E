@@ -13,6 +13,7 @@
 #include <glad/glad.h>
 #include <iostream>
 #include <iterator>
+#include <optional>
 #include <vector>
 
 namespace statics
@@ -606,8 +607,9 @@ indirect_draw_info create_indirect()
 	        .command_stride = sizeof(draw_commands[0])};
 }
 
-bool load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
-                std::vector<unsigned int> &out_indices)
+std::optional<indirect_command>
+load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
+           std::vector<unsigned int> &out_indices)
 {
 	Assimp::Importer importer;
 	// @Warning: Triangulate doesn't work on points and lines
@@ -618,7 +620,7 @@ bool load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
 	if (!importer.ValidateFlags(process_flags))
 	{
 		std::cerr << "process flags for importing are invalid" << std::endl;
-		return false;
+		return {};
 	}
 
 	const aiScene *scene_node = importer.ReadFile(file, process_flags);
@@ -626,9 +628,12 @@ bool load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
 	if (scene_node == nullptr)
 	{
 		std::cerr << "Error reading file: " << error << std::endl;
-		return false;
+		return {};
 	}
 
+	unsigned int index_count{0};
+	unsigned int first_index{(unsigned int)out_indices.size()};
+	int base_vertex{(int)out_vertices.size()};
 	for (int mesh_idx{0}; mesh_idx < scene_node->mNumMeshes; ++mesh_idx)
 	{
 		aiMesh *ai_mesh = scene_node->mMeshes[mesh_idx];
@@ -645,6 +650,7 @@ bool load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
 
 		for (int face_idx{0}; face_idx < ai_mesh->mNumFaces; ++face_idx)
 		{
+			index_count += ai_mesh->mNumFaces * 3;
 			for (int index{0}; index < 3; ++index)
 			{
 				aiFace face = ai_mesh->mFaces[face_idx];
@@ -654,7 +660,11 @@ bool load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
 		}
 	}
 
-	return true;
+	constexpr int instance_count = 1;
+	constexpr unsigned int base_index{0}; // No instances right now
+	indirect_command command_info{index_count, instance_count, first_index,
+	                              base_index};
+	return command_info;
 }
 
 dynamic_multi_draw upload_objects(std::span<indirect_command> commands,

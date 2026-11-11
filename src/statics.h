@@ -99,8 +99,9 @@ instanced_cube create_instanced_cubes();
 
 indirect_draw_info create_indirect();
 
-bool load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
-                std::vector<unsigned int> &out_indices);
+std::optional<indirect_command>
+load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
+           std::vector<unsigned int> &out_indices);
 
 dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
                                   std::span<glm::vec3> vertices,
