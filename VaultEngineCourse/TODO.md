@@ -10,18 +10,11 @@ kanban-plugin: board
 - [ ] Use 2 back frame buffers to avoid capping tick rate to monitor hz and still allow for vsync
 - [ ] Slang as shader language. For shader lang features and reflection. https://shader-slang.org/
 - [ ] Support vat (vertex animation texture)
+- [ ] vertex pulling
 
 
 ## Next
 
-- [ ] Impl my own obj loader.
-	Handle at least these lines:
-	- [ ] \#
-	- [ ] o
-	- [ ] v
-	- [ ] vt
-	- [ ] vn
-	- [ ] f
 - [ ] f lines should support quads too
 - [ ] Do basic validation. Don't let I/O crash app
 - [ ] Allow toggling between obj loaders
@@ -32,16 +25,25 @@ kanban-plugin: board
 - [ ] crude directional light
 	- [ ] test normals
 - [ ] support textures in at least one shader
-- [ ] Scene populated with at least 5 imported objects
 
 
 ## Now
 
-- [ ] Integrate assimp
+- [ ] Impl my own obj loader.
+	Handle at least these lines:
+	- [ ] \#
+	- [ ] o
+	- [ ] v
+	- [ ] vt
+	- [ ] vn
+	- [ ] f
 
 
 ## Done
 
+- [ ] Add model matrix per model
+- [ ] Scene populated with at least 5 imported objects
+- [ ] Integrate assimp
 
 
 ***
