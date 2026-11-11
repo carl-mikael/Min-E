@@ -607,6 +607,9 @@ indirect_draw_info create_indirect()
 	        .command_stride = sizeof(draw_commands[0])};
 }
 
+// @NOTE: Maybe it's better to return a list of indirect commands, so each
+// sub-mesh could be its own command, because assimp resets the index per
+// sub-mesh anyways
 std::optional<indirect_command>
 load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
            std::vector<unsigned int> &out_indices)
@@ -634,10 +637,14 @@ load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
 	unsigned int index_count{0};
 	unsigned int first_index{(unsigned int)out_indices.size()};
 	int base_vertex{(int)out_vertices.size()};
+
+	int model_base_index{0};
 	for (int mesh_idx{0}; mesh_idx < scene_node->mNumMeshes; ++mesh_idx)
 	{
 		aiMesh *ai_mesh = scene_node->mMeshes[mesh_idx];
+		index_count += ai_mesh->mNumFaces * 3;
 
+		// Need this before resize so we know where to copy the new mem to
 		int vertex_offset = out_vertices.size();
 		int index_offset = out_indices.size();
 
@@ -650,20 +657,22 @@ load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
 
 		for (int face_idx{0}; face_idx < ai_mesh->mNumFaces; ++face_idx)
 		{
-			index_count += ai_mesh->mNumFaces * 3;
 			for (int index{0}; index < 3; ++index)
 			{
 				aiFace face = ai_mesh->mFaces[face_idx];
 				out_indices[index_offset + face_idx * 3 + index] =
-					vertex_offset + face.mIndices[index];
+					model_base_index + face.mIndices[index];
 			}
 		}
+
+		// If it has multiple meshes we need to count to offset the index value
+		model_base_index += ai_mesh->mNumVertices;
 	}
 
 	constexpr int instance_count = 1;
-	constexpr unsigned int base_index{0}; // No instances right now
 	indirect_command command_info{index_count, instance_count, first_index,
-	                              base_index};
+	                              base_vertex, 0};
+
 	return command_info;
 }
 

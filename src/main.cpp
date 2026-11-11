@@ -161,17 +161,17 @@ int main(int argc, char **argv)
 
 	const char *cube_file = "asset/cube.obj";
 	const char *tree_file = "asset/tree.obj";
-	auto o_command = statics::load_asset(tree_file, vertices, indices);
-	if (!o_command)
-	{
-		return -1;
-	}
-	statics::indirect_command command = o_command.value();
+	// auto o_command = statics::load_asset(tree_file, vertices, indices);
+	// if (!o_command)
+	// {
+	// 	return -1;
+	// }
+	// statics::indirect_command command = o_command.value();
 
 #pragma endregion
-	statics::indirect_command commands[5]{
-		// statics::indirect_command{(unsigned int)indices.size(), 1, 0, 0, 0},
-		command,
+	statics::indirect_command commands[]{
+		statics::load_asset(cube_file, vertices, indices).value(),
+		statics::load_asset(tree_file, vertices, indices).value(),
 	};
 
 	statics::dynamic_multi_draw multi_draw_info =
@@ -237,7 +237,8 @@ int main(int argc, char **argv)
 			GL_UNSIGNED_INT; // @TODO: Replace with GL_UNSIGNED_SHORT
 		constexpr void *command_buffer_offset =
 			(void *)0; // @TODO: Change this based on which mesh to draw
-		constexpr GLsizei commands_to_execute = 1;
+		constexpr GLsizei commands_to_execute =
+			sizeof(commands) / sizeof(commands[0]);
 		constexpr GLsizei command_stride =
 			0; // sizeof(statics::indirect_command);
 		glMultiDrawElementsIndirect(GL_TRIANGLES, index_typ,
