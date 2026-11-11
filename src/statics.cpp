@@ -613,8 +613,8 @@ bool load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
 	// @Warning: Triangulate doesn't work on points and lines
 	constexpr unsigned int process_flags =
 		aiProcess_Triangulate | aiProcess_OptimizeMeshes |
-		aiProcess_OptimizeGraph | aiProcess_JoinIdenticalVertices |
-		aiProcess_FindInvalidData | aiProcess_ValidateDataStructure;
+		aiProcess_JoinIdenticalVertices | aiProcess_FindInvalidData |
+		aiProcess_ValidateDataStructure | aiProcess_PreTransformVertices;
 	if (!importer.ValidateFlags(process_flags))
 	{
 		std::cerr << "process flags for importing are invalid" << std::endl;
@@ -629,28 +629,28 @@ bool load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
 		return false;
 	}
 
-	assert(scene_node->mNumMeshes == 1); // Only supporting one mesh right now
-
-	aiMesh *aiMesh = *scene_node->mMeshes;
-
-	int vertex_offset = out_vertices.size();
-	int index_offset = out_indices.size();
-
-	out_vertices.resize(out_vertices.size() + (size_t)aiMesh->mNumVertices);
-	LOG("Vertices size: " << out_vertices.size());
-
-	out_indices.resize(out_indices.size() + aiMesh->mNumFaces * 3);
-	LOG("Indices size: " << out_indices.size());
-
-	std::memcpy(out_vertices.data() + vertex_offset, aiMesh->mVertices,
-	            aiMesh->mNumVertices * sizeof(out_vertices[0]));
-
-	for (int i{0}; i < aiMesh->mNumFaces; ++i)
+	for (int mesh_idx{0}; mesh_idx < scene_node->mNumMeshes; ++mesh_idx)
 	{
-		for (int j{0}; j < 3; ++j)
+		aiMesh *ai_mesh = scene_node->mMeshes[mesh_idx];
+
+		int vertex_offset = out_vertices.size();
+		int index_offset = out_indices.size();
+
+		out_vertices.resize(out_vertices.size() +
+		                    (size_t)ai_mesh->mNumVertices);
+		out_indices.resize(out_indices.size() + ai_mesh->mNumFaces * 3);
+
+		std::memcpy(out_vertices.data() + vertex_offset, ai_mesh->mVertices,
+		            ai_mesh->mNumVertices * sizeof(out_vertices[0]));
+
+		for (int face_idx{0}; face_idx < ai_mesh->mNumFaces; ++face_idx)
 		{
-			out_indices[index_offset + i * 3 + j] =
-				vertex_offset / 3 + *((aiMesh->mFaces + i)->mIndices + j);
+			for (int index{0}; index < 3; ++index)
+			{
+				aiFace face = ai_mesh->mFaces[face_idx];
+				out_indices[index_offset + face_idx * 3 + index] =
+					vertex_offset + face.mIndices[index];
+			}
 		}
 	}
 

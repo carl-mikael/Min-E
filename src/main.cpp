@@ -109,8 +109,9 @@ int main(int argc, char **argv)
 	glClearColor(1, 1, 1, 1);
 
 #pragma region view
-	glm::vec3 view_pos{0, 0, 3.0f};
-	glm::vec3 view_target{0, 0, 0};
+	constexpr float camera_height = 5.0f;
+	glm::vec3 view_pos{0, camera_height, 10.0f};
+	glm::vec3 view_target{0, camera_height, 0}; // Look forward
 	glm::vec3 view_up_axis{0, 1, 0};
 	glm::mat4 camera = glm::lookAt(view_pos, view_target, view_up_axis);
 #pragma endregion
@@ -158,9 +159,10 @@ int main(int argc, char **argv)
 	static_assert(sizeof(aiVector3t<ai_real>) == 3 * sizeof(float),
 	              "Assimp vector doesn't match 3 floats");
 
-	const char *asset_file =
-		"asset/cube.obj"; // @TODO: Replace with actual model path
-	if (!statics::load_asset(asset_file, vertices, indices))
+	const char *cube_file = "asset/cube.obj";
+
+	const char *tree_file = "asset/tree.obj";
+	if (!statics::load_asset(tree_file, vertices, indices))
 	{
 		return -1;
 	}
@@ -174,6 +176,7 @@ int main(int argc, char **argv)
 		statics::upload_objects(commands, {vertices}, {indices}, {});
 
 	glm::mat4 model{1};
+	model = glm::translate(model, {0, 0, -20.0f});
 
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER,
 	             multi_draw_info.command_buffer_handle);
@@ -185,7 +188,7 @@ int main(int argc, char **argv)
 	                          glm::value_ptr(model));
 
 	glEnable(GL_DEPTH_TEST);
-	// glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 
 	bool line_mode = false;
 
