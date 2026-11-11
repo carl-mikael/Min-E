@@ -4,6 +4,9 @@
 // "Lucky"! the pragma once is ignored by GLSL
 #pragma once
 
+#define UBO_MAX_SIZE 65536
+#define MAT4_SIZE 64
+
 // Attributes, OpenGL guarantees that 0-15 exists. Reminder: Mat4 takes up 4.
 #define ATTR_POS 0
 #define ATTR_INST_OFFSET 1
@@ -16,3 +19,4 @@
 //  as different references towards the tot.
 // Binding point
 #define BLOCK_MATRICES 0
+#define BLOCK_MODELS 1

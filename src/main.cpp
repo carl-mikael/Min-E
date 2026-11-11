@@ -11,7 +11,6 @@
 #include "macros.h"
 #include "statics.h"
 #include <GLFW/glfw3.h>
-#include <cmath>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <iostream>
@@ -189,11 +188,14 @@ int main(int argc, char **argv)
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER,
 	             multi_draw_info.command_buffer_handle);
 
-	int model_location = glGetUniformLocation(shader_program, "model");
-	int color_location = glGetUniformLocation(shader_program, "color");
+	GLuint models_handle;
+	glCreateBuffers(1, &models_handle);
+	glNamedBufferStorage(models_handle, UBO_MAX_SIZE, nullptr,
+	                     GL_DYNAMIC_STORAGE_BIT);
+	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MODELS, models_handle);
 
-	glProgramUniformMatrix4fv(shader_program, model_location, 1, GL_FALSE,
-	                          glm::value_ptr(model));
+	glNamedBufferSubData(models_handle, 0, sizeof(glm::mat4),
+	                     glm::value_ptr(model));
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
