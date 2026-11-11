@@ -4,9 +4,11 @@
 #include "assimp/vector3.h"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
+#include "glm/ext/scalar_constants.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/fwd.hpp"
 #include "glm/gtc/type_ptr.hpp"
+#include "glm/trigonometric.hpp"
 #include "glslSemantics.h"
 #include "macros.h"
 #include "statics.h"
@@ -182,8 +184,18 @@ int main(int argc, char **argv)
 	statics::dynamic_multi_draw multi_draw_info =
 		statics::upload_objects(commands, {vertices}, {indices}, {});
 
-	glm::mat4 model{1};
-	model = glm::translate(model, {0, 0, -20.0f});
+	constexpr int num_models = 5;
+	glm::mat4 models[num_models];
+
+	constexpr int far_left_pos = -15.0f;
+	constexpr int model_offset = 10.0f;
+	for (int i{0}; i < num_models; ++i)
+	{
+		models[i] = glm::translate(
+			{1}, glm::vec3{far_left_pos + model_offset * i, 0, -20.0f});
+	}
+
+	models[num_models - 1] = glm::translate({1}, glm::vec3{0, 0, -10.0f});
 
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER,
 	             multi_draw_info.command_buffer_handle);
@@ -194,8 +206,8 @@ int main(int argc, char **argv)
 	                     GL_DYNAMIC_STORAGE_BIT);
 	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MODELS, models_handle);
 
-	glNamedBufferSubData(models_handle, 0, sizeof(glm::mat4),
-	                     glm::value_ptr(model));
+	glNamedBufferSubData(models_handle, 0, sizeof(models),
+	                     glm::value_ptr(models[0]));
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
