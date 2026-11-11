@@ -1,5 +1,7 @@
 #pragma once
 
+#include "assimp/defs.h"
+#include "assimp/vector3.h"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/vector_float3.hpp"
@@ -149,17 +151,45 @@ int main(int argc, char **argv)
 
 #pragma region load-objects
 	std::vector<float> vertices;
+	vertices.reserve(500);
 	std::vector<unsigned int> indices;
+	indices.reserve(1000);
+
+	static_assert(std::is_same_v<ai_real, float>,
+	              "Assimp isn't built using float");
+	static_assert(sizeof(aiVector3t<ai_real>) == 3 * sizeof(float),
+	              "Assimp vector doesn't match 3 floats");
+
+	const char *asset_file =
+		"asset/cube.obj"; // @TODO: Replace with actual model path
+	if (!statics::load_asset(asset_file, vertices, indices))
+	{
+		return -1;
+	}
+
 #pragma endregion
-	statics::indirect_command commands[5];
+	statics::indirect_command commands[5]{
+		statics::indirect_command{(unsigned int)indices.size(), 1, 0, 0, 0},
+	};
+
+	std::span<float> vertex_span{vertices};
+	std::span<GLuint> index_span{indices};
 	statics::dynamic_multi_draw multi_draw_info =
-		statics::upload_objects(commands, {vertices}, {indices}, {});
+		statics::upload_objects(commands, vertex_span, index_span, {});
+
+	glm::mat4 model{1};
+
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER,
+	             multi_draw_info.command_buffer_handle);
 
 	int model_location = glGetUniformLocation(shader_program, "model");
 	int color_location = glGetUniformLocation(shader_program, "color");
 
+	glProgramUniformMatrix4fv(shader_program, model_location, 1, GL_FALSE,
+	                          glm::value_ptr(model));
+
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	// glEnable(GL_CULL_FACE);
 
 	bool line_mode = false;
 
@@ -170,7 +200,7 @@ int main(int argc, char **argv)
 
 	glUseProgram(shader_program);
 
-	// @TODO: Bind vao
+	glBindVertexArray(multi_draw_info.vao);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -204,12 +234,13 @@ int main(int argc, char **argv)
 
 		constexpr GLenum index_typ =
 			GL_UNSIGNED_INT; // @TODO: Replace with GL_UNSIGNED_SHORT
-		constexpr void *command_buffer_offset = (void *)0;
-		constexpr GLsizei command_to_execute = 5;
+		constexpr void *command_buffer_offset =
+			(void *)0; // @TODO: Change this based on which mesh to draw
+		constexpr GLsizei commands_to_execute = 1;
 		constexpr GLsizei command_stride =
-			0; // Tightly packed. @TODO: Replace with the actual stride
+			0; // sizeof(statics::indirect_command);
 		glMultiDrawElementsIndirect(GL_TRIANGLES, index_typ,
-		                            command_buffer_offset, command_to_execute,
+		                            command_buffer_offset, commands_to_execute,
 		                            command_stride);
 
 		glfwSwapBuffers(window);

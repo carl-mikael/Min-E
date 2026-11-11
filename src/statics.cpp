@@ -7,6 +7,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <cassert>
+#include <cstring>
 #include <exception>
 #include <fstream>
 #include <glad/glad.h>
@@ -605,9 +606,11 @@ indirect_draw_info create_indirect()
 	        .command_stride = sizeof(draw_commands[0])};
 }
 
-bool load_asset(const char *file)
+bool load_asset(const char *file, std::vector<float> &out_vertices,
+                std::vector<unsigned int> &out_indices)
 {
 	Assimp::Importer importer;
+	// @Warning: Triangulate doesn't work on points and lines
 	constexpr unsigned int process_flags =
 		aiProcess_Triangulate | aiProcess_OptimizeMeshes |
 		aiProcess_OptimizeGraph | aiProcess_JoinIdenticalVertices |
@@ -626,7 +629,30 @@ bool load_asset(const char *file)
 		return false;
 	}
 
+	assert(scene_node->mNumMeshes == 1); // Only supporting one mesh right now
+
 	aiMesh *aiMesh = *scene_node->mMeshes;
+
+	int vertex_offset = out_vertices.size();
+	int index_offset = out_indices.size();
+
+	out_vertices.resize(out_vertices.size() + (size_t)aiMesh->mNumVertices * 3);
+	LOG("Vertices size: " << out_vertices.size());
+
+	out_indices.resize(out_indices.size() + aiMesh->mNumFaces * 3);
+	LOG("Indices size: " << out_indices.size());
+
+	std::memcpy(out_vertices.data() + vertex_offset, aiMesh->mVertices,
+	            aiMesh->mNumVertices * sizeof(float) * 3);
+
+	for (int i{0}; i < aiMesh->mNumFaces; ++i)
+	{
+		for (int j{0}; j < 3; ++j)
+		{
+			out_indices[index_offset + i * 3 + j] =
+				vertex_offset / 3 + *((aiMesh->mFaces + i)->mIndices + j);
+		}
+	}
 
 	return true;
 }
@@ -664,11 +690,12 @@ dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
 
 	glEnableVertexArrayAttrib(vao, ATTR_POS);
 	glVertexArrayAttribFormat(vao, ATTR_POS, positions_per_vertex, GL_FLOAT,
-	                          GL_FALSE, no_client_side_access);
+	                          GL_FALSE, 0);
 	glVertexArrayAttribBinding(vao, ATTR_POS, vbo_slot);
 
 	// indices
-	glNamedBufferStorage(ebo, indices.size_bytes(), indices.data(), 0);
+	glNamedBufferStorage(ebo, indices.size_bytes(), indices.data(),
+	                     no_client_side_access);
 	glVertexArrayElementBuffer(vao, ebo);
 
 	if (offsets.has_value())

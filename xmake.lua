@@ -57,6 +57,7 @@ target("Min-E")
 
     after_build( function (target)
         os.cp("$(projectdir)/src/shader", target:targetdir())
+        os.cp("$(projectdir)/asset/", target:targetdir())
         os.cp("$(projectdir)/src/" .. GLSL_SEMANTICS, target:targetdir())
     end)
 

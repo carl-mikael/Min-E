@@ -88,6 +88,8 @@ void gl_debug_callback(GLenum source, GLenum type, unsigned int id,
 	}
 	std::cout << std::endl;
 	std::cout << std::endl;
+
+	// __debugbreak();
 }
 
 unsigned long glCheckError_(const char *file, int line)
