@@ -161,6 +161,9 @@ int main(int argc, char **argv)
 
 	const char *cube_file = "asset/cube.obj";
 	const char *tree_file = "asset/tree.obj";
+	const char *golem_file = "asset/StoneGolem.obj";
+	const char *eyeball_file = "asset/eyeball.obj";
+	const char *penguin_file = "asset/penguin.obj";
 	// auto o_command = statics::load_asset(tree_file, vertices, indices);
 	// if (!o_command)
 	// {
@@ -172,6 +175,9 @@ int main(int argc, char **argv)
 	statics::indirect_command commands[]{
 		statics::load_asset(cube_file, vertices, indices).value(),
 		statics::load_asset(tree_file, vertices, indices).value(),
+		statics::load_asset(golem_file, vertices, indices).value(),
+		statics::load_asset(eyeball_file, vertices, indices).value(),
+		statics::load_asset(penguin_file, vertices, indices).value(),
 	};
 
 	statics::dynamic_multi_draw multi_draw_info =
@@ -239,8 +245,7 @@ int main(int argc, char **argv)
 			(void *)0; // @TODO: Change this based on which mesh to draw
 		constexpr GLsizei commands_to_execute =
 			sizeof(commands) / sizeof(commands[0]);
-		constexpr GLsizei command_stride =
-			0; // sizeof(statics::indirect_command);
+		constexpr GLsizei command_stride = sizeof(statics::indirect_command);
 		glMultiDrawElementsIndirect(GL_TRIANGLES, index_typ,
 		                            command_buffer_offset, commands_to_execute,
 		                            command_stride);
