@@ -1,4 +1,5 @@
 #include "statics.h"
+#include "glm/common.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glslSemantics.h"
 #include "macros.h"
@@ -7,13 +8,16 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <cassert>
+#include <cstdint>
 #include <cstring>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <glad/glad.h>
 #include <iostream>
 #include <iterator>
 #include <optional>
+#include <string_view>
 #include <vector>
 
 namespace statics
@@ -44,7 +48,7 @@ bool could_compile(unsigned int shader, const char *shader_path)
 	{
 		glGetShaderInfoLog(shader, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader: " << shader_path
-				  << " info_log: " << info_log << std::endl;
+		          << " info_log: " << info_log << std::endl;
 
 		return false;
 	}
@@ -111,7 +115,7 @@ bool create_shader_program(unsigned int *out_shader_program,
 	{
 		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader program: " << info_log
-				  << std::endl;
+		          << std::endl;
 		return false;
 	}
 
@@ -524,9 +528,9 @@ indirect_draw_info create_indirect()
 			.base_vertex = 0, // The offset in the vbo
 			.base_instance =
 				0, // I like to think of this value as an element offset into
-	               // the instance offset buffer. Buut it's actually how much to
-	               // add to the result of the instance divisor result.
-	               // (gl_InstanceID/divisor) + base_instance
+				   // the instance offset buffer. Buut it's actually how much to
+				   // add to the result of the instance divisor result.
+				   // (gl_InstanceID/divisor) + base_instance
 		},
 		{
 			// Sphere
@@ -536,7 +540,7 @@ indirect_draw_info create_indirect()
 				nr_cube_indices, // Indices for a cube is stored first
 			.base_vertex =
 				nr_cube_vertices, // Cube vertices are stored first. This is the
-	                              // offset in the vbo to the sphere vertices
+				                  // offset in the vbo to the sphere vertices
 			.base_instance = nr_cube_instances_to_draw,
 		},
 	};
@@ -739,6 +743,46 @@ dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
 	                                              // change the draw commands
 
 	return {.vao = vao, .command_buffer_handle = indirect_commands};
+}
+
+bool load_obj(const char *file)
+{
+	LOG("Load obj file: " << file);
+
+	std::ifstream file_stream{file, std::ios::binary};
+	if (!file_stream.is_open())
+	{
+		std::cerr << "Failed to open obj file: " << file << std::endl;
+		return false;
+	}
+
+	// Create file buffer window to avoid storing the whole file in mem if big
+	uintmax_t file_size = std::filesystem::file_size(file);
+	constexpr size_t cache_line_size = 64;
+	constexpr size_t buf_size = cache_line_size;
+	char file_window_buffer[cache_line_size];
+
+	size_t buf_base{0};
+	size_t size_to_fill = buf_size - buf_base;
+	file_stream.read(file_window_buffer + buf_base, size_to_fill);
+	// returns how much it managed to read, we try to read size_to_fill, but it
+	// can't read that many if it encountered the file end
+	bool reached_eof = file_stream.gcount() < size_to_fill;
+
+	char *first{0}, second{0};
+	char c{}; // @Note: Can probably remove this later if you want, but might be
+	          // nice to have when debugging
+
+	while (second < buf_size && (c = file_window_buffer[second++]) != 'o')
+	{
+	}
+
+	std::string_view buffer_view{file_window_buffer,
+	                             file_window_buffer + second};
+
+	LOG("Found: " << c << "Buffer: " << buffer_view);
+
+	return true;
 }
 
 } // namespace statics

@@ -4,7 +4,6 @@
 #include "assimp/vector3.h"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
-#include "glm/ext/scalar_constants.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/fwd.hpp"
 #include "glm/gtc/type_ptr.hpp"
@@ -128,7 +127,7 @@ int main(int argc, char **argv)
 	constexpr float ortho_near_width = ortho_near_height * aspect;
 	glm::mat4 orthographic =
 		glm::ortho(-ortho_near_width, ortho_near_width, -ortho_near_height,
-	               ortho_near_height, near, far);
+		           ortho_near_height, near, far);
 
 	GLuint uniform_matrices_object;
 	glCreateBuffers(1, &uniform_matrices_object);
@@ -171,6 +170,8 @@ int main(int argc, char **argv)
 	// 	return -1;
 	// }
 	// statics::indirect_command command = o_command.value();
+
+	statics::load_obj(cube_file);
 
 #pragma endregion
 	statics::indirect_command commands[]{

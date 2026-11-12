@@ -108,4 +108,6 @@ dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
                                   std::span<unsigned int> indices,
                                   std::optional<std::span<glm::vec3>> offsets);
 
+bool load_obj(const char *file);
+
 }; // namespace statics

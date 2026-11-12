@@ -8,7 +8,9 @@ kanban-plugin: board
 
 - [ ] Understand the offsets/padding for std140: https://learnopengl.com/Advanced-OpenGL/Advanced-GLSL
 - [ ] Use 2 back frame buffers to avoid capping tick rate to monitor hz and still allow for vsync
-- [ ] Slang as shader language. For shader lang features and reflection. https://shader-slang.org/
+- [ ] Super set of GLSL, custom pre parsing before uploading source.
+	Or
+	Slang as shader language. For shader lang features and reflection. https://shader-slang.org/
 - [ ] Support vat (vertex animation texture)
 - [ ] vertex pulling
 
