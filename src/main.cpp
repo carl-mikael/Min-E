@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 	constexpr float ortho_near_width = ortho_near_height * aspect;
 	glm::mat4 orthographic =
 		glm::ortho(-ortho_near_width, ortho_near_width, -ortho_near_height,
-		           ortho_near_height, near, far);
+	               ortho_near_height, near, far);
 
 	GLuint uniform_matrices_object;
 	glCreateBuffers(1, &uniform_matrices_object);
@@ -171,7 +171,9 @@ int main(int argc, char **argv)
 	// }
 	// statics::indirect_command command = o_command.value();
 
-	statics::load_obj(cube_file);
+	const char *badcube =
+		"asset/badcube.obj"; // @WARNING: It's broken to test system
+	statics::load_obj(badcube);
 
 #pragma endregion
 	statics::indirect_command commands[]{
