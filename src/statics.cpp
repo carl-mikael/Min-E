@@ -6,18 +6,22 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <bit>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <emmintrin.h>
 #include <exception>
 #include <filesystem>
 #include <fstream>
 #include <glad/glad.h>
+#include <immintrin.h>
 #include <iostream>
 #include <iterator>
 #include <optional>
 #include <string_view>
 #include <vector>
+#include <xmmintrin.h>
 
 namespace statics
 {
@@ -47,7 +51,7 @@ bool could_compile(unsigned int shader, const char *shader_path)
 	{
 		glGetShaderInfoLog(shader, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader: " << shader_path
-		          << " info_log: " << info_log << std::endl;
+				  << " info_log: " << info_log << std::endl;
 
 		return false;
 	}
@@ -114,7 +118,7 @@ bool create_shader_program(unsigned int *out_shader_program,
 	{
 		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader program: " << info_log
-		          << std::endl;
+				  << std::endl;
 		return false;
 	}
 
@@ -527,9 +531,9 @@ indirect_draw_info create_indirect()
 			.base_vertex = 0, // The offset in the vbo
 			.base_instance =
 				0, // I like to think of this value as an element offset into
-				   // the instance offset buffer. Buut it's actually how much to
-				   // add to the result of the instance divisor result.
-				   // (gl_InstanceID/divisor) + base_instance
+	               // the instance offset buffer. Buut it's actually how much to
+	               // add to the result of the instance divisor result.
+	               // (gl_InstanceID/divisor) + base_instance
 		},
 		{
 			// Sphere
@@ -539,7 +543,7 @@ indirect_draw_info create_indirect()
 				nr_cube_indices, // Indices for a cube is stored first
 			.base_vertex =
 				nr_cube_vertices, // Cube vertices are stored first. This is the
-				                  // offset in the vbo to the sphere vertices
+	                              // offset in the vbo to the sphere vertices
 			.base_instance = nr_cube_instances_to_draw,
 		},
 	};
@@ -789,14 +793,33 @@ bool load_obj(const char *file)
 
 	bool reached_eof = false;
 
-	auto capture_word =
-		[&buf_size](int &first, int &second, char *file_window_buffer)
+	auto capture_word = [&]()
 	{
-		char c;
-		while (second < buf_size && (c = file_window_buffer[++second]) != ' ' &&
-		       c != '\n')
-		{
-		}
+		__m128i data = _mm_loadu_si128(
+			reinterpret_cast<const __m128i *>(file_window_buffer + second));
+		__m128i space_matches = _mm_cmpeq_epi8(data, _mm_set1_epi8(' '));
+		__m128i new_line_matches = _mm_cmpeq_epi8(data, _mm_set1_epi8('\n'));
+		// Since the var is local/temp we store it in an uint since a
+		// word/normal reg has a storgage of 8 anyways And! when counting zeros
+		// the amount can be more than the highest idx find, which means we can
+		// use it to know if we found a match or not.
+		unsigned int matches = _mm_movemask_epi8(_mm_or_si128(
+			space_matches,
+			new_line_matches)); // pipe '|' instead of _mm_or_si128 compiles to
+		                        // the same thing, except for MSVC users,
+		                        // microsoft doesn't give the __m128i any ops
+
+		// Was thinking why we would pipe in the return value, so tried writing
+		// it out using SIMD instead, realized it's because we would need
+		// 32byte register. We could enable this but for now I'll learn using
+		// the basic 16byte.
+
+		// Returns 32 if it didn't find anything. A match would be 0-15;
+		int zeros = std::countr_zero(matches);
+		// If we didn't find a match increase second by 16 as that would be the
+		// next char to search from, otherwise (we found a match), move it to
+		// the matching char
+		second += zeros == 32 ? 16 : zeros;
 	};
 
 	auto skip_line = [&]()
@@ -817,7 +840,7 @@ bool load_obj(const char *file)
 
 	do
 	{
-		capture_word(first, second, file_window_buffer);
+		capture_word();
 		LOG("Captured new word: " << view.get());
 
 		// Outside window buffer
@@ -825,7 +848,7 @@ bool load_obj(const char *file)
 		{
 			std::cerr << "laod_obj - Need to handle trying to peek outside "
 						 "window buffer"
-			          << std::endl;
+					  << std::endl;
 			return false;
 		}
 
@@ -842,7 +865,7 @@ bool load_obj(const char *file)
 			{
 			case 'v':
 				LOG("Vertex pos!");
-				capture_word(first, second, file_window_buffer);
+				capture_word();
 				LOG("X: " << view.get());
 				break;
 
