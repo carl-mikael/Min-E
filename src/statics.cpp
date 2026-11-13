@@ -47,7 +47,7 @@ bool could_compile(unsigned int shader, const char *shader_path)
 	{
 		glGetShaderInfoLog(shader, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader: " << shader_path
-				  << " info_log: " << info_log << std::endl;
+		          << " info_log: " << info_log << std::endl;
 
 		return false;
 	}
@@ -114,7 +114,7 @@ bool create_shader_program(unsigned int *out_shader_program,
 	{
 		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
 		std::cerr << "Failed to compile shader program: " << info_log
-				  << std::endl;
+		          << std::endl;
 		return false;
 	}
 
@@ -527,9 +527,9 @@ indirect_draw_info create_indirect()
 			.base_vertex = 0, // The offset in the vbo
 			.base_instance =
 				0, // I like to think of this value as an element offset into
-	               // the instance offset buffer. Buut it's actually how much to
-	               // add to the result of the instance divisor result.
-	               // (gl_InstanceID/divisor) + base_instance
+				   // the instance offset buffer. Buut it's actually how much to
+				   // add to the result of the instance divisor result.
+				   // (gl_InstanceID/divisor) + base_instance
 		},
 		{
 			// Sphere
@@ -539,7 +539,7 @@ indirect_draw_info create_indirect()
 				nr_cube_indices, // Indices for a cube is stored first
 			.base_vertex =
 				nr_cube_vertices, // Cube vertices are stored first. This is the
-	                              // offset in the vbo to the sphere vertices
+				                  // offset in the vbo to the sphere vertices
 			.base_instance = nr_cube_instances_to_draw,
 		},
 	};
@@ -763,9 +763,10 @@ bool load_obj(const char *file)
 
 	// Create file buffer window to avoid storing the whole file in mem if big
 	uintmax_t file_size = std::filesystem::file_size(file);
-	constexpr size_t cache_line_size = 64;
-	constexpr size_t buf_size = cache_line_size;
-	char file_window_buffer[buf_size];
+	constexpr size_t page_size = 4 * 1024;
+	constexpr size_t buf_size = 16 * page_size;
+	alignas(64) static char
+		file_window_buffer[buf_size]; // @TODO: Take mem from arena instead
 
 	size_t buf_base{0};
 	int first{0}, second{0};
@@ -773,7 +774,19 @@ bool load_obj(const char *file)
 	                                   // if you want, but might be nice to
 	                                   // have when debugging
 
-	std::string_view buffer_view{};
+	struct
+	{
+		int *first, *second;
+		[[nodiscard]] std::string_view get() const noexcept
+		{
+			return {file_window_buffer + (*first),
+			        file_window_buffer + (*second)};
+		}
+	} view;
+
+	view.first = &first;
+	view.second = &second;
+
 	bool reached_eof = false;
 
 	auto capture_word =
@@ -784,9 +797,6 @@ bool load_obj(const char *file)
 		       c != '\n')
 		{
 		}
-
-		return std::string_view{file_window_buffer + first,
-		                        file_window_buffer + second};
 	};
 
 	auto skip_line = [&]()
@@ -807,32 +817,33 @@ bool load_obj(const char *file)
 
 	do
 	{
-		auto buffer_view = capture_word(first, second, file_window_buffer);
-		LOG("Captured new word: " << buffer_view);
+		capture_word(first, second, file_window_buffer);
+		LOG("Captured new word: " << view.get());
 
 		// Outside window buffer
 		if (second >= buf_size)
 		{
 			std::cerr << "laod_obj - Need to handle trying to peek outside "
 						 "window buffer"
-					  << std::endl;
+			          << std::endl;
 			return false;
 		}
 
-		LOG("First: '" << buffer_view.front() << "'" << " Second: '"
-		               << buffer_view.back() << "'");
-		switch (buffer_view.length())
+		LOG("First: '" << view.get().front() << "'" << " Second: '"
+		               << view.get().back() << "'");
+		switch (view.get().length())
 		{
 		case 0:
 			LOG("Buffer_view 0 lenght");
 			break;
 
 		case 1:
-			switch (buffer_view.front())
+			switch (view.get().front())
 			{
 			case 'v':
 				LOG("Vertex pos!");
-				LOG("X: " << capture_word(first, second, file_window_buffer));
+				capture_word(first, second, file_window_buffer);
+				LOG("X: " << view.get());
 				break;
 
 			case 'o':
@@ -863,9 +874,9 @@ bool load_obj(const char *file)
 			}
 		}
 
-		buffer_view = skip_line();
+		skip_line();
 
-		LOG("End of Line, buffer: " << buffer_view);
+		LOG("End of Line, buffer: " << view.get());
 
 		first = second;
 		reached_eof = reached_eof || c == '\0';
