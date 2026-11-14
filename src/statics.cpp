@@ -1,5 +1,6 @@
 #include "statics.h"
 #include "glm/common.hpp"
+#include "glm/exponential.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glslSemantics.h"
 #include "macros.h"
@@ -10,18 +11,23 @@
 #include <bit>
 #include <cassert>
 #include <charconv>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <emmintrin.h>
 #include <exception>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <glad/glad.h>
 #include <immintrin.h>
 #include <iostream>
 #include <iterator>
 #include <optional>
+#include <set>
 #include <string_view>
+#include <unordered_map>
+#include <vcruntime_typeinfo.h>
 #include <vector>
 #include <xmmintrin.h>
 
@@ -756,8 +762,9 @@ constexpr uint16_t pack_as_int(char a, char b) noexcept
 	                             static_cast<uint8_t>(b));
 }
 
-bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
-              std::vector<unsigned int> &out_indices)
+std::optional<indirect_command> load_obj(const char *file,
+                                         std::vector<glm::vec3> &out_vertices,
+                                         std::vector<unsigned int> &out_indices)
 {
 	LOG("Load obj file: " << file);
 
@@ -765,12 +772,40 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 	if (!file_stream.is_open())
 	{
 		std::cerr << "Failed to open obj file: " << file << std::endl;
-		return false;
+		return {};
 	}
+
+	struct face
+	{
+		int pos, normal, uv;
+
+		bool operator==(const face &other) const
+		{
+			return pos == other.pos && normal == other.normal && uv == other.uv;
+		}
+	};
+
+	// Not sure how this works, followed:
+	// https://www.geeksforgeeks.org/cpp/implement-custom-hash-functions-for-user-defined-types-in-std-unordered_map/
+	struct face_hasher
+	{
+		size_t operator()(const face &f) const
+		{
+			return std::hash<int>()(f.pos) ^ std::hash<int>()(f.normal) ^
+			       std::hash<int>()(f.uv);
+		}
+	};
+
+	// face/vertex to index
+	std::unordered_map<face, unsigned int, face_hasher> vertex_to_index{};
 
 	std::vector<glm::vec3> positions{};
 	std::vector<glm::vec3> normals{};
 	std::vector<glm::vec2> uvs{};
+
+	unsigned int unique_vertices_added{0};
+	unsigned int first_index{(unsigned int)out_indices.size()};
+	int base_vertex{(int)out_vertices.size()};
 
 	// Create file buffer window to avoid storing the whole file in mem if big
 	uintmax_t file_size = std::filesystem::file_size(file);
@@ -807,11 +842,11 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 	// @Note: The first time it's called after encountering a token first =
 	// second. After that, if we don't find anything from first+16, it should
 	// check the range of pos -> pos+16, hence file_window_buffer + second.
-	auto capture_word = [&]()
+	auto capture_word = [&](const char delim)
 	{
 		__m128i data = _mm_loadu_si128(
 			reinterpret_cast<const __m128i *>(file_window_buffer + second));
-		__m128i space_matches = _mm_cmpeq_epi8(data, _mm_set1_epi8(' '));
+		__m128i space_matches = _mm_cmpeq_epi8(data, _mm_set1_epi8(delim));
 		__m128i new_line_matches = _mm_cmpeq_epi8(data, _mm_set1_epi8('\n'));
 		// Since the var is local/temp we store it in an uint since a
 		// word/normal reg has a storgage of 8 anyways And! when counting zeros
@@ -834,6 +869,7 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 		// next char to search from, otherwise (we found a match), move it to
 		// the matching char
 		second += zeros == 32 ? 16 : zeros;
+		return matches;
 	};
 
 	auto skip_line = [&]()
@@ -842,17 +878,14 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 		       (c = file_window_buffer[++second]) != '\n' && c != '\0')
 		{
 		};
-
-		return std::string_view{file_window_buffer + first,
-		                        file_window_buffer + second};
 	};
 
 	// Interpret view as float and store it in value
-	auto set_value_from_view = [&](float &value)
-	{
-		std::from_chars(view.get()._Unchecked_begin(),
-		                view.get()._Unchecked_end(), value);
-	};
+	auto set_value_from_view = [](std::string_view view, float &value)
+	{ std::from_chars(view._Unchecked_begin(), view._Unchecked_end(), value); };
+
+	auto set_int_from_view = [](std::string_view view, int &value)
+	{ std::from_chars(view._Unchecked_begin(), view._Unchecked_end(), value); };
 
 	file_stream.read(file_window_buffer + buf_base, buffer_content);
 	// returns how much it managed to read, we try to read buffer_content, but
@@ -861,7 +894,7 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 
 	do
 	{
-		capture_word();
+		capture_word(' ');
 		LOG("Captured new word: " << view.get());
 
 		// Outside window buffer
@@ -870,7 +903,7 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 			std::cerr << "laod_obj - Need to handle trying to peek outside "
 						 "window buffer"
 					  << std::endl;
-			return false;
+			return {};
 		}
 
 		LOG("First: '" << view.get().front() << "'" << " Second: '"
@@ -891,14 +924,14 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 			{
 			case 'v':
 				first = ++second;
-				capture_word();
-				set_value_from_view(pos.x);
+				capture_word(' ');
+				set_value_from_view(view.get(), pos.x);
 				first = ++second;
-				capture_word();
-				set_value_from_view(pos.y);
+				capture_word(' ');
+				set_value_from_view(view.get(), pos.y);
 				first = ++second;
-				capture_word();
-				set_value_from_view(pos.z);
+				capture_word(' ');
+				set_value_from_view(view.get(), pos.z);
 				LOG("v: " << pos.x << pos.y << pos.z);
 				positions.push_back(pos);
 				break;
@@ -909,8 +942,83 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 				break;
 
 			case 'f':
-				LOG("Face!");
-				break;
+			{
+				LOG("Face! " << view.get());
+				face faces[4];
+				int face_count{0};
+				while (*view.get()._Unchecked_end() != '\n' &&
+				       *view.get()._Unchecked_end() != '\0')
+				{
+					face f;
+					first = ++second;
+					unsigned int face_matches = capture_word(' ');
+
+					int offset{0};
+					size_t delim{0};
+					// Each face holds 3 values
+					for (int i{0}; i < 3; ++i)
+					{
+						// delim becomes npos when searching for the last value
+						delim = view.get().find_first_of(" /", offset);
+						int count = delim == std::string_view::npos
+						                ? view.get().length() - offset
+						                : delim - offset;
+
+						LOG("offset, count: " << offset << ", " << count);
+
+						std::string_view face_view =
+							view.get().substr(offset, count);
+
+						int *value = i == 0   ? &f.pos
+						             : i == 1 ? &f.normal
+						                      : &f.uv;
+						set_int_from_view(face_view, *value);
+						--*value;
+
+						LOG("Face value: " << face_view);
+						offset += delim - offset + 1;
+					}
+
+					faces[face_count++] = f;
+				}
+
+				LOG("nr faces: " << face_count);
+				for (int i{0}; i < 3; ++i)
+				{
+					const face &f = faces[i];
+					// It contains the vertex, only push the index
+					if (vertex_to_index.contains(f))
+					{
+						out_indices.push_back(vertex_to_index[f]);
+					}
+					else
+					{
+						out_vertices.push_back({positions[f.pos]});
+						vertex_to_index[f] = unique_vertices_added;
+						out_indices.push_back(unique_vertices_added++);
+					}
+				}
+				if (face_count == 4)
+				{
+					for (int i{0}; i < 3; ++i)
+					{
+						int idx = (2 + i) % 4;
+						const face &f = faces[idx];
+						// It contains the vertex, only push the index
+						if (vertex_to_index.contains(f))
+						{
+							out_indices.push_back(vertex_to_index[f]);
+						}
+						else
+						{
+							out_vertices.push_back({positions[f.pos]});
+							vertex_to_index[f] = unique_vertices_added;
+							out_indices.push_back(unique_vertices_added++);
+						}
+					}
+				}
+			}
+			break;
 
 			case '#':
 				skip_line();
@@ -930,25 +1038,25 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 			{
 			case pack_as_int('v', 'n'):
 				first = ++second;
-				capture_word();
-				set_value_from_view(normal.x);
+				capture_word(' ');
+				set_value_from_view(view.get(), normal.x);
 				first = ++second;
-				capture_word();
-				set_value_from_view(normal.y);
+				capture_word(' ');
+				set_value_from_view(view.get(), normal.y);
 				first = ++second;
-				capture_word();
-				set_value_from_view(normal.z);
+				capture_word(' ');
+				set_value_from_view(view.get(), normal.z);
 				LOG("vn: " << normal.x << normal.y << normal.z);
 				normals.push_back(normal);
 				break;
 
 			case pack_as_int('v', 't'):
 				first = ++second;
-				capture_word();
-				set_value_from_view(uv.x);
+				capture_word(' ');
+				set_value_from_view(view.get(), uv.x);
 				first = ++second;
-				capture_word();
-				set_value_from_view(uv.y);
+				capture_word(' ');
+				set_value_from_view(view.get(), uv.y);
 				LOG("vt: " << uv.x << uv.y);
 				uvs.push_back(uv);
 				break;
@@ -961,11 +1069,11 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 			LOG("Garbo - skipping line: " << view.get());
 		}
 
-		if (c == '\0')
-		{
-			LOG("EOF, from inside loop");
-			break;
-		}
+		// if (c == '\0')
+		// {
+		// 	LOG("EOF, from inside loop, view: " << view.get());
+		// 	break;
+		// }
 
 		first = ++second;
 	} while (*view.second < buffer_content);
@@ -975,7 +1083,14 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 	LOG("Positions, normals, and uvs (count): "
 	    << positions.size() << ", " << normals.size() << ", " << uvs.size());
 
-	return true;
+	constexpr int instance_count = 1;
+	// Always increasing index after applying it, so it's one more than it
+	// actaully is
+	indirect_command command_info{
+		static_cast<unsigned int>(out_indices.size()) - first_index,
+		instance_count, first_index, base_vertex, 0};
+
+	return command_info;
 }
 
 } // namespace statics
