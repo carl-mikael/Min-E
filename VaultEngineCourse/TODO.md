@@ -33,11 +33,11 @@ kanban-plugin: board
 
 - [ ] Impl my own obj loader.
 	Handle at least these lines:
-	- [ ] \#
-	- [ ] o
-	- [ ] v
-	- [ ] vt
-	- [ ] vn
+	- [x] \#
+	- [x] o
+	- [x] v
+	- [x] vt
+	- [x] vn
 	- [ ] f
 
 

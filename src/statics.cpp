@@ -804,10 +804,13 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 
 	bool reached_eof = false;
 
+	// @Note: The first time it's called after encountering a token first =
+	// second. After that, if we don't find anything from first+16, it should
+	// check the range of pos -> pos+16, hence file_window_buffer + second.
 	auto capture_word = [&]()
 	{
 		__m128i data = _mm_loadu_si128(
-			reinterpret_cast<const __m128i *>(file_window_buffer + first));
+			reinterpret_cast<const __m128i *>(file_window_buffer + second));
 		__m128i space_matches = _mm_cmpeq_epi8(data, _mm_set1_epi8(' '));
 		__m128i new_line_matches = _mm_cmpeq_epi8(data, _mm_set1_epi8('\n'));
 		// Since the var is local/temp we store it in an uint since a
@@ -875,6 +878,8 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 		               << " length: " << view.get().length());
 
 		glm::vec3 pos{};
+		glm::vec3 normal{};
+		glm::vec2 uv{};
 		switch (view.get().length())
 		{
 		case 0:
@@ -894,13 +899,13 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 				first = ++second;
 				capture_word();
 				set_value_from_view(pos.z);
-				LOG("V - pos.xyz: " << pos.x << pos.y << pos.z);
+				LOG("v: " << pos.x << pos.y << pos.z);
 				positions.push_back(pos);
 				break;
 
 			case 'o':
-				LOG("Submesh?");
 				skip_line();
+				LOG("Submesh? - skipping line: " << view.get());
 				break;
 
 			case 'f':
@@ -908,28 +913,44 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 				break;
 
 			case '#':
-				LOG("Comment");
 				skip_line();
+				LOG("Comment - skipping line: " << view.get());
 				break;
 
 			// No match - garbo
 			default:
-				LOG("Garbo, skipping line: " << view.get());
 				skip_line();
+				LOG("Garbo - skipping line: " << view.get());
 			}
 			break;
 
 		case 2:
 			// Packing the chars into an int to compare it
-			switch (pack_as_int(file_window_buffer[first],
-			                    file_window_buffer[second]))
+			switch (pack_as_int(view.get().front(), view.get().back()))
 			{
 			case pack_as_int('v', 'n'):
-				LOG("Vertex normal!");
+				first = ++second;
+				capture_word();
+				set_value_from_view(normal.x);
+				first = ++second;
+				capture_word();
+				set_value_from_view(normal.y);
+				first = ++second;
+				capture_word();
+				set_value_from_view(normal.z);
+				LOG("vn: " << normal.x << normal.y << normal.z);
+				normals.push_back(normal);
 				break;
 
 			case pack_as_int('v', 't'):
-				LOG("Vertex Texture (UV)!");
+				first = ++second;
+				capture_word();
+				set_value_from_view(uv.x);
+				first = ++second;
+				capture_word();
+				set_value_from_view(uv.y);
+				LOG("vt: " << uv.x << uv.y);
+				uvs.push_back(uv);
 				break;
 			}
 			break;
@@ -937,7 +958,7 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 		// No match - garbo
 		default:
 			skip_line();
-			LOG("Garbo, skipping line: " << view.get());
+			LOG("Garbo - skipping line: " << view.get());
 		}
 
 		if (c == '\0')
@@ -950,6 +971,9 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 	} while (*view.second < buffer_content);
 
 	LOG("EOF!");
+
+	LOG("Positions, normals, and uvs (count): "
+	    << positions.size() << ", " << normals.size() << ", " << uvs.size());
 
 	return true;
 }
