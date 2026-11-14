@@ -807,297 +807,89 @@ std::optional<indirect_command> load_obj(const char *file,
 	unsigned int first_index{(unsigned int)out_indices.size()};
 	int base_vertex{(int)out_vertices.size()};
 
-	// Create file buffer window to avoid storing the whole file in mem if big
-	uintmax_t file_size = std::filesystem::file_size(file);
-	constexpr size_t page_size = 4 * 1024;
-	constexpr size_t buf_size = 16 * page_size;
-	alignas(64) static char
-		file_window_buffer[buf_size]; // @TODO: Take mem from arena instead.
-	                                  // @TODO: Try with a small size where it
-	                                  // needs to move the window
-
-	size_t buffer_content = glm::min(file_size, buf_size);
-
-	size_t left_in_file = file_size - buffer_content;
-
-	const char *msg = buffer_content == file_size
-	                      ? "Reading whole file in one chunk"
-	                      : "File is being divided";
-	LOG(msg);
-
-	size_t buf_base{0};
-	int first{0}, second{0};
-	char c{file_window_buffer[first]}; // @Note: Can probably remove this later
-	                                   // if you want, but might be nice to
-	                                   // have when debugging
-
-	struct
+	std::string line{};
+	while (std::getline(file_stream, line))
 	{
-		int *first, *second;
-		[[nodiscard]] std::string_view get() const noexcept
-		{
-			return {file_window_buffer + (*first),
-			        file_window_buffer + (*second)};
-		}
-	} view;
-
-	view.first = &first;
-	view.second = &second;
-
-	bool reached_eof = false;
-
-	// @Note: The first time it's called after encountering a token first =
-	// second. After that, if we don't find anything from first+16, it should
-	// check the range of pos -> pos+16, hence file_window_buffer + second.
-	auto capture_word = [&](const char delim)
-	{
-		__m128i data = _mm_loadu_si128(
-			reinterpret_cast<const __m128i *>(file_window_buffer + second));
-		__m128i space_matches = _mm_cmpeq_epi8(data, _mm_set1_epi8(delim));
-		__m128i new_line_matches = _mm_cmpeq_epi8(data, _mm_set1_epi8('\n'));
-		// Since the var is local/temp we store it in an uint since a
-		// word/normal reg has a storgage of 8 anyways And! when counting zeros
-		// the amount can be more than the highest idx find, which means we can
-		// use it to know if we found a match or not.
-		unsigned int matches = _mm_movemask_epi8(_mm_or_si128(
-			space_matches,
-			new_line_matches)); // pipe '|' instead of _mm_or_si128 compiles to
-		                        // the same thing, except for MSVC users,
-		                        // microsoft doesn't give the __m128i any ops
-
-		// Was thinking why we would pipe in the return value, so tried writing
-		// it out using SIMD instead, realized it's because we would need
-		// 32byte register. We could enable this but for now I'll learn using
-		// the basic 16byte.
-
-		// Returns 32 if it didn't find anything. A match would be 0-15;
-		int zeros = std::countr_zero(matches);
-		// If we didn't find a match increase second by 16 as that would be the
-		// next char to search from, otherwise (we found a match), move it to
-		// the matching char
-		second += zeros == 32 ? 16 : zeros;
-		return matches;
-	};
-
-	auto skip_line = [&]()
-	{
-		while (second < buffer_content &&
-		       (c = file_window_buffer[++second]) != '\n' && c != '\0')
-		{
-		};
-	};
-
-	// Interpret view as float and store it in value
-	auto set_value_from_view = [](std::string_view view, float &value)
-	{ std::from_chars(view._Unchecked_begin(), view._Unchecked_end(), value); };
-
-	auto set_int_from_view = [](std::string_view view, int &value)
-	{ std::from_chars(view._Unchecked_begin(), view._Unchecked_end(), value); };
-
-	file_stream.read(file_window_buffer + buf_base, buffer_content);
-	// returns how much it managed to read, we try to read buffer_content, but
-	// it can't read that many if it encountered the file end
-	reached_eof = file_stream.gcount() < buffer_content;
-
-	do
-	{
-		capture_word(' ');
-
-		// Outside window buffer
-		if (second >= buf_size)
-		{
-			std::cerr << "laod_obj - Need to handle trying to peek outside "
-						 "window buffer"
-					  << std::endl;
-			return {};
-		}
-
-		glm::vec3 pos{};
-		glm::vec3 normal{};
-		glm::vec2 uv{};
-		switch (view.get().length())
+		size_t delim_idx = line.find_first_of(" ");
+		switch (delim_idx)
 		{
 		case 0:
 			LOG("Buffer_view 0 lenght");
 			break;
 
 		case 1:
-			switch (view.get().front())
+			switch (line[0])
 			{
 			case 'v':
-				first = ++second;
-				capture_word(' ');
-				set_value_from_view(view.get(), pos.x);
-				first = ++second;
-				capture_word(' ');
-				set_value_from_view(view.get(), pos.y);
-				first = ++second;
-				capture_word(' ');
-				set_value_from_view(view.get(), pos.z);
-				LOG("v: " << pos.x << pos.y << pos.z);
-				positions.push_back(pos);
-				break;
-
-			case 'o':
-				skip_line();
-				LOG("Submesh? - skipping line: " << view.get());
-				break;
-
-			case 'f':
 			{
-				face faces[4];
-				int face_count{0};
-				std::cout << "Faces: ";
-				while (*view.get()._Unchecked_end() != '\n' &&
-				       *view.get()._Unchecked_end() != '\0')
-				{
-					assert(face_count < 5);
-					face f;
-					first = ++second;
-					unsigned int face_matches = capture_word(' ');
-					std::cout << view.get() << " ";
-
-					int offset{0};
-					size_t delim{0};
-					// Each face holds 3 values
-					for (int i{0}; i < 3; ++i)
-					{
-						// delim becomes npos when searching for the last value
-						delim = view.get().find_first_of(" /", offset);
-						int count = delim == std::string_view::npos
-						                ? view.get().length() - offset
-						                : delim - offset;
-
-						std::string_view face_view =
-							view.get().substr(offset, count);
-
-						int *value = i == 0   ? &f.pos
-						             : i == 1 ? &f.normal
-						                      : &f.uv;
-						set_int_from_view(face_view, *value);
-						--*value;
-
-						offset += delim - offset + 1;
-					}
-
-					faces[face_count++] = f;
-				}
-
-				std::cout << std::endl;
+				LOG("v");
+				glm::vec3 pos{};
+				size_t offset{delim_idx + 1};
 				for (int i{0}; i < 3; ++i)
 				{
-					const face &f = faces[i];
-					// It contains the vertex, only push the index
-					if (vertex_to_index.contains(f))
-					{
-						out_indices.push_back(vertex_to_index[f]);
-					}
-					else
-					{
-						out_vertices.push_back({positions[f.pos]});
-						vertex_to_index[f] = unique_vertices_added;
-						out_indices.push_back(unique_vertices_added++);
-					}
+					delim_idx = line.find_first_of(" ", offset);
+
+					int count = delim_idx == std::string_view::npos
+					                ? line.length() - offset
+					                : delim_idx - offset;
+
+					float *value = i == 0 ? &pos.x : i == 1 ? &pos.y : &pos.z;
+
+					std::from_chars(line._Unchecked_begin() + offset,
+					                line._Unchecked_begin() + offset + count,
+					                *value);
+
+					offset += delim_idx - offset + 1;
 				}
-				if (face_count == 4)
-				{
-					for (int i{0}; i < 3; ++i)
-					{
-						int idx = (2 + i) % 4;
-						const face &f = faces[idx];
-						// It contains the vertex, only push the index
-						if (vertex_to_index.contains(f))
-						{
-							out_indices.push_back(vertex_to_index[f]);
-						}
-						else
-						{
-							out_vertices.push_back({positions[f.pos]});
-							vertex_to_index[f] = unique_vertices_added;
-							out_indices.push_back(unique_vertices_added++);
-						}
-					}
-				}
+				positions.push_back(pos);
+				LOG("Pos: " << pos.x << pos.y << pos.z);
 			}
 			break;
 
+			case 'o':
+				LOG("Submesh? - skipping line: " << line);
+				continue;
+				break;
+
+			case 'f':
+				LOG("f");
+				continue;
+				break;
+
 			case '#':
-				skip_line();
-				LOG("Comment - skipping line: " << view.get());
+				LOG("Comment - skipping line: " << line);
+				continue;
 				break;
 
 			// No match - garbo
 			default:
-				skip_line();
-				LOG("Garbo - skipping line: " << view.get());
+				LOG("Garbo - skipping line: " << line);
+				continue;
 			}
 			break;
 
 		case 2:
 			// Packing the chars into an int to compare it
-			switch (pack_as_int(view.get().front(), view.get().back()))
+			switch (pack_as_int(line[0], line[1]))
 			{
 			case pack_as_int('v', 'n'):
-				first = ++second;
-				capture_word(' ');
-				set_value_from_view(view.get(), normal.x);
-				first = ++second;
-				capture_word(' ');
-				set_value_from_view(view.get(), normal.y);
-				first = ++second;
-				capture_word(' ');
-				set_value_from_view(view.get(), normal.z);
-				LOG("vn: " << normal.x << normal.y << normal.z);
-				normals.push_back(normal);
+				LOG("vn");
+				// normals.push_back(normal);
 				break;
 
 			case pack_as_int('v', 't'):
-				first = ++second;
-				capture_word(' ');
-				set_value_from_view(view.get(), uv.x);
-				first = ++second;
-				capture_word(' ');
-				set_value_from_view(view.get(), uv.y);
-				LOG("vt: " << uv.x << uv.y);
-				uvs.push_back(uv);
+				LOG("vt");
+				// uvs.push_back(uv);
 				break;
 			}
 			break;
 
 		// No match - garbo
 		default:
-			skip_line();
-			LOG("Garbo - skipping line: " << view.get());
+			LOG("Garbo - skipping line: " << line);
+			continue;
 		}
-
-		if (second >= buffer_content)
-		{
-			LOG("Read through buffer");
-			// Copy the sign before first, so we can tokenize the whole token at
-			// once
-			file_window_buffer[0] = file_window_buffer[first - 1];
-			// Move part of token that was cut off to the front of the buffer
-			view.get().copy(file_window_buffer + 1, view.get().length());
-
-			buf_base = view.get().length() + 1;
-
-			// We have what's left in the file to read plus how much of a token
-			// that got cut, if any
-			buffer_content = glm::min(left_in_file + buf_base, buf_size);
-			left_in_file -= file_size - (buffer_content - buf_base);
-
-			file_stream.read(file_window_buffer + buf_base, buffer_content);
-
-			first = second = 0;
-		}
-
-		first = ++second;
-	} while (file_window_buffer[second] != '\0');
-
-	LOG("EOF!");
-
-	LOG("Positions, normals, and uvs (count): "
-	    << positions.size() << ", " << normals.size() << ", " << uvs.size());
+	}
 
 	constexpr int instance_count = 1;
 	// Always increasing index after applying it, so it's one more than it
