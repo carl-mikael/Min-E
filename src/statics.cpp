@@ -1,4 +1,5 @@
 #include "statics.h"
+#include "glm/common.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glslSemantics.h"
 #include "macros.h"
@@ -780,6 +781,8 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 	                                  // @TODO: Try with a small size where it
 	                                  // needs to move the window
 
+	size_t buffer_content = glm::min(file_size, buf_size);
+
 	size_t buf_base{0};
 	int first{0}, second{0};
 	char c{file_window_buffer[first]}; // @Note: Can probably remove this later
@@ -832,7 +835,7 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 
 	auto skip_line = [&]()
 	{
-		while (second < buf_size &&
+		while (second < buffer_content &&
 		       (c = file_window_buffer[++second]) != '\n' && c != '\0')
 		{
 		};
@@ -848,10 +851,10 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 		                view.get()._Unchecked_end(), value);
 	};
 
-	file_stream.read(file_window_buffer + buf_base, buf_size);
-	// returns how much it managed to read, we try to read buf_size, but it
-	// can't read that many if it encountered the file end
-	reached_eof = file_stream.gcount() < buf_size;
+	file_stream.read(file_window_buffer + buf_base, buffer_content);
+	// returns how much it managed to read, we try to read buffer_content, but
+	// it can't read that many if it encountered the file end
+	reached_eof = file_stream.gcount() < buffer_content;
 
 	do
 	{
@@ -868,7 +871,8 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 		}
 
 		LOG("First: '" << view.get().front() << "'" << " Second: '"
-		               << view.get().back() << "'");
+		               << view.get().back() << "'"
+		               << " length: " << view.get().length());
 
 		glm::vec3 pos{};
 		switch (view.get().length())
@@ -881,25 +885,22 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 			switch (view.get().front())
 			{
 			case 'v':
-				LOG("Vertex pos!");
 				first = ++second;
 				capture_word();
-				LOG("X: " << view.get());
 				set_value_from_view(pos.x);
 				first = ++second;
 				capture_word();
-				LOG("Y: " << view.get());
 				set_value_from_view(pos.y);
 				first = ++second;
 				capture_word();
-				LOG("Z: " << view.get());
 				set_value_from_view(pos.z);
-				LOG("pos.xyz: " << pos.x << pos.y << pos.z);
+				LOG("V - pos.xyz: " << pos.x << pos.y << pos.z);
 				positions.push_back(pos);
 				break;
 
 			case 'o':
 				LOG("Submesh?");
+				skip_line();
 				break;
 
 			case 'f':
@@ -908,7 +909,13 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 
 			case '#':
 				LOG("Comment");
+				skip_line();
 				break;
+
+			// No match - garbo
+			default:
+				LOG("Garbo, skipping line: " << view.get());
+				skip_line();
 			}
 			break;
 
@@ -926,11 +933,12 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 				break;
 			}
 			break;
+
+		// No match - garbo
+		default:
+			skip_line();
+			LOG("Garbo, skipping line: " << view.get());
 		}
-
-		skip_line();
-
-		LOG("End of Line, buffer: " << view.get());
 
 		if (c == '\0')
 		{
@@ -939,7 +947,7 @@ bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
 		}
 
 		first = ++second;
-	} while (*view.second < buf_size);
+	} while (*view.second < buffer_content);
 
 	LOG("EOF!");
 
