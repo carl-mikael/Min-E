@@ -176,12 +176,12 @@ int main(int argc, char **argv)
 
 #pragma endregion
 	statics::indirect_command commands[]{
-		statics::load_asset(cube_file, vertices, indices).value(),
+		// statics::load_asset(cube_file, vertices, indices).value(),
 		// statics::load_asset(tree_file, vertices, indices).value(),
-	    // statics::load_asset(golem_file, vertices, indices).value(),
-	    // statics::load_asset(eyeball_file, vertices, indices).value(),
-	    // statics::load_asset(penguin_file, vertices, indices).value(),
-		statics::load_obj(cube_file, vertices, indices).value(),
+		// statics::load_asset(golem_file, vertices, indices).value(),
+		// statics::load_asset(eyeball_file, vertices, indices).value(),
+		// statics::load_asset(penguin_file, vertices, indices).value(),
+		statics::load_obj(badcube, vertices, indices).value(),
 	};
 
 	statics::dynamic_multi_draw multi_draw_info =

@@ -818,6 +818,13 @@ std::optional<indirect_command> load_obj(const char *file,
 
 	size_t buffer_content = glm::min(file_size, buf_size);
 
+	size_t left_in_file = file_size - buffer_content;
+
+	const char *msg = buffer_content == file_size
+	                      ? "Reading whole file in one chunk"
+	                      : "File is being divided";
+	LOG(msg);
+
 	size_t buf_base{0};
 	int first{0}, second{0};
 	char c{file_window_buffer[first]}; // @Note: Can probably remove this later
@@ -895,7 +902,6 @@ std::optional<indirect_command> load_obj(const char *file,
 	do
 	{
 		capture_word(' ');
-		LOG("Captured new word: " << view.get());
 
 		// Outside window buffer
 		if (second >= buf_size)
@@ -905,10 +911,6 @@ std::optional<indirect_command> load_obj(const char *file,
 					  << std::endl;
 			return {};
 		}
-
-		LOG("First: '" << view.get().front() << "'" << " Second: '"
-		               << view.get().back() << "'"
-		               << " length: " << view.get().length());
 
 		glm::vec3 pos{};
 		glm::vec3 normal{};
@@ -943,15 +945,17 @@ std::optional<indirect_command> load_obj(const char *file,
 
 			case 'f':
 			{
-				LOG("Face! " << view.get());
 				face faces[4];
 				int face_count{0};
+				std::cout << "Faces: ";
 				while (*view.get()._Unchecked_end() != '\n' &&
 				       *view.get()._Unchecked_end() != '\0')
 				{
+					assert(face_count < 5);
 					face f;
 					first = ++second;
 					unsigned int face_matches = capture_word(' ');
+					std::cout << view.get() << " ";
 
 					int offset{0};
 					size_t delim{0};
@@ -964,8 +968,6 @@ std::optional<indirect_command> load_obj(const char *file,
 						                ? view.get().length() - offset
 						                : delim - offset;
 
-						LOG("offset, count: " << offset << ", " << count);
-
 						std::string_view face_view =
 							view.get().substr(offset, count);
 
@@ -975,14 +977,13 @@ std::optional<indirect_command> load_obj(const char *file,
 						set_int_from_view(face_view, *value);
 						--*value;
 
-						LOG("Face value: " << face_view);
 						offset += delim - offset + 1;
 					}
 
 					faces[face_count++] = f;
 				}
 
-				LOG("nr faces: " << face_count);
+				std::cout << std::endl;
 				for (int i{0}; i < 3; ++i)
 				{
 					const face &f = faces[i];
@@ -1069,14 +1070,29 @@ std::optional<indirect_command> load_obj(const char *file,
 			LOG("Garbo - skipping line: " << view.get());
 		}
 
-		// if (c == '\0')
-		// {
-		// 	LOG("EOF, from inside loop, view: " << view.get());
-		// 	break;
-		// }
+		if (second >= buffer_content)
+		{
+			LOG("Read through buffer");
+			// Copy the sign before first, so we can tokenize the whole token at
+			// once
+			file_window_buffer[0] = file_window_buffer[first - 1];
+			// Move part of token that was cut off to the front of the buffer
+			view.get().copy(file_window_buffer + 1, view.get().length());
+
+			buf_base = view.get().length() + 1;
+
+			// We have what's left in the file to read plus how much of a token
+			// that got cut, if any
+			buffer_content = glm::min(left_in_file + buf_base, buf_size);
+			left_in_file -= file_size - (buffer_content - buf_base);
+
+			file_stream.read(file_window_buffer + buf_base, buffer_content);
+
+			first = second = 0;
+		}
 
 		first = ++second;
-	} while (*view.second < buffer_content);
+	} while (file_window_buffer[second] != '\0');
 
 	LOG("EOF!");
 
