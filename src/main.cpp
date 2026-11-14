@@ -164,11 +164,14 @@ int main(int argc, char **argv)
 	const char *golem_file = "asset/StoneGolem.obj";
 	const char *eyeball_file = "asset/eyeball.obj";
 	const char *penguin_file = "asset/penguin.obj";
-	// auto o_command = statics::load_asset(tree_file, vertices, indices);
+
+	// auto o_command = statics::load_obj(golem_file, vertices, indices);
 	// if (!o_command)
 	// {
+	// 	LOG("Failed to load!");
 	// 	return -1;
 	// }
+
 	// statics::indirect_command command = o_command.value();
 
 	const char *badcube =
@@ -176,12 +179,13 @@ int main(int argc, char **argv)
 
 #pragma endregion
 	statics::indirect_command commands[]{
-		// statics::load_asset(cube_file, vertices, indices).value(),
+		statics::load_asset(cube_file, vertices, indices).value(),
 		// statics::load_asset(tree_file, vertices, indices).value(),
-		// statics::load_asset(golem_file, vertices, indices).value(),
-		// statics::load_asset(eyeball_file, vertices, indices).value(),
-		// statics::load_asset(penguin_file, vertices, indices).value(),
-		statics::load_obj(badcube, vertices, indices).value(),
+	    // statics::load_asset(golem_file, vertices, indices).value(),
+	    // statics::load_asset(eyeball_file, vertices, indices).value(),
+	    // statics::load_asset(penguin_file, vertices, indices).value(),
+		statics::load_obj(golem_file, vertices, indices).value(),
+		// command,
 	};
 
 	statics::dynamic_multi_draw multi_draw_info =

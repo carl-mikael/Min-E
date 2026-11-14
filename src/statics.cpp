@@ -771,19 +771,24 @@ bool set_values(size_t &delim_idx, const std::string &line, T *values,
 	bool consumed_line = false;
 	for (int i{0}; i < count; ++i)
 	{
-		delim_idx = line.find_first_of("  /", offset);
+		delim_idx = line.find_first_of(" /", offset);
 
 		consumed_line = delim_idx == std::string_view::npos;
 
 		nchars = consumed_line ? line.length() - offset : delim_idx - offset;
 
-		std::from_chars(line._Unchecked_begin() + offset,
-		                line._Unchecked_begin() + offset + nchars, values[i]);
+		std::from_chars(line.data() + offset, line.data() + offset + nchars,
+		                values[i]);
 
-		offset += delim_idx - offset + 1;
+		if (consumed_line)
+		{
+			return true;
+		}
+
+		offset = delim_idx + 1;
 	}
 
-	return consumed_line;
+	return false;
 }
 
 std::optional<indirect_command> load_obj(const char *file,
@@ -849,7 +854,6 @@ std::optional<indirect_command> load_obj(const char *file,
 				glm::vec3 pos{};
 				set_values(delim_idx, line, &pos[0], 3);
 				positions.push_back(pos);
-				LOG("Pos: " << pos.x << pos.y << pos.z);
 			}
 			break;
 
@@ -859,11 +863,19 @@ std::optional<indirect_command> load_obj(const char *file,
 				break;
 
 			case 'f':
-				int face[3];
+			{
+				int facei[3];
+				face faces[4];
+				int face_count{0};
 				while (true)
 				{
-					bool consumed_line = set_values(delim_idx, line, face, 3);
-					std::cout << "f: " << face[0] << face[1] << face[2] << " ";
+					bool consumed_line =
+						set_values(delim_idx, line, &facei[0], 3);
+
+					assert(face_count < std::size(faces));
+
+					faces[face_count++] =
+						face{facei[0] - 1, facei[1] - 1, facei[2] - 1};
 
 					if (consumed_line)
 					{
@@ -871,8 +883,42 @@ std::optional<indirect_command> load_obj(const char *file,
 					}
 				}
 
-				std::cout << std::endl;
-				break;
+				for (int i{0}; i < 3; ++i)
+				{
+					const face &f = faces[i];
+					// It contains the vertex, only push the index
+					if (vertex_to_index.contains(f))
+					{
+						out_indices.push_back(vertex_to_index[f]);
+					}
+					else
+					{
+						out_vertices.push_back({positions[f.pos]});
+						vertex_to_index[f] = unique_vertices_added;
+						out_indices.push_back(unique_vertices_added++);
+					}
+				}
+				if (face_count == 4)
+				{
+					for (int i{0}; i < 3; ++i)
+					{
+						int idx = (2 + i) % 4;
+						const face &f = faces[idx];
+						// It contains the vertex, only push the index
+						if (vertex_to_index.contains(f))
+						{
+							out_indices.push_back(vertex_to_index[f]);
+						}
+						else
+						{
+							out_vertices.push_back({positions[f.pos]});
+							vertex_to_index[f] = unique_vertices_added;
+							out_indices.push_back(unique_vertices_added++);
+						}
+					}
+				}
+			}
+			break;
 
 			case '#':
 				LOG("Comment - skipping line: " << line);
@@ -895,7 +941,6 @@ std::optional<indirect_command> load_obj(const char *file,
 				glm::vec3 normal{};
 				set_values(delim_idx, line, &normal[0], 3);
 				normals.push_back(normal);
-				LOG("vn: " << normal.x << normal.y << normal.z);
 			}
 			break;
 
@@ -903,7 +948,6 @@ std::optional<indirect_command> load_obj(const char *file,
 				glm::vec2 uv{};
 				set_values(delim_idx, line, &uv[0], 2);
 				uvs.push_back(uv);
-				LOG("vt: " << uv.x << uv.y);
 				break;
 			}
 			break;
