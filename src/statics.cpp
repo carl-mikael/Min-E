@@ -762,6 +762,30 @@ constexpr uint16_t pack_as_int(char a, char b) noexcept
 	                             static_cast<uint8_t>(b));
 }
 
+template <typename T>
+bool set_values(size_t &delim_idx, const std::string &line, T *values,
+                int count)
+{
+	int nchars;
+	size_t offset{delim_idx + 1};
+	bool consumed_line = false;
+	for (int i{0}; i < count; ++i)
+	{
+		delim_idx = line.find_first_of("  /", offset);
+
+		consumed_line = delim_idx == std::string_view::npos;
+
+		nchars = consumed_line ? line.length() - offset : delim_idx - offset;
+
+		std::from_chars(line._Unchecked_begin() + offset,
+		                line._Unchecked_begin() + offset + nchars, values[i]);
+
+		offset += delim_idx - offset + 1;
+	}
+
+	return consumed_line;
+}
+
 std::optional<indirect_command> load_obj(const char *file,
                                          std::vector<glm::vec3> &out_vertices,
                                          std::vector<unsigned int> &out_indices)
@@ -822,25 +846,8 @@ std::optional<indirect_command> load_obj(const char *file,
 			{
 			case 'v':
 			{
-				LOG("v");
 				glm::vec3 pos{};
-				size_t offset{delim_idx + 1};
-				for (int i{0}; i < 3; ++i)
-				{
-					delim_idx = line.find_first_of(" ", offset);
-
-					int count = delim_idx == std::string_view::npos
-					                ? line.length() - offset
-					                : delim_idx - offset;
-
-					float *value = i == 0 ? &pos.x : i == 1 ? &pos.y : &pos.z;
-
-					std::from_chars(line._Unchecked_begin() + offset,
-					                line._Unchecked_begin() + offset + count,
-					                *value);
-
-					offset += delim_idx - offset + 1;
-				}
+				set_values(delim_idx, line, &pos[0], 3);
 				positions.push_back(pos);
 				LOG("Pos: " << pos.x << pos.y << pos.z);
 			}
@@ -852,8 +859,19 @@ std::optional<indirect_command> load_obj(const char *file,
 				break;
 
 			case 'f':
-				LOG("f");
-				continue;
+				int face[3];
+				while (true)
+				{
+					bool consumed_line = set_values(delim_idx, line, face, 3);
+					std::cout << "f: " << face[0] << face[1] << face[2] << " ";
+
+					if (consumed_line)
+					{
+						break;
+					}
+				}
+
+				std::cout << std::endl;
 				break;
 
 			case '#':
@@ -873,13 +891,19 @@ std::optional<indirect_command> load_obj(const char *file,
 			switch (pack_as_int(line[0], line[1]))
 			{
 			case pack_as_int('v', 'n'):
-				LOG("vn");
-				// normals.push_back(normal);
-				break;
+			{
+				glm::vec3 normal{};
+				set_values(delim_idx, line, &normal[0], 3);
+				normals.push_back(normal);
+				LOG("vn: " << normal.x << normal.y << normal.z);
+			}
+			break;
 
 			case pack_as_int('v', 't'):
-				LOG("vt");
-				// uvs.push_back(uv);
+				glm::vec2 uv{};
+				set_values(delim_idx, line, &uv[0], 2);
+				uvs.push_back(uv);
+				LOG("vt: " << uv.x << uv.y);
 				break;
 			}
 			break;
