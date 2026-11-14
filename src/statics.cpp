@@ -1,6 +1,4 @@
 #include "statics.h"
-#include "glm/common.hpp"
-#include "glm/exponential.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glslSemantics.h"
 #include "macros.h"
@@ -8,7 +6,6 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-#include <bit>
 #include <cassert>
 #include <charconv>
 #include <cstddef>
@@ -16,7 +13,6 @@
 #include <cstring>
 #include <emmintrin.h>
 #include <exception>
-#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <glad/glad.h>
@@ -626,7 +622,7 @@ indirect_draw_info create_indirect()
 // sub-mesh could be its own command, because assimp resets the index per
 // sub-mesh anyways
 std::optional<indirect_command>
-load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
+load_asset(const char *file, std::vector<vertex> &out_vertices,
            std::vector<unsigned int> &out_indices)
 {
 	Assimp::Importer importer;
@@ -667,8 +663,21 @@ load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
 		                    (size_t)ai_mesh->mNumVertices);
 		out_indices.resize(out_indices.size() + ai_mesh->mNumFaces * 3);
 
-		std::memcpy(out_vertices.data() + vertex_offset, ai_mesh->mVertices,
-		            ai_mesh->mNumVertices * sizeof(out_vertices[0]));
+		// std::memcpy(out_vertices.data() + vertex_offset, ai_mesh->mVertices,
+		//             ai_mesh->mNumVertices * sizeof(out_vertices[0]));
+		for (int i{0}; i < ai_mesh->mNumVertices; ++i)
+		{
+			vertex v{};
+			v.pos.x = ai_mesh->mVertices[i].x;
+			v.pos.y = ai_mesh->mVertices[i].y;
+			v.pos.z = ai_mesh->mVertices[i].z;
+			v.normal.x = ai_mesh->mNormals[i].x;
+			v.normal.y = ai_mesh->mNormals[i].y;
+			v.normal.z = ai_mesh->mNormals[i].z;
+			v.uv.x = ai_mesh->mNormals[i].x;
+			v.uv.y = ai_mesh->mNormals[i].y;
+			out_vertices[vertex_offset + i] = v;
+		}
 
 		for (int face_idx{0}; face_idx < ai_mesh->mNumFaces; ++face_idx)
 		{
@@ -692,7 +701,7 @@ load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
 }
 
 dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
-                                  std::span<glm::vec3> vertices,
+                                  std::span<vertex> vertices,
                                   std::span<GLuint> indices,
                                   std::optional<std::span<glm::vec3>> offsets)
 {
@@ -717,15 +726,22 @@ dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
 	                     no_client_side_access);
 
 	constexpr GLintptr position_offset = 0;
-	constexpr GLint positions_per_vertex = 3;
-	constexpr GLsizei position_stride = positions_per_vertex * sizeof(float);
-	glVertexArrayVertexBuffer(vao, vbo_slot, vbo, position_offset,
-	                          position_stride);
+	constexpr GLsizei stride = 8 * sizeof(float);
+	glVertexArrayVertexBuffer(vao, vbo_slot, vbo, position_offset, stride);
 
 	glEnableVertexArrayAttrib(vao, ATTR_POS);
-	glVertexArrayAttribFormat(vao, ATTR_POS, positions_per_vertex, GL_FLOAT,
-	                          GL_FALSE, 0);
+	glVertexArrayAttribFormat(vao, ATTR_POS, 3, GL_FLOAT, GL_FALSE, 0);
 	glVertexArrayAttribBinding(vao, ATTR_POS, vbo_slot);
+
+	glEnableVertexArrayAttrib(vao, ATTR_NORM);
+	glVertexArrayAttribFormat(vao, ATTR_NORM, 3, GL_FLOAT, GL_FALSE,
+	                          3 * sizeof(float));
+	glVertexArrayAttribBinding(vao, ATTR_NORM, vbo_slot);
+
+	glEnableVertexArrayAttrib(vao, ATTR_UV);
+	glVertexArrayAttribFormat(vao, ATTR_UV, 2, GL_FLOAT, GL_FALSE,
+	                          6 * sizeof(float));
+	glVertexArrayAttribBinding(vao, ATTR_UV, vbo_slot);
 
 	// indices
 	glNamedBufferStorage(ebo, indices.size_bytes(), indices.data(),
@@ -792,7 +808,7 @@ bool set_values(size_t &delim_idx, const std::string &line, T *values,
 }
 
 std::optional<indirect_command> load_obj(const char *file,
-                                         std::vector<glm::vec3> &out_vertices,
+                                         std::vector<vertex> &out_vertices,
                                          std::vector<unsigned int> &out_indices)
 {
 	LOG("Load obj file: " << file);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -64,6 +65,13 @@ struct indirect_draw_info
 	int command_stride;
 };
 
+struct vertex
+{
+	glm::vec3 pos;
+	glm::vec3 normal;
+	glm::vec2 uv;
+};
+
 bool read_file(const char *file_path, std::string &out_content);
 
 bool could_compile(unsigned int shader, const char *shader_path);
@@ -101,16 +109,16 @@ instanced_cube create_instanced_cubes();
 indirect_draw_info create_indirect();
 
 std::optional<indirect_command>
-load_asset(const char *file, std::vector<glm::vec3> &out_vertices,
+load_asset(const char *file, std::vector<vertex> &out_vertices,
            std::vector<unsigned int> &out_indices);
 
 dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
-                                  std::span<glm::vec3> vertices,
+                                  std::span<vertex> vertices,
                                   std::span<unsigned int> indices,
                                   std::optional<std::span<glm::vec3>> offsets);
 
 std::optional<indirect_command>
-load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
+load_obj(const char *file, std::vector<vertex> &out_vertices,
          std::vector<unsigned int> &out_indices);
 
 }; // namespace statics

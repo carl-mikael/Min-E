@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 #pragma endregion
 
 #pragma region load-objects
-	std::vector<glm::vec3> vertices{};
+	std::vector<statics::vertex> vertices{};
 	std::vector<unsigned int> indices{};
 
 	static_assert(std::is_same_v<ai_real, float>,
@@ -184,7 +184,7 @@ int main(int argc, char **argv)
 	    // statics::load_asset(golem_file, vertices, indices).value(),
 	    // statics::load_asset(eyeball_file, vertices, indices).value(),
 	    // statics::load_asset(penguin_file, vertices, indices).value(),
-		statics::load_obj(golem_file, vertices, indices).value(),
+		statics::load_obj(tree_file, vertices, indices).value(),
 		// command,
 	};
 
