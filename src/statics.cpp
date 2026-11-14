@@ -8,6 +8,7 @@
 #include <assimp/scene.h>
 #include <bit>
 #include <cassert>
+#include <charconv>
 #include <cstdint>
 #include <cstring>
 #include <emmintrin.h>
@@ -754,7 +755,8 @@ constexpr uint16_t pack_as_int(char a, char b) noexcept
 	                             static_cast<uint8_t>(b));
 }
 
-bool load_obj(const char *file)
+bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
+              std::vector<unsigned int> &out_indices)
 {
 	LOG("Load obj file: " << file);
 
@@ -765,12 +767,18 @@ bool load_obj(const char *file)
 		return false;
 	}
 
+	std::vector<glm::vec3> positions{};
+	std::vector<glm::vec3> normals{};
+	std::vector<glm::vec2> uvs{};
+
 	// Create file buffer window to avoid storing the whole file in mem if big
 	uintmax_t file_size = std::filesystem::file_size(file);
 	constexpr size_t page_size = 4 * 1024;
 	constexpr size_t buf_size = 16 * page_size;
 	alignas(64) static char
-		file_window_buffer[buf_size]; // @TODO: Take mem from arena instead
+		file_window_buffer[buf_size]; // @TODO: Take mem from arena instead.
+	                                  // @TODO: Try with a small size where it
+	                                  // needs to move the window
 
 	size_t buf_base{0};
 	int first{0}, second{0};
@@ -796,7 +804,7 @@ bool load_obj(const char *file)
 	auto capture_word = [&]()
 	{
 		__m128i data = _mm_loadu_si128(
-			reinterpret_cast<const __m128i *>(file_window_buffer + second));
+			reinterpret_cast<const __m128i *>(file_window_buffer + first));
 		__m128i space_matches = _mm_cmpeq_epi8(data, _mm_set1_epi8(' '));
 		__m128i new_line_matches = _mm_cmpeq_epi8(data, _mm_set1_epi8('\n'));
 		// Since the var is local/temp we store it in an uint since a
@@ -833,6 +841,13 @@ bool load_obj(const char *file)
 		                        file_window_buffer + second};
 	};
 
+	// Interpret view as float and store it in value
+	auto set_value_from_view = [&](float &value)
+	{
+		std::from_chars(view.get()._Unchecked_begin(),
+		                view.get()._Unchecked_end(), value);
+	};
+
 	file_stream.read(file_window_buffer + buf_base, buf_size);
 	// returns how much it managed to read, we try to read buf_size, but it
 	// can't read that many if it encountered the file end
@@ -854,6 +869,8 @@ bool load_obj(const char *file)
 
 		LOG("First: '" << view.get().front() << "'" << " Second: '"
 		               << view.get().back() << "'");
+
+		glm::vec3 pos{};
 		switch (view.get().length())
 		{
 		case 0:
@@ -865,8 +882,20 @@ bool load_obj(const char *file)
 			{
 			case 'v':
 				LOG("Vertex pos!");
+				first = ++second;
 				capture_word();
 				LOG("X: " << view.get());
+				set_value_from_view(pos.x);
+				first = ++second;
+				capture_word();
+				LOG("Y: " << view.get());
+				set_value_from_view(pos.y);
+				first = ++second;
+				capture_word();
+				LOG("Z: " << view.get());
+				set_value_from_view(pos.z);
+				LOG("pos.xyz: " << pos.x << pos.y << pos.z);
+				positions.push_back(pos);
 				break;
 
 			case 'o':
@@ -881,6 +910,7 @@ bool load_obj(const char *file)
 				LOG("Comment");
 				break;
 			}
+			break;
 
 		case 2:
 			// Packing the chars into an int to compare it
@@ -895,16 +925,21 @@ bool load_obj(const char *file)
 				LOG("Vertex Texture (UV)!");
 				break;
 			}
+			break;
 		}
 
 		skip_line();
 
 		LOG("End of Line, buffer: " << view.get());
 
-		first = second;
-		reached_eof = reached_eof || c == '\0';
-		second += reached_eof ? 0 : 1;
-	} while (!reached_eof);
+		if (c == '\0')
+		{
+			LOG("EOF, from inside loop");
+			break;
+		}
+
+		first = ++second;
+	} while (*view.second < buf_size);
 
 	LOG("EOF!");
 

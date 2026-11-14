@@ -173,7 +173,7 @@ int main(int argc, char **argv)
 
 	const char *badcube =
 		"asset/badcube.obj"; // @WARNING: It's broken to test system
-	statics::load_obj(badcube);
+	statics::load_obj(badcube, vertices, indices);
 
 #pragma endregion
 	statics::indirect_command commands[]{

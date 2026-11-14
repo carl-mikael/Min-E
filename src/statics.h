@@ -6,6 +6,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <vector>
 
 namespace statics
 {
@@ -108,6 +109,7 @@ dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
                                   std::span<unsigned int> indices,
                                   std::optional<std::span<glm::vec3>> offsets);
 
-bool load_obj(const char *file);
+bool load_obj(const char *file, std::vector<glm::vec3> &out_vertices,
+              std::vector<unsigned int> &out_indices);
 
 }; // namespace statics
