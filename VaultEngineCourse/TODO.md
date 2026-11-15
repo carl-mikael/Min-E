@@ -18,18 +18,18 @@ kanban-plugin: board
 ## Next
 
 - [ ] Do basic validation. Don't let I/O crash app
-- [ ] Allow toggling between obj loaders
-- [ ] The obj loader shouldn't have to load the same file twice
 
 
 ## Now
 
-- [ ] render_obj(string name, vec3 pos)
-	Should not trigger unneeded data transfers to the GPU
+- [ ] Allow toggling between obj loaders
 
 
 ## Done
 
+- [ ] The obj loader shouldn't have to load the same file twice
+- [ ] render_obj(string name, vec3 pos)
+	Should not trigger unneeded data transfers to the GPU
 - [ ] normals in at least one shader
 - [ ] support textures in at least one shader
 - [ ] crude directional light

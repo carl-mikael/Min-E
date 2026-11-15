@@ -68,6 +68,10 @@ struct vertex
 	glm::vec2 uv;
 };
 
+using load_func = std::optional<indirect_command>(
+	const char *file, std::vector<vertex> &out_vertices,
+	std::vector<unsigned int> &out_indices);
+
 bool read_file(const char *file_path, std::string &out_content);
 
 bool could_compile(unsigned int shader, const char *shader_path);
@@ -104,16 +108,12 @@ unsigned int create_instanced_cubes();
 
 indirect_draw_info create_indirect();
 
-std::optional<indirect_command>
-load_asset(const char *file, std::vector<vertex> &out_vertices,
-           std::vector<unsigned int> &out_indices);
+load_func load_asset;
 
 unsigned upload_objects(std::span<vertex> vertices,
                         std::span<unsigned int> indices);
 
-std::optional<indirect_command>
-load_obj(const char *file, std::vector<vertex> &out_vertices,
-         std::vector<unsigned int> &out_indices);
+load_func load_obj;
 
 void render_obj(std::string file, glm::vec3 pos,
                 std::unordered_map<std::string, indirect_instanced> &objects,

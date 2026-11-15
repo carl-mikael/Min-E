@@ -9,6 +9,13 @@ option("log")
     add_defines("MINE_LOG")
 option_end()
 
+option("custom-loader")
+    set_default(true)
+    set_showmenu(true)
+    set_description("Use custom loader? Otherwise integrated")
+    add_defines("MINE_LOADER")
+option_end()
+
 if is_mode("debug") or has_config("log") then
     add_defines("MINE_LOG");
 end
@@ -48,7 +55,7 @@ target("Min-E")
     add_files("src/*.cpp")
 
     add_packages("glfw", "glad", "glm", "assimp", "stb")
-    add_options("log")
+    add_options("log", "custom-loader")
     add_defines("GLFW_INCLUDE_NONE")
 
     if is_mode("debug") then

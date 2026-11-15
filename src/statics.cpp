@@ -627,6 +627,7 @@ std::optional<indirect_command>
 load_asset(const char *file, std::vector<vertex> &out_vertices,
            std::vector<unsigned int> &out_indices)
 {
+	LOG("Integrated loader, loading: " << file);
 	Assimp::Importer importer;
 	// @Warning: Triangulate doesn't work on points and lines
 	constexpr unsigned int process_flags =
@@ -789,7 +790,7 @@ std::optional<indirect_command> load_obj(const char *file,
                                          std::vector<vertex> &out_vertices,
                                          std::vector<unsigned int> &out_indices)
 {
-	LOG("Load obj file: " << file);
+	LOG("Custom loader, loading: " << file);
 
 	std::ifstream file_stream{file, std::ios::binary};
 	if (!file_stream.is_open())
@@ -975,6 +976,12 @@ void render_obj(std::string file, glm::vec3 pos,
                 std::vector<vertex> &out_vertices,
                 std::vector<unsigned int> &out_indices)
 {
+	statics::load_func *load_function;
+#ifdef MINE_LOADER
+	load_function = statics::load_obj;
+#else
+	load_function = statics::load_asset;
+#endif
 	if (objects.contains(file))
 	{
 		indirect_instanced &ii = objects.at(file);
@@ -988,7 +995,7 @@ void render_obj(std::string file, glm::vec3 pos,
 		return;
 	}
 
-	if (auto ocommand = load_obj(file.data(), out_vertices, out_indices))
+	if (auto ocommand = load_function(file.data(), out_vertices, out_indices))
 	{
 		auto &command = ocommand.value();
 		objects[file] = {command, std::vector<glm::vec3>{pos}};

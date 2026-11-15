@@ -1,3 +1,5 @@
+![[Pasted image 20261115191127.png]]
+![[Pasted image 20261115191146.png]]
 - Because normal registers/words store 8 bytes, using short instead of int for temporary/local variables could be worse, as the compiler might do extra work to zero out the top 4 bytes.
 
 - Had to think for a minute to realize why countr_zero would return the first matching index when doing SIMD compare against a char. Thought it would return index  - 1, but index starts at 0... and this function starts counting at one, meaning that if the lsb is a one (aka a match), then it would return 0, and that's the first index.

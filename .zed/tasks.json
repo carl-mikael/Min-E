@@ -3,8 +3,12 @@
 // Example:
 [
   {
-    "label": "Min-E Debug+Logs",
-    "command": "xmake f -m debug --log=y",
+    "label": "Min-E Debug+Logs+custom-loader",
+    "command": "xmake f -m debug --log=y --custom-loader=y",
+  },
+  {
+    "label": "Min-E Debug+Logs+integrated-loader",
+    "command": "xmake f -m debug --log=y --custom-loader=n",
   },
   {
     "label": "Min-E Build",
