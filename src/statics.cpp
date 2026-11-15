@@ -22,6 +22,7 @@
 #include <iterator>
 #include <optional>
 #include <set>
+#include <span>
 #include <unordered_map>
 #include <vcruntime_typeinfo.h>
 #include <vector>
@@ -612,10 +613,11 @@ indirect_draw_info create_indirect()
 	glNamedBufferStorage(indirect_commands, sizeof(draw_commands),
 	                     draw_commands, 0);
 
-	return {.vao = vao,
-	        .commands_handle = indirect_commands,
-	        .draw_count = sizeof(draw_commands) / sizeof(draw_commands[0]),
-	        .command_stride = sizeof(draw_commands[0])};
+	return indirect_draw_info{.vao = vao,
+	                          .commands_handle = indirect_commands,
+	                          .draw_count = sizeof(draw_commands) /
+	                                        sizeof(draw_commands[0]),
+	                          .command_stride = sizeof(draw_commands[0])};
 }
 
 // @NOTE: Maybe it's better to return a list of indirect commands, so each
@@ -700,8 +702,7 @@ load_asset(const char *file, std::vector<vertex> &out_vertices,
 	return command_info;
 }
 
-unsigned int upload_objects(std::span<vertex> vertices,
-                            std::span<GLuint> indices)
+unsigned upload_objects(std::span<vertex> vertices, std::span<GLuint> indices)
 {
 	GLuint vao;
 	glCreateVertexArrays(1, &vao);
@@ -717,7 +718,7 @@ unsigned int upload_objects(std::span<vertex> vertices,
 	constexpr unsigned int vbo_slot{0};
 
 	// 0 = can't interact with it again from client side.
-	constexpr GLbitfield no_client_side_access = 0;
+	constexpr GLbitfield no_client_side_access = GL_DYNAMIC_STORAGE_BIT;
 
 	// vertices
 	glNamedBufferStorage(vbo, vertices.size_bytes(), vertices.data(),
@@ -969,28 +970,34 @@ std::optional<indirect_command> load_obj(const char *file,
 	return command_info;
 }
 
-// void render_obj(
-// 	const char *file, glm::vec3 pos,
-// 	std::unordered_map<const std::string, indirect_command &> &objects,
-// 	std::vector<indirect_command> &commands, std::vector<vertex> &out_vertices,
-// 	std::vector<unsigned int> &out_indices)
-// {
-// 	if (objects.contains(file))
-// 	{
-// 		indirect_command &command = objects.at(file);
-// 		++command.instance_count;
-// 		return;
-// 	}
+void render_obj(std::string file, glm::vec3 pos,
+                std::unordered_map<std::string, indirect_instanced> &objects,
+                std::vector<vertex> &out_vertices,
+                std::vector<unsigned int> &out_indices)
+{
+	if (objects.contains(file))
+	{
+		indirect_instanced &ii = objects.at(file);
+		auto &offsets = ii.offsets;
+		// auto it = std::find(offsets.begin(), offsets.end(), pos);
+		// if (it == offsets.end())
+		// {
+		offsets.push_back(pos);
+		// }
 
-// 	if (auto ocommand = load_obj(file, out_vertices, out_indices))
-// 	{
-// 		commands.push_back(ocommand.value());
-// 	}
-// 	else
-// 	{
-// 		std::cerr << "render_obj - couldn't get command from load_obj"
-// 				  << std::endl;
-// 	}
-// }
+		return;
+	}
+
+	if (auto ocommand = load_obj(file.data(), out_vertices, out_indices))
+	{
+		auto &command = ocommand.value();
+		objects[file] = {command, std::vector<glm::vec3>{pos}};
+	}
+	else
+	{
+		std::cerr << "render_obj - couldn't get command from load_obj"
+				  << std::endl;
+	}
+}
 
 } // namespace statics

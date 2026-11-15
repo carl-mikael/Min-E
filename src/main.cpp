@@ -1,5 +1,7 @@
 #pragma once
-#include <optional>
+#include <cstring>
+#include <string>
+#include <unordered_map>
 #define STB_IMAGE_IMPLEMENTATION
 
 #include "assimp/defs.h"
@@ -113,7 +115,7 @@ int main(int argc, char **argv)
 
 #pragma region view
 	constexpr float camera_height = 5.0f;
-	glm::vec3 view_pos{0, camera_height, 10.0f};
+	glm::vec3 view_pos{0, camera_height, 30.0f};
 	glm::vec3 view_target{0, camera_height, 0}; // Look forward
 	glm::vec3 view_up_axis{0, 1, 0};
 	glm::mat4 camera = glm::lookAt(view_pos, view_target, view_up_axis);
@@ -153,7 +155,6 @@ int main(int argc, char **argv)
 	                 uniform_matrices_object);
 #pragma endregion
 
-#pragma region load-objects
 	std::vector<statics::vertex> vertices{};
 	std::vector<unsigned int> indices{};
 
@@ -168,73 +169,77 @@ int main(int argc, char **argv)
 	const char *eyeball_file = "asset/eyeball.obj";
 	const char *penguin_file = "asset/penguin.obj";
 
-	// auto o_command = statics::load_obj(golem_file, vertices, indices);
-	// if (!o_command)
-	// {
-	// 	LOG("Failed to load!");
-	// 	return -1;
-	// }
-
-	// statics::indirect_command command = o_command.value();
-
 	const char *badcube =
 		"asset/badcube.obj"; // @WARNING: It's broken to test system
 
-#pragma endregion
-	statics::indirect_command commands[]{
-		statics::load_asset(cube_file, vertices, indices).value(),
-		// statics::load_asset(golem_file, vertices, indices).value(),
-	    // statics::load_asset(eyeball_file, vertices, indices).value(),
-	    // statics::load_asset(penguin_file, vertices, indices).value(),
-		statics::load_obj(tree_file, vertices, indices).value(),
-		statics::load_obj(golem_file, vertices, indices).value(),
-		// statics::load_asset(tree_file, vertices, indices).value(),
-	    // command,
-	};
+	std::unordered_map<std::string, statics::indirect_instanced> objects{};
+
+	statics::render_obj(cube_file, glm::vec3{0}, objects, vertices, indices);
+	statics::render_obj(cube_file, glm::vec3{5.0f, 0.0f, 0.0f}, objects,
+	                    vertices, indices);
+	statics::render_obj(tree_file, {0, 0, -30}, objects, vertices, indices);
+	statics::render_obj(golem_file, {-10, 0, 0}, objects, vertices, indices);
+	statics::render_obj(golem_file, {8, 0, -5}, objects, vertices, indices);
 
 	GLuint vao = statics::upload_objects({vertices}, {indices});
 
-	std::optional<std::vector<glm::vec3>> o_offsets;
-
-	if (o_offsets.has_value())
+	std::vector<statics::indirect_command> commands{};
+	std::vector<glm::vec3> offsets{};
+	unsigned instances{0};
+	for (auto pair : objects)
 	{
-		GLuint offsets_id, offsets_slot{1};
-		glCreateBuffers(1, &offsets_id);
+		// Command
+		statics::indirect_command &command = pair.second.command;
+		command.base_instance = instances;
+		std::vector<glm::vec3> &model_offsets = pair.second.offsets;
+		unsigned model_instances = model_offsets.size();
+		command.instance_count = model_instances;
+		instances += model_instances;
+		commands.push_back(command);
 
-		glNamedBufferStorage(offsets_id, o_offsets->size(), o_offsets->data(),
-		                     0);
-		glVertexArrayVertexBuffer(vao, offsets_slot, offsets_id, 0,
-		                          3 * sizeof(float));
-
-		constexpr GLuint divisor = 1; // Update offset every new instance
-		glVertexArrayBindingDivisor(vao, offsets_slot, divisor);
-
-		glVertexArrayAttribFormat(vao, ATTR_INST_OFFSET, 3, GL_FLOAT, false, 0);
-		glEnableVertexArrayAttrib(vao, ATTR_INST_OFFSET);
-		glVertexArrayAttribBinding(vao, ATTR_INST_OFFSET, offsets_slot);
+		// Offsets
+		const size_t offset_base = offsets.size();
+		offsets.resize(offset_base + model_instances);
+		std::memcpy(offsets.data() + offset_base, model_offsets.data(),
+		            model_offsets.size() * sizeof(offsets[0]));
 	}
+
+	GLuint offsets_id, offsets_slot{1};
+	glCreateBuffers(1, &offsets_id);
+
+	glNamedBufferStorage(offsets_id, offsets.size() * sizeof(offsets[0]),
+	                     offsets.data(), 0);
+	glVertexArrayVertexBuffer(vao, offsets_slot, offsets_id, 0,
+	                          3 * sizeof(float));
+
+	constexpr GLuint divisor = 1; // Update offset every new instance
+	glVertexArrayBindingDivisor(vao, offsets_slot, divisor);
+
+	glVertexArrayAttribFormat(vao, ATTR_INST_OFFSET, 3, GL_FLOAT, false, 0);
+	glEnableVertexArrayAttrib(vao, ATTR_INST_OFFSET);
+	glVertexArrayAttribBinding(vao, ATTR_INST_OFFSET, offsets_slot);
 
 	// upload draw commands
 	GLuint indirect_commands;
 	glCreateBuffers(1, &indirect_commands);
 	glNamedBufferStorage(indirect_commands,
-	                     std::size(commands) * sizeof(commands[0]), commands,
-	                     0);
+	                     std::size(commands) * sizeof(commands[0]),
+	                     commands.data(), 0);
 
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirect_commands);
 
-	constexpr int num_models = 5;
-	glm::mat4 models[num_models];
+#pragma region model-matrices
+	std::vector<glm::mat4> models(instances, {1});
 
 	constexpr int far_left_pos = -15.0f;
 	constexpr int model_offset = 10.0f;
-	for (int i{0}; i < num_models; ++i)
+	for (int i{0}; i < models.size(); ++i)
 	{
-		models[i] = glm::translate(
-			{1}, glm::vec3{far_left_pos + model_offset * i, 0, -20.0f});
+		// models[i] = glm::translate(
+		// {1}, glm::vec3{far_left_pos + model_offset * i, 0, -20.0f});
 	}
 
-	models[num_models - 1] = glm::translate({1}, glm::vec3{0, 0, -10.0f});
+	// models.back() = glm::translate({1}, glm::vec3{0, 0, -10.0f});
 
 	GLuint models_handle;
 	glCreateBuffers(1, &models_handle);
@@ -242,8 +247,9 @@ int main(int argc, char **argv)
 	                     GL_DYNAMIC_STORAGE_BIT);
 	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MODELS, models_handle);
 
-	glNamedBufferSubData(models_handle, 0, sizeof(models),
-	                     glm::value_ptr(models[0]));
+	glNamedBufferSubData(models_handle, 0, models.size() * sizeof(models[0]),
+	                     models.data());
+#pragma endregion
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -343,20 +349,11 @@ int main(int argc, char **argv)
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// define command struct to hold arguments to call
-		// glMultiDrawElementsIndirect with map obj file -> indirect command Use
-		// render_obj(string name, vec3 pos, command struct&) to create the call
-		// information for glMultiDrawElementsIndirect
-		// BUT, can only call commands that are put sequentially in the buffer.
-		// So it won't work. Unless you call it multiple times. Or, move around
-		// the data in the command buffer.
-
 		constexpr GLenum index_typ =
 			GL_UNSIGNED_INT; // @TODO: Replace with GL_UNSIGNED_SHORT
 		constexpr void *command_buffer_offset =
 			(void *)0; // @TODO: Change this based on which mesh to draw
-		constexpr GLsizei commands_to_execute =
-			sizeof(commands) / sizeof(commands[0]);
+		GLsizei commands_to_execute = commands.size();
 		constexpr GLsizei command_stride = sizeof(statics::indirect_command);
 		glMultiDrawElementsIndirect(GL_TRIANGLES, index_typ,
 		                            command_buffer_offset, commands_to_execute,

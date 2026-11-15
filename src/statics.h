@@ -47,6 +47,12 @@ struct indirect_command
 	unsigned int base_instance;
 };
 
+struct indirect_instanced
+{
+	indirect_command command;
+	std::vector<glm::vec3> offsets;
+};
+
 struct indirect_draw_info
 {
 	unsigned int vao;
@@ -102,11 +108,16 @@ std::optional<indirect_command>
 load_asset(const char *file, std::vector<vertex> &out_vertices,
            std::vector<unsigned int> &out_indices);
 
-unsigned int upload_objects(std::span<vertex> vertices,
-                            std::span<unsigned int> indices);
+unsigned upload_objects(std::span<vertex> vertices,
+                        std::span<unsigned int> indices);
 
 std::optional<indirect_command>
 load_obj(const char *file, std::vector<vertex> &out_vertices,
          std::vector<unsigned int> &out_indices);
+
+void render_obj(std::string file, glm::vec3 pos,
+                std::unordered_map<std::string, indirect_instanced> &objects,
+                std::vector<vertex> &out_vertices,
+                std::vector<unsigned int> &out_indices);
 
 }; // namespace statics

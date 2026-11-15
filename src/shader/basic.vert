@@ -19,8 +19,8 @@ layout(std140, binding = BLOCK_MODELS) uniform Models {
 void main()
 {
     // gl_Position = projection * view * model * pos;
-    gl_Position = projection * view * models[gl_DrawID] * vec4(vpos + vinstance_offset, 1.0);
-    world_pos = vec3(models[gl_DrawID] * vec4(vpos, 1.0));
+    gl_Position = projection * view * models[gl_DrawID + gl_InstanceID] * vec4(vpos + vinstance_offset, 1.0);
+    world_pos = vec3(models[gl_DrawID + gl_InstanceID] * vec4(vpos, 1.0));
     normal = vnormal;
     uv = auv;
 }
