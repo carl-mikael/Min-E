@@ -677,8 +677,8 @@ load_asset(const char *file, std::vector<vertex> &out_vertices,
 			v.normal.x = ai_mesh->mNormals[i].x;
 			v.normal.y = ai_mesh->mNormals[i].y;
 			v.normal.z = ai_mesh->mNormals[i].z;
-			v.uv.x = ai_mesh->mNormals[i].x;
-			v.uv.y = ai_mesh->mNormals[i].y;
+			v.uv.x = ai_mesh->mTextureCoords[0][i].x;
+			v.uv.y = ai_mesh->mTextureCoords[0][i].y;
 			out_vertices[vertex_offset + i] = v;
 		}
 
