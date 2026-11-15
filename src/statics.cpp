@@ -1009,11 +1009,7 @@ bool render_obj(std::string file, glm::vec3 pos,
 	{
 		indirect_instanced &ii = objects.at(file);
 		auto &offsets = ii.offsets;
-		// auto it = std::find(offsets.begin(), offsets.end(), pos);
-		// if (it == offsets.end())
-		// {
 		offsets.push_back(pos);
-		// }
 
 		return true;
 	}

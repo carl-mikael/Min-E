@@ -13,6 +13,8 @@ kanban-plugin: board
 	Slang as shader language. For shader lang features and reflection. https://shader-slang.org/
 - [ ] Support vat (vertex animation texture)
 - [ ] vertex pulling
+- [ ] clang tidy
+- [ ] add compilation flags to get warnings
 
 
 ## Next
