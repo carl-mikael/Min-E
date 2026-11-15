@@ -7,6 +7,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace statics
@@ -102,8 +103,7 @@ load_asset(const char *file, std::vector<vertex> &out_vertices,
            std::vector<unsigned int> &out_indices);
 
 unsigned int upload_objects(std::span<vertex> vertices,
-                            std::span<unsigned int> indices,
-                            std::optional<std::span<glm::vec3>> offsets);
+                            std::span<unsigned int> indices);
 
 std::optional<indirect_command>
 load_obj(const char *file, std::vector<vertex> &out_vertices,

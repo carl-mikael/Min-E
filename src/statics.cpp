@@ -3,6 +3,7 @@
 #include "glslSemantics.h"
 #include "macros.h"
 
+#include <algorithm>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -21,7 +22,6 @@
 #include <iterator>
 #include <optional>
 #include <set>
-#include <string_view>
 #include <unordered_map>
 #include <vcruntime_typeinfo.h>
 #include <vector>
@@ -701,21 +701,20 @@ load_asset(const char *file, std::vector<vertex> &out_vertices,
 }
 
 unsigned int upload_objects(std::span<vertex> vertices,
-                            std::span<GLuint> indices,
-                            std::optional<std::span<glm::vec3>> offsets)
+                            std::span<GLuint> indices)
 {
 	GLuint vao;
 	glCreateVertexArrays(1, &vao);
 
-	constexpr int nr_handles = 3;
+	constexpr int nr_handles = 2;
 	GLuint buffer_handles[nr_handles];
 	GLuint &vbo = buffer_handles[0];
 	GLuint &ebo = buffer_handles[1];
-	GLuint &instance_offsets = buffer_handles[2];
+	// GLuint &instance_offsets = buffer_handles[2];
 	// GLuint &indirect_commands = buffer_handles[3];
 	glCreateBuffers(nr_handles, buffer_handles);
 
-	constexpr unsigned int vbo_slot{0}, offsets_slot{1};
+	constexpr unsigned int vbo_slot{0};
 
 	// 0 = can't interact with it again from client side.
 	constexpr GLbitfield no_client_side_access = 0;
@@ -747,21 +746,6 @@ unsigned int upload_objects(std::span<vertex> vertices,
 	                     no_client_side_access);
 	glVertexArrayElementBuffer(vao, ebo);
 
-	if (offsets.has_value())
-	{
-		glNamedBufferStorage(instance_offsets, offsets->size_bytes(),
-		                     offsets->data(), 0);
-		glVertexArrayVertexBuffer(vao, offsets_slot, instance_offsets, 0,
-		                          3 * sizeof(float));
-
-		constexpr GLuint divisor = 1; // Update offset every new instance
-		glVertexArrayBindingDivisor(vao, offsets_slot, divisor);
-
-		glVertexArrayAttribFormat(vao, ATTR_INST_OFFSET, 3, GL_FLOAT, false, 0);
-		glEnableVertexArrayAttrib(vao, ATTR_INST_OFFSET);
-		glVertexArrayAttribBinding(vao, ATTR_INST_OFFSET, offsets_slot);
-	}
-
 	return vao;
 }
 
@@ -782,7 +766,7 @@ bool set_values(size_t &delim_idx, const std::string &line, T *values,
 	{
 		delim_idx = line.find_first_of(" /", offset);
 
-		consumed_line = delim_idx == std::string_view::npos;
+		consumed_line = delim_idx == std::string::npos;
 
 		nchars = consumed_line ? line.length() - offset : delim_idx - offset;
 
@@ -984,5 +968,29 @@ std::optional<indirect_command> load_obj(const char *file,
 
 	return command_info;
 }
+
+// void render_obj(
+// 	const char *file, glm::vec3 pos,
+// 	std::unordered_map<const std::string, indirect_command &> &objects,
+// 	std::vector<indirect_command> &commands, std::vector<vertex> &out_vertices,
+// 	std::vector<unsigned int> &out_indices)
+// {
+// 	if (objects.contains(file))
+// 	{
+// 		indirect_command &command = objects.at(file);
+// 		++command.instance_count;
+// 		return;
+// 	}
+
+// 	if (auto ocommand = load_obj(file, out_vertices, out_indices))
+// 	{
+// 		commands.push_back(ocommand.value());
+// 	}
+// 	else
+// 	{
+// 		std::cerr << "render_obj - couldn't get command from load_obj"
+// 				  << std::endl;
+// 	}
+// }
 
 } // namespace statics

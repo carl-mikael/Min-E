@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #define STB_IMAGE_IMPLEMENTATION
 
 #include "assimp/defs.h"
@@ -191,15 +192,35 @@ int main(int argc, char **argv)
 	    // command,
 	};
 
-	GLuint vao = statics::upload_objects({vertices}, {indices}, {});
+	GLuint vao = statics::upload_objects({vertices}, {indices});
+
+	std::optional<std::vector<glm::vec3>> o_offsets;
+
+	if (o_offsets.has_value())
+	{
+		GLuint offsets_id, offsets_slot{1};
+		glCreateBuffers(1, &offsets_id);
+
+		glNamedBufferStorage(offsets_id, o_offsets->size(), o_offsets->data(),
+		                     0);
+		glVertexArrayVertexBuffer(vao, offsets_slot, offsets_id, 0,
+		                          3 * sizeof(float));
+
+		constexpr GLuint divisor = 1; // Update offset every new instance
+		glVertexArrayBindingDivisor(vao, offsets_slot, divisor);
+
+		glVertexArrayAttribFormat(vao, ATTR_INST_OFFSET, 3, GL_FLOAT, false, 0);
+		glEnableVertexArrayAttrib(vao, ATTR_INST_OFFSET);
+		glVertexArrayAttribBinding(vao, ATTR_INST_OFFSET, offsets_slot);
+	}
 
 	// upload draw commands
 	GLuint indirect_commands;
 	glCreateBuffers(1, &indirect_commands);
 	glNamedBufferStorage(indirect_commands,
 	                     std::size(commands) * sizeof(commands[0]), commands,
-	                     GL_DYNAMIC_STORAGE_BIT); // Dynamic so the client can
-	                                              // change the draw commands
+	                     0);
+
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirect_commands);
 
 	constexpr int num_models = 5;
