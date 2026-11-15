@@ -27,13 +27,13 @@ kanban-plugin: board
 
 ## Now
 
-- [ ] crude directional light
-	- [ ] test normals
 - [ ] support textures in at least one shader
 
 
 ## Done
 
+- [ ] crude directional light
+	- [x] test normals
 - [ ] f lines should support quads too
 - [ ] Impl my own obj loader.
 	Handle at least these lines:

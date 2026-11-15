@@ -1,4 +1,5 @@
 #pragma once
+#define STB_IMAGE_IMPLEMENTATION
 
 #include "assimp/defs.h"
 #include "assimp/vector3.h"
@@ -15,6 +16,7 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <iostream>
+#include <stb_image.h>
 #include <vector>
 
 int main(int argc, char **argv)
@@ -230,6 +232,56 @@ int main(int argc, char **argv)
 	int color_loc = glGetUniformLocation(shader_program, STR_DEF(COLOR));
 	glm::vec3 color = {0.5, 0.5, 0.5};
 	glProgramUniform3fv(shader_program, color_loc, 1, &color[0]);
+
+#pragma region texture
+	const char *texture_file = "asset/plank.jpg";
+	int width, height, nr_channels;
+	unsigned char *tex_data =
+		stbi_load(texture_file, &width, &height, &nr_channels, 0);
+
+	if (tex_data == nullptr)
+	{
+		std::cerr << "Couldn't load texture at: " << texture_file << std::endl;
+		return -1;
+	}
+
+	LOG("Loaded texture: " << texture_file << " with width: " << width
+	                       << " height: " << height
+	                       << " channels: " << nr_channels);
+
+	GLuint tex;
+	glCreateTextures(GL_TEXTURE_2D, 1, &tex);
+
+	glTextureParameteri(tex, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTextureParameteri(tex, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTextureParameteri(tex, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTextureParameteri(tex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	GLenum format;
+	if (nr_channels == 1)
+	{
+		format = GL_RED;
+	}
+	else if (nr_channels == 3)
+	{
+		format = GL_RGB8;
+	}
+	else if (nr_channels == 4)
+	{
+		format = GL_RGBA;
+	}
+	else
+	{
+		format = GL_RED;
+		std::cerr << "Unknown format with ' " << nr_channels << "' using GL_RED"
+				  << std::endl;
+	}
+
+	glTextureStorage2D(tex, 1, format, width, height);
+	glTextureSubImage2D(tex, 0, 0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE,
+	                    tex_data);
+	glBindTextureUnit(TEX2D, tex);
+#pragma endregion
 
 	glUseProgram(shader_program);
 

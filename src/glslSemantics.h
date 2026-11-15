@@ -23,4 +23,8 @@
 #define BLOCK_MATRICES 0
 #define BLOCK_MODELS 1
 
+// 16 guaranteed texture slots per stage
+#define TEX2D 0
+
 #define COLOR color
+#define TEXTURE tex
