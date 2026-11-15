@@ -859,7 +859,6 @@ std::optional<indirect_command> load_obj(const char *file,
 		switch (delim_idx)
 		{
 		case 0:
-			LOG("Buffer_view 0 lenght");
 			break;
 
 		case 1:
@@ -874,7 +873,6 @@ std::optional<indirect_command> load_obj(const char *file,
 			break;
 
 			case 'o':
-				LOG("Submesh? - skipping line: " << line);
 				continue;
 				break;
 
@@ -890,8 +888,9 @@ std::optional<indirect_command> load_obj(const char *file,
 
 					assert(face_count < std::size(faces));
 
+					// Obj stores faces as pos/uv/normal
 					faces[face_count++] =
-						face{facei[0] - 1, facei[1] - 1, facei[2] - 1};
+						face{facei[0] - 1, facei[2] - 1, facei[1] - 1};
 
 					if (consumed_line)
 					{
@@ -909,7 +908,8 @@ std::optional<indirect_command> load_obj(const char *file,
 					}
 					else
 					{
-						out_vertices.push_back({positions[f.pos]});
+						out_vertices.push_back(
+							{positions[f.pos], normals[f.normal], uvs[f.uv]});
 						vertex_to_index[f] = unique_vertices_added;
 						out_indices.push_back(unique_vertices_added++);
 					}
@@ -927,7 +927,9 @@ std::optional<indirect_command> load_obj(const char *file,
 						}
 						else
 						{
-							out_vertices.push_back({positions[f.pos]});
+							out_vertices.push_back({positions[f.pos],
+							                        normals[f.normal],
+							                        uvs[f.uv]});
 							vertex_to_index[f] = unique_vertices_added;
 							out_indices.push_back(unique_vertices_added++);
 						}
@@ -937,14 +939,13 @@ std::optional<indirect_command> load_obj(const char *file,
 			break;
 
 			case '#':
-				LOG("Comment - skipping line: " << line);
 				continue;
 				break;
 
 			// No match - garbo
 			default:
-				LOG("Garbo - skipping line: " << line);
 				continue;
+				break;
 			}
 			break;
 
@@ -961,6 +962,7 @@ std::optional<indirect_command> load_obj(const char *file,
 			break;
 
 			case pack_as_int('v', 't'):
+			{
 				glm::vec2 uv{};
 				set_values(delim_idx, line, &uv[0], 2);
 				uvs.push_back(uv);
@@ -968,10 +970,15 @@ std::optional<indirect_command> load_obj(const char *file,
 			}
 			break;
 
-		// No match - garbo
+			// No match - garbo
+			default:
+				continue;
+				break;
+			}
+
 		default:
-			LOG("Garbo - skipping line: " << line);
 			continue;
+			break;
 		}
 	}
 
