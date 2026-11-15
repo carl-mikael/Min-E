@@ -115,7 +115,7 @@ unsigned upload_objects(std::span<vertex> vertices,
 
 load_func load_obj;
 
-void render_obj(std::string file, glm::vec3 pos,
+bool render_obj(std::string file, glm::vec3 pos,
                 std::unordered_map<std::string, indirect_instanced> &objects,
                 std::vector<vertex> &out_vertices,
                 std::vector<unsigned int> &out_indices);

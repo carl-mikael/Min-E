@@ -174,12 +174,15 @@ int main(int argc, char **argv)
 
 	std::unordered_map<std::string, statics::indirect_instanced> objects{};
 
-	statics::render_obj(cube_file, glm::vec3{0}, objects, vertices, indices);
-	statics::render_obj(cube_file, glm::vec3{5.0f, 0.0f, 0.0f}, objects,
-	                    vertices, indices);
-	statics::render_obj(tree_file, {0, 0, -30}, objects, vertices, indices);
-	statics::render_obj(golem_file, {-10, 0, 0}, objects, vertices, indices);
-	statics::render_obj(golem_file, {8, 0, -5}, objects, vertices, indices);
+	if (!statics::render_obj(badcube, glm::vec3{0}, objects, vertices, indices))
+	{
+		return -1;
+	}
+	// statics::render_obj(cube_file, glm::vec3{5.0f, 0.0f, 0.0f}, objects,
+	//                     vertices, indices);
+	// statics::render_obj(tree_file, {0, 0, -30}, objects, vertices, indices);
+	// statics::render_obj(golem_file, {-10, 0, 0}, objects, vertices, indices);
+	// statics::render_obj(golem_file, {8, 0, -5}, objects, vertices, indices);
 
 	GLuint vao = statics::upload_objects({vertices}, {indices});
 

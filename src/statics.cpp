@@ -887,6 +887,14 @@ std::optional<indirect_command> load_obj(const char *file,
 					}
 					else
 					{
+						if (f.pos >= positions.size() ||
+						    f.normal >= normals.size() || f.uv >= uvs.size())
+						{
+							std::cerr << "Face index out of bounds"
+									  << std::endl;
+							return {};
+						}
+
 						out_vertices.push_back(
 							{positions[f.pos], normals[f.normal], uvs[f.uv]});
 						vertex_to_index[f] = unique_vertices_added;
@@ -906,6 +914,15 @@ std::optional<indirect_command> load_obj(const char *file,
 						}
 						else
 						{
+							if (f.pos >= positions.size() ||
+							    f.normal >= normals.size() ||
+							    f.uv >= uvs.size())
+							{
+								std::cerr << "Face index out of bounds"
+										  << std::endl;
+								return {};
+							}
+
 							out_vertices.push_back({positions[f.pos],
 							                        normals[f.normal],
 							                        uvs[f.uv]});
@@ -921,9 +938,21 @@ std::optional<indirect_command> load_obj(const char *file,
 				continue;
 				break;
 
+			case 's':
+				continue;
+				break;
+
+			case ' ':
+				LOG("Bad format, read ' ' at the beginning of the line: "
+				    << line);
+				return {};
+				break;
+
 			// No match - garbo
 			default:
-				continue;
+				LOG("Doesn't recognize token '" << line[0]
+				                                << "' line: " << line);
+				return {};
 				break;
 			}
 			break;
@@ -951,7 +980,9 @@ std::optional<indirect_command> load_obj(const char *file,
 
 			// No match - garbo
 			default:
-				continue;
+				LOG("Doesn't recognize 2 char token '" << line[0] << line[1]
+				                                       << "' line: " << line);
+				return {};
 				break;
 			}
 
@@ -971,7 +1002,7 @@ std::optional<indirect_command> load_obj(const char *file,
 	return command_info;
 }
 
-void render_obj(std::string file, glm::vec3 pos,
+bool render_obj(std::string file, glm::vec3 pos,
                 std::unordered_map<std::string, indirect_instanced> &objects,
                 std::vector<vertex> &out_vertices,
                 std::vector<unsigned int> &out_indices)
@@ -992,7 +1023,7 @@ void render_obj(std::string file, glm::vec3 pos,
 		offsets.push_back(pos);
 		// }
 
-		return;
+		return true;
 	}
 
 	if (auto ocommand = load_function(file.data(), out_vertices, out_indices))
@@ -1004,7 +1035,10 @@ void render_obj(std::string file, glm::vec3 pos,
 	{
 		std::cerr << "render_obj - couldn't get command from load_obj"
 				  << std::endl;
+		return false;
 	}
+
+	return true;
 }
 
 } // namespace statics
