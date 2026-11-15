@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 
 #pragma endregion
 	statics::indirect_command commands[]{
-		statics::load_asset(cube_file, vertices, indices).value(),
+		statics::load_asset(tree_file, vertices, indices).value(),
 		// statics::load_asset(tree_file, vertices, indices).value(),
 	    // statics::load_asset(golem_file, vertices, indices).value(),
 	    // statics::load_asset(eyeball_file, vertices, indices).value(),
@@ -225,6 +225,10 @@ int main(int argc, char **argv)
 	double last_space_click{-space_cooldown};
 	constexpr float f_cooldown = 0.2f;
 	double last_f_click{-f_cooldown};
+
+	int color_loc = glGetUniformLocation(shader_program, STR_DEF(COLOR));
+	glm::vec3 color = {0.5, 0.5, 0.5};
+	glProgramUniform3fv(shader_program, color_loc, 1, &color[0]);
 
 	glUseProgram(shader_program);
 

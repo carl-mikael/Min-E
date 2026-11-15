@@ -9,7 +9,7 @@
 
 // Attributes, OpenGL guarantees that 0-15 exists. Reminder: Mat4 takes up 4.
 #define ATTR_POS 0
-#define ATTR_NORM 1
+#define ATTR_NORMAL 1
 #define ATTR_UV 2
 #define ATTR_INST_OFFSET 15
 
@@ -22,3 +22,5 @@
 // Binding point
 #define BLOCK_MATRICES 0
 #define BLOCK_MODELS 1
+
+#define COLOR color

@@ -733,10 +733,10 @@ dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
 	glVertexArrayAttribFormat(vao, ATTR_POS, 3, GL_FLOAT, GL_FALSE, 0);
 	glVertexArrayAttribBinding(vao, ATTR_POS, vbo_slot);
 
-	glEnableVertexArrayAttrib(vao, ATTR_NORM);
-	glVertexArrayAttribFormat(vao, ATTR_NORM, 3, GL_FLOAT, GL_FALSE,
+	glEnableVertexArrayAttrib(vao, ATTR_NORMAL);
+	glVertexArrayAttribFormat(vao, ATTR_NORMAL, 3, GL_FLOAT, GL_FALSE,
 	                          3 * sizeof(float));
-	glVertexArrayAttribBinding(vao, ATTR_NORM, vbo_slot);
+	glVertexArrayAttribBinding(vao, ATTR_NORMAL, vbo_slot);
 
 	glEnableVertexArrayAttrib(vao, ATTR_UV);
 	glVertexArrayAttribFormat(vao, ATTR_UV, 2, GL_FLOAT, GL_FALSE,

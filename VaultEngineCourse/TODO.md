@@ -17,20 +17,24 @@ kanban-plugin: board
 
 ## Next
 
-- [ ] f lines should support quads too
+- [ ] normals in at least one shader
 - [ ] Do basic validation. Don't let I/O crash app
 - [ ] Allow toggling between obj loaders
 - [ ] The obj loader shouldn't have to load the same file twice
 - [ ] render_obj(string name, vec3 pos)
 	Should not trigger unneeded data transfers to the GPU
-- [ ] normals in at least one shader
+
+
+## Now
+
 - [ ] crude directional light
 	- [ ] test normals
 - [ ] support textures in at least one shader
 
 
-## Now
+## Done
 
+- [ ] f lines should support quads too
 - [ ] Impl my own obj loader.
 	Handle at least these lines:
 	- [x] \#
@@ -38,11 +42,7 @@ kanban-plugin: board
 	- [x] v
 	- [x] vt
 	- [x] vn
-	- [ ] f
-
-
-## Done
-
+	- [x] f
 - [ ] Add model matrix per model
 - [ ] Scene populated with at least 5 imported objects
 - [ ] Integrate assimp
