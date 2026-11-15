@@ -35,11 +35,6 @@ struct pyramid
 	unsigned int indices;
 };
 
-struct instanced_cube
-{
-	unsigned int vao;
-};
-
 struct indirect_command
 {
 	unsigned int count;
@@ -49,12 +44,6 @@ struct indirect_command
 	                 // followed this:
 	                 // https://registry.khronos.org/OpenGL-Refpages/gl4/html/glMultiDrawElementsIndirect.xhtml
 	unsigned int base_instance;
-};
-
-struct dynamic_multi_draw
-{
-	unsigned int vao;
-	unsigned int command_buffer_handle;
 };
 
 struct indirect_draw_info
@@ -104,7 +93,7 @@ sphere create_sphere();
 
 pyramid create_pyramid();
 
-instanced_cube create_instanced_cubes();
+unsigned int create_instanced_cubes();
 
 indirect_draw_info create_indirect();
 
@@ -112,10 +101,9 @@ std::optional<indirect_command>
 load_asset(const char *file, std::vector<vertex> &out_vertices,
            std::vector<unsigned int> &out_indices);
 
-dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
-                                  std::span<vertex> vertices,
-                                  std::span<unsigned int> indices,
-                                  std::optional<std::span<glm::vec3>> offsets);
+unsigned int upload_objects(std::span<vertex> vertices,
+                            std::span<unsigned int> indices,
+                            std::optional<std::span<glm::vec3>> offsets);
 
 std::optional<indirect_command>
 load_obj(const char *file, std::vector<vertex> &out_vertices,

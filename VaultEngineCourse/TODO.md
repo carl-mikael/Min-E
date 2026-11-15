@@ -17,21 +17,21 @@ kanban-plugin: board
 
 ## Next
 
-- [ ] normals in at least one shader
 - [ ] Do basic validation. Don't let I/O crash app
 - [ ] Allow toggling between obj loaders
 - [ ] The obj loader shouldn't have to load the same file twice
-- [ ] render_obj(string name, vec3 pos)
-	Should not trigger unneeded data transfers to the GPU
 
 
 ## Now
 
-- [ ] support textures in at least one shader
+- [ ] render_obj(string name, vec3 pos)
+	Should not trigger unneeded data transfers to the GPU
 
 
 ## Done
 
+- [ ] normals in at least one shader
+- [ ] support textures in at least one shader
 - [ ] crude directional light
 	- [x] test normals
 - [ ] f lines should support quads too

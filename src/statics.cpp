@@ -456,7 +456,7 @@ pyramid create_pyramid()
 	return {.vao = vao, .indices = (sizeof(indices) / sizeof(indices[0]))};
 }
 
-instanced_cube create_instanced_cubes()
+unsigned int create_instanced_cubes()
 {
 	cuboid cube = create_cube(0.5f);
 
@@ -481,7 +481,7 @@ instanced_cube create_instanced_cubes()
 
 	glBindVertexArray(0);
 
-	return {.vao = cube.vao};
+	return cube.vao;
 }
 
 indirect_draw_info create_indirect()
@@ -700,20 +700,19 @@ load_asset(const char *file, std::vector<vertex> &out_vertices,
 	return command_info;
 }
 
-dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
-                                  std::span<vertex> vertices,
-                                  std::span<GLuint> indices,
-                                  std::optional<std::span<glm::vec3>> offsets)
+unsigned int upload_objects(std::span<vertex> vertices,
+                            std::span<GLuint> indices,
+                            std::optional<std::span<glm::vec3>> offsets)
 {
 	GLuint vao;
 	glCreateVertexArrays(1, &vao);
 
-	constexpr int nr_handles = 4;
+	constexpr int nr_handles = 3;
 	GLuint buffer_handles[nr_handles];
 	GLuint &vbo = buffer_handles[0];
 	GLuint &ebo = buffer_handles[1];
 	GLuint &instance_offsets = buffer_handles[2];
-	GLuint &indirect_commands = buffer_handles[3];
+	// GLuint &indirect_commands = buffer_handles[3];
 	glCreateBuffers(nr_handles, buffer_handles);
 
 	constexpr unsigned int vbo_slot{0}, offsets_slot{1};
@@ -763,13 +762,7 @@ dynamic_multi_draw upload_objects(std::span<indirect_command> commands,
 		glVertexArrayAttribBinding(vao, ATTR_INST_OFFSET, offsets_slot);
 	}
 
-	// upload draw commands
-	glNamedBufferStorage(indirect_commands, commands.size_bytes(),
-	                     commands.data(),
-	                     GL_DYNAMIC_STORAGE_BIT); // Dynamic so the client can
-	                                              // change the draw commands
-
-	return {.vao = vao, .command_buffer_handle = indirect_commands};
+	return vao;
 }
 
 constexpr uint16_t pack_as_int(char a, char b) noexcept

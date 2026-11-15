@@ -191,8 +191,16 @@ int main(int argc, char **argv)
 	    // command,
 	};
 
-	statics::dynamic_multi_draw multi_draw_info =
-		statics::upload_objects(commands, {vertices}, {indices}, {});
+	GLuint vao = statics::upload_objects({vertices}, {indices}, {});
+
+	// upload draw commands
+	GLuint indirect_commands;
+	glCreateBuffers(1, &indirect_commands);
+	glNamedBufferStorage(indirect_commands,
+	                     std::size(commands) * sizeof(commands[0]), commands,
+	                     GL_DYNAMIC_STORAGE_BIT); // Dynamic so the client can
+	                                              // change the draw commands
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirect_commands);
 
 	constexpr int num_models = 5;
 	glm::mat4 models[num_models];
@@ -206,9 +214,6 @@ int main(int argc, char **argv)
 	}
 
 	models[num_models - 1] = glm::translate({1}, glm::vec3{0, 0, -10.0f});
-
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER,
-	             multi_draw_info.command_buffer_handle);
 
 	GLuint models_handle;
 	glCreateBuffers(1, &models_handle);
@@ -285,7 +290,7 @@ int main(int argc, char **argv)
 
 	glUseProgram(shader_program);
 
-	glBindVertexArray(multi_draw_info.vao);
+	glBindVertexArray(vao);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -316,6 +321,14 @@ int main(int argc, char **argv)
 		}
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// define command struct to hold arguments to call
+		// glMultiDrawElementsIndirect with map obj file -> indirect command Use
+		// render_obj(string name, vec3 pos, command struct&) to create the call
+		// information for glMultiDrawElementsIndirect
+		// BUT, can only call commands that are put sequentially in the buffer.
+		// So it won't work. Unless you call it multiple times. Or, move around
+		// the data in the command buffer.
 
 		constexpr GLenum index_typ =
 			GL_UNSIGNED_INT; // @TODO: Replace with GL_UNSIGNED_SHORT
