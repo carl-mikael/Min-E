@@ -15,6 +15,9 @@ kanban-plugin: board
 - [ ] vertex pulling
 - [ ] clang tidy
 - [ ] add compilation flags to get warnings
+- [ ] Update command buffer dynamically.
+	Use 2 buffers to ping-pong between. So all the work stays on the GPU.
+	Update draw count based on it.
 
 
 ## Next
