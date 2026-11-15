@@ -174,10 +174,33 @@ int main(int argc, char **argv)
 
 	std::unordered_map<std::string, statics::indirect_instanced> objects{};
 
-	if (!statics::render_obj(badcube, glm::vec3{0}, objects, vertices, indices))
+	struct
 	{
-		return -1;
+		std::string file;
+		glm::vec3 pos;
+	} obj_render_data[]{
+		cube_file,    glm::vec3{0}, eyeball_file, glm::vec3{-3, 0, 5},
+		tree_file,    {0, 0, -30},  golem_file,   {-10, 0, 0},
+		penguin_file, {4, 0, 15},
+	};
+
+	for (int i{0}; i < std::size(obj_render_data); ++i)
+	{
+		if (!statics::render_obj(obj_render_data[i].file,
+		                         obj_render_data[i].pos, objects, vertices,
+		                         indices))
+		{
+			std::cerr << "Failed to add command from file: "
+					  << obj_render_data[i].file << std::endl;
+			return -1;
+		}
 	}
+
+	// if (!statics::render_obj(badcube, glm::vec3{0}, objects, vertices,
+	// indices))
+	// {
+	// 	return -1;
+	// }
 	// statics::render_obj(cube_file, glm::vec3{5.0f, 0.0f, 0.0f}, objects,
 	//                     vertices, indices);
 	// statics::render_obj(tree_file, {0, 0, -30}, objects, vertices, indices);

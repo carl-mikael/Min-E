@@ -21,11 +21,11 @@ kanban-plugin: board
 
 ## Now
 
-- [ ] Do basic validation. Don't let I/O crash app
 
 
 ## Done
 
+- [ ] Do basic validation. Don't let I/O crash app
 - [ ] Allow toggling between obj loaders
 - [ ] The obj loader shouldn't have to load the same file twice
 - [ ] render_obj(string name, vec3 pos)

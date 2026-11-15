@@ -938,10 +938,6 @@ std::optional<indirect_command> load_obj(const char *file,
 				continue;
 				break;
 
-			case 's':
-				continue;
-				break;
-
 			case ' ':
 				LOG("Bad format, read ' ' at the beginning of the line: "
 				    << line);
@@ -950,9 +946,7 @@ std::optional<indirect_command> load_obj(const char *file,
 
 			// No match - garbo
 			default:
-				LOG("Doesn't recognize token '" << line[0]
-				                                << "' line: " << line);
-				return {};
+				continue;
 				break;
 			}
 			break;
@@ -980,9 +974,7 @@ std::optional<indirect_command> load_obj(const char *file,
 
 			// No match - garbo
 			default:
-				LOG("Doesn't recognize 2 char token '" << line[0] << line[1]
-				                                       << "' line: " << line);
-				return {};
+				continue;
 				break;
 			}
 
@@ -1040,5 +1032,8 @@ bool render_obj(std::string file, glm::vec3 pos,
 
 	return true;
 }
+
+// bool render_objs(std::span<std::string> files, std::span<glm::vec3>
+// positions, )
 
 } // namespace statics
