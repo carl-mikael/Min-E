@@ -3,7 +3,6 @@
 #include "glslSemantics.h"
 #include "macros.h"
 
-#include <algorithm>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>

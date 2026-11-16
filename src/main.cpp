@@ -1,6 +1,7 @@
 #pragma once
 #include <cstring>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #define STB_IMAGE_IMPLEMENTATION
 
@@ -155,6 +156,7 @@ int main(int argc, char **argv)
 	                 uniform_matrices_object);
 #pragma endregion
 
+#pragma region create-model-data
 	// These should not store the values after they have been uploaded
 	std::vector<statics::vertex> vertices{};
 	std::vector<unsigned int> indices{};
@@ -207,9 +209,10 @@ int main(int argc, char **argv)
 	// statics::render_obj(tree_file, {0, 0, -30}, objects, vertices, indices);
 	// statics::render_obj(golem_file, {-10, 0, 0}, objects, vertices, indices);
 	// statics::render_obj(golem_file, {8, 0, -5}, objects, vertices, indices);
-
+#pragma endregion
 	GLuint vao = statics::upload_objects({vertices}, {indices});
 
+#pragma region upload-commands-and-offsets
 	std::vector<statics::indirect_command> commands{};
 	std::vector<glm::vec3> offsets{};
 	unsigned instances{0};
@@ -254,6 +257,7 @@ int main(int argc, char **argv)
 	                     commands.data(), 0);
 
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirect_commands);
+#pragma endregion
 
 #pragma region model-matrices
 	std::vector<glm::mat4> models(instances, {1});
@@ -283,10 +287,37 @@ int main(int argc, char **argv)
 
 	bool line_mode = false;
 
+#pragma region input
+	// constexpr size_t unique_actions = 15;
+	// bool input_actions[unique_actions]{};
+
+	// Allows for 16 unique inputs
+	using action_mask = unsigned;
+	action_mask input_actions{};
+
+#define FORWARD 3
+	struct map
+	{
+	};
+
+	action_mask forward = input_actions & action_mask{1} << FORWARD;
+
+	action_mask unbound = 0;
+	// GLFW largest keycode
+	action_mask bindings[348]{};
+
+	bindings[GLFW_KEY_W] = forward;
+	bindings[GLFW_KEY_UP] = forward;
+
+	// input_actions |= action_mask{1} << FORWARD;
+	// bool forward = input_actions & action_mask{1} << FORWARD;
+	LOG("Forward: " << forward);
+
 	constexpr float space_cooldown = 0.2f;
 	double last_space_click{-space_cooldown};
 	constexpr float f_cooldown = 0.2f;
 	double last_f_click{-f_cooldown};
+#pragma endregion
 
 	int color_loc = glGetUniformLocation(shader_program, STR_DEF(COLOR));
 	glm::vec3 color = {0.5, 0.5, 0.5};
