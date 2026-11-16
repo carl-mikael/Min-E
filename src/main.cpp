@@ -6,11 +6,11 @@
 
 #include "assimp/defs.h"
 #include "assimp/vector3.h"
+#include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/fwd.hpp"
-#include "glm/gtc/type_ptr.hpp"
 #include "glm/trigonometric.hpp"
 #include "glslSemantics.h"
 #include "macros.h"
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
 	constexpr float ortho_near_width = ortho_near_height * aspect;
 	glm::mat4 orthographic =
 		glm::ortho(-ortho_near_width, ortho_near_width, -ortho_near_height,
-	               ortho_near_height, near, far);
+		           ortho_near_height, near, far);
 
 	GLuint uniform_matrices_object;
 	glCreateBuffers(1, &uniform_matrices_object);
@@ -155,6 +155,7 @@ int main(int argc, char **argv)
 	                 uniform_matrices_object);
 #pragma endregion
 
+	// These should not store the values after they have been uploaded
 	std::vector<statics::vertex> vertices{};
 	std::vector<unsigned int> indices{};
 
@@ -191,7 +192,7 @@ int main(int argc, char **argv)
 		                         indices))
 		{
 			std::cerr << "Failed to add command from file: "
-					  << obj_render_data[i].file << std::endl;
+			          << obj_render_data[i].file << std::endl;
 			return -1;
 		}
 	}
@@ -332,7 +333,7 @@ int main(int argc, char **argv)
 	{
 		format = GL_RED;
 		std::cerr << "Unknown format with ' " << nr_channels << "' using GL_RED"
-				  << std::endl;
+		          << std::endl;
 	}
 
 	glTextureStorage2D(tex, 1, format, width, height);

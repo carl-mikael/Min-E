@@ -22,13 +22,33 @@ kanban-plugin: board
 
 ## Next
 
+- [ ] Flying camera
+- [ ] Split screen
+	- [ ] Toggle on/off during runtime
+- [ ] Scene
+	- [ ] Custom file format
+	Should include:
+	- [ ] Scene name
+	- [ ] A start pos
+	- [ ] A goal pos
+	- [ ] Object positions
+- [ ] Swap between scenes in runtime
+	- [ ] Teleport the players back to start
 
 
 ## Now
 
+- [ ] Input System
+	- [ ] Support multiple players
 
 
 ## Done
+
+
+
+***
+
+## Archive
 
 - [ ] Do basic validation. Don't let I/O crash app
 - [ ] Allow toggling between obj loaders
@@ -51,12 +71,6 @@ kanban-plugin: board
 - [ ] Add model matrix per model
 - [ ] Scene populated with at least 5 imported objects
 - [ ] Integrate assimp
-
-
-***
-
-## Archive
-
 - [ ] Learn RenderDoc
 - [ ] Go over the code line by line
 - [ ] Ensure you can explain the webgl cubes: https://webglfundamentals.org/webgl/lessons/resources/webgl-state-diagram.html?exampleId=triangle#no-help
