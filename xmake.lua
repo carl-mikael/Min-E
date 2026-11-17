@@ -52,7 +52,7 @@ add_requires("glad v0.1.36", { configs = {
 target("Min-E")
     set_languages("c++20")
     set_kind("binary")
-    add_files("src/*.cpp")
+    add_files("src/**.cpp")
 
     add_packages("glfw", "glad", "glm", "assimp", "stb")
     add_options("log", "custom-loader")

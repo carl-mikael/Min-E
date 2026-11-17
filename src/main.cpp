@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdint>
 #include <cstring>
 #include <string>
 #include <string_view>
@@ -15,6 +14,7 @@
 #include "glm/fwd.hpp"
 #include "glm/trigonometric.hpp"
 #include "glslSemantics.h"
+#include "input/input.h"
 #include "macros.h"
 #include "statics.h"
 #include <GLFW/glfw3.h>
@@ -26,6 +26,8 @@
 
 int main(int argc, char **argv)
 {
+	MINE_input::create();
+
 	if (!glfwInit())
 	{
 		std::cerr << "Failed Init" << std::endl;
@@ -134,7 +136,7 @@ int main(int argc, char **argv)
 	constexpr float ortho_near_width = ortho_near_height * aspect;
 	glm::mat4 orthographic =
 		glm::ortho(-ortho_near_width, ortho_near_width, -ortho_near_height,
-	               ortho_near_height, near, far);
+		           ortho_near_height, near, far);
 
 	GLuint uniform_matrices_object;
 	glCreateBuffers(1, &uniform_matrices_object);
@@ -195,7 +197,7 @@ int main(int argc, char **argv)
 		                         indices))
 		{
 			std::cerr << "Failed to add command from file: "
-					  << obj_render_data[i].file << std::endl;
+			          << obj_render_data[i].file << std::endl;
 			return -1;
 		}
 	}
@@ -289,13 +291,8 @@ int main(int argc, char **argv)
 	bool line_mode = false;
 
 #pragma region input
-
-	// Allows for 31 unique inputs. And one combination for no input
-	using input_slots = uint32_t;
-	input_slots inputs{0};
-
-	// User would define, as a helper. input_slots would be public.
-	enum class gameplay_action : input_slots
+	// User would defines. Meta meaning to input slots.
+	enum class gameplay_action : MINE_input::input_slots
 	{
 		NONE,
 		FORWARD,
@@ -304,29 +301,12 @@ int main(int argc, char **argv)
 		DOWN,
 	};
 
-	// GLFW largest keycode
-	using key_map = input_slots[348]; // @NOTE: Disgusting how it saves keys
-	                                  // that aren't being bound?
+	std::vector<MINE_input::token_binding> bindings{
+		{MINE_input::KEY::W, (MINE_input::input_slots)gameplay_action::FORWARD},
+		{MINE_input::KEY::UP,
+		 (MINE_input::input_slots)gameplay_action::FORWARD}};
 
-	// Input manager would have
-	key_map input_map;
-
-	// User
-	key_map gameplay_map;
-	gameplay_map[GLFW_KEY_W] = (input_slots)gameplay_action::FORWARD;
-	gameplay_map[GLFW_KEY_UP] = (input_slots)gameplay_action::FORWARD;
-	// Disgusting copy
-	std::memcpy(input_map, gameplay_map, std::size(gameplay_map));
-
-	// Input manager, keep temp array of key tokens to bind events to?
-	// to loop over keys to subscribe to?
-
-	// Idea
-	// inputs |= (input_slots{1} << (input_slots)gameplay_action::FORWARD);
-	// bool forward =
-	// 	inputs & (input_slots{1} << (input_slots)gameplay_action::FORWARD);
-	// bool left = inputs & (input_slots{1} <<
-	// (input_slots)gameplay_action::LEFT);
+	MINE_input::bind(bindings);
 
 	// LOG("Forward: " << forward);
 	// LOG("Left: " << left);
@@ -382,7 +362,7 @@ int main(int argc, char **argv)
 	{
 		format = GL_RED;
 		std::cerr << "Unknown format with ' " << nr_channels << "' using GL_RED"
-				  << std::endl;
+		          << std::endl;
 	}
 
 	glTextureStorage2D(tex, 1, format, width, height);
@@ -405,11 +385,11 @@ int main(int argc, char **argv)
 
 		if (glfwGetKey(window, GLFW_KEY_SPACE))
 		{
-			if ((glfwGetTime() - last_space_click) > space_cooldown)
-			{
-				LOG("Space!");
-				last_space_click = glfwGetTime();
-			}
+			// if ((glfwGetTime() - last_space_click) > space_cooldown)
+			// {
+			LOG("Space!");
+			last_space_click = glfwGetTime();
+			// }
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_F))
