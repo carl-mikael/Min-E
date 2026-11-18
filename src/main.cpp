@@ -19,6 +19,7 @@
 #include "glslSemantics.h"
 #include "input/input.h"
 #include "macros.h"
+#include "platform/platform.h"
 #include "statics.h"
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
@@ -29,61 +30,12 @@
 
 int main(int argc, char **argv)
 {
-	if (!glfwInit())
+	platform::window_data window{};
+	if (!platform::init(800, 600, window))
 	{
-		std::cerr << "Failed Init" << std::endl;
+		std::cerr << "platform::init failed" << std::endl;
 		return -1;
 	}
-
-	constexpr int WINDOW_WIDTH = 800;
-	constexpr int WINDOW_HEIGHT = 600;
-
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GL_MAJOR_V);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GL_MINOR_V);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-#ifdef DEBUG
-	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-#endif
-
-	GLFWwindow *window =
-		glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "MinE", nullptr, nullptr);
-	if (!window)
-	{
-		std::cerr << "Failed creating window" << std::endl;
-		glfwTerminate();
-		return -1;
-	}
-
-	glfwMakeContextCurrent(window);
-
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		std::cerr << "Failed to initialize GLAD" << std::endl;
-		return -1;
-	}
-
-	bool is_two_players = false;
-
-#ifdef DEBUG
-// Yoinked from: https://learnopengl.com/In-Practice/Debugging
-#pragma region debug_callback
-	int flags;
-	glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
-	if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
-	{
-		glEnable(GL_DEBUG_OUTPUT);
-		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-		glDebugMessageCallback(gl_debug_callback, nullptr);
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0,
-		                      nullptr, GL_TRUE);
-	}
-#pragma endregion
-#endif
-	constexpr float cube_size = 0.5f;
-	auto cube = statics::create_cube(cube_size);
-	auto sphere = statics::create_sphere();
-	auto pyramid = statics::create_pyramid();
 
 	GLuint shader_program, vertex_shader, fragment_shader, geometry_shader;
 
@@ -121,22 +73,14 @@ int main(int argc, char **argv)
 #pragma endregion
 
 #pragma region uniform-matrices-buffer
-	float window_width{WINDOW_WIDTH}, window_height{WINDOW_HEIGHT};
+
+	bool is_two_players = false;
+
 	auto get_aspect_ratio = [&]()
 	{
-		return (static_cast<float>(window_width) / (is_two_players ? 2 : 1)) /
-		       static_cast<float>(window_height);
+		return (static_cast<float>(window.width) / (is_two_players ? 2 : 1)) /
+		       static_cast<float>(window.height);
 	};
-
-	// @TODO: Have this in platform layer where it has access to window
-	// width/height
-	glfwSetFramebufferSizeCallback(
-		window,
-		[](GLFWwindow *window, int width, int height)
-		{
-			LOG("TODO: Put FramebufferSizeCallback in platform layer where it "
-		        "has access to window width/height");
-		});
 
 	constexpr float near{0.1f}, far{100.0f};
 	constexpr float fov{glm::radians(45.0f)};
@@ -214,17 +158,17 @@ int main(int argc, char **argv)
 		}
 	}
 
-	// if (!statics::render_obj(badcube, glm::vec3{0}, objects, vertices,
-	// indices))
-	// {
-	// 	return -1;
-	// }
-	// statics::render_obj(cube_file, glm::vec3{5.0f, 0.0f, 0.0f}, objects,
-	//                     vertices, indices);
-	// statics::render_obj(tree_file, {0, 0, -30}, objects, vertices,
-	// indices); statics::render_obj(golem_file, {-10, 0, 0}, objects,
-	// vertices, indices); statics::render_obj(golem_file, {8, 0, -5},
-	// objects, vertices, indices);
+// if (!statics::render_obj(badcube, glm::vec3{0}, objects, vertices,
+// indices))
+// {
+// 	return -1;
+// }
+// statics::render_obj(cube_file, glm::vec3{5.0f, 0.0f, 0.0f}, objects,
+//                     vertices, indices);
+// statics::render_obj(tree_file, {0, 0, -30}, objects, vertices,
+// indices); statics::render_obj(golem_file, {-10, 0, 0}, objects,
+// vertices, indices); statics::render_obj(golem_file, {8, 0, -5},
+// objects, vertices, indices);
 #pragma endregion
 	GLuint vao = statics::upload_objects({vertices}, {indices});
 
@@ -389,10 +333,10 @@ int main(int argc, char **argv)
 
 	// First player
 	auto scissor_first_player = [&]()
-	{ glScissor(0, 0, window_width / 2, window_height); };
+	{ glScissor(0, 0, window.width / 2, window.height); };
 	// Second player
 	auto scissor_second_player = [&]()
-	{ glScissor(window_width / 2, 0, window_width / 2, window_height); };
+	{ glScissor(window.width / 2, 0, window.width / 2, window.height); };
 
 	double delta_time{0};
 	// Updating last time at the end of the loop. So it reflects what is
@@ -401,18 +345,18 @@ int main(int argc, char **argv)
 
 	glUseProgram(shader_program);
 	glBindVertexArray(vao);
-	while (!glfwWindowShouldClose(window))
+	while (!glfwWindowShouldClose(window.platform_window))
 	{
 		double time = glfwGetTime();
 		delta_time = time - last_time;
 
-		if (glfwGetKey(window, GLFW_KEY_ESCAPE))
+		if (glfwGetKey(window.platform_window, GLFW_KEY_ESCAPE))
 		{
 			// this would close after this frame, is that what we want?
-			glfwSetWindowShouldClose(window, true);
+			glfwSetWindowShouldClose(window.platform_window, true);
 		}
 
-		if (glfwGetKey(window, GLFW_KEY_SPACE))
+		if (glfwGetKey(window.platform_window, GLFW_KEY_SPACE))
 		{
 			if ((glfwGetTime() - last_space_click) > space_cooldown)
 			{
@@ -426,7 +370,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		if (glfwGetKey(window, GLFW_KEY_F))
+		if (glfwGetKey(window.platform_window, GLFW_KEY_F))
 		{
 			if ((glfwGetTime() - last_f_click) > f_cooldown)
 			{
@@ -439,22 +383,22 @@ int main(int argc, char **argv)
 
 		glm::vec3 movement_input{0};
 
-		if (glfwGetKey(window, GLFW_KEY_W))
+		if (glfwGetKey(window.platform_window, GLFW_KEY_W))
 		{
 			movement_input.z += 1;
 		}
 
-		if (glfwGetKey(window, GLFW_KEY_S))
+		if (glfwGetKey(window.platform_window, GLFW_KEY_S))
 		{
 			movement_input.z -= 1;
 		}
 
-		if (glfwGetKey(window, GLFW_KEY_A))
+		if (glfwGetKey(window.platform_window, GLFW_KEY_A))
 		{
 			movement_input.x += 1;
 		}
 
-		if (glfwGetKey(window, GLFW_KEY_D))
+		if (glfwGetKey(window.platform_window, GLFW_KEY_D))
 		{
 			movement_input.x -= 1;
 		}
@@ -485,8 +429,8 @@ int main(int argc, char **argv)
 		glClearColor(0.8, 0.12, 0.12, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glViewport(0, 0, window_width / (is_two_players ? 2 : 1),
-		           WINDOW_HEIGHT);
+		glViewport(0, 0, window.width / (is_two_players ? 2 : 1),
+		           window.height);
 		constexpr GLenum index_typ =
 			GL_UNSIGNED_INT; // @TODO: Replace with GL_UNSIGNED_SHORT
 		constexpr void *command_buffer_offset =
@@ -514,7 +458,7 @@ int main(int argc, char **argv)
 			glClearColor(0.12, 0.8, 0.12, 1);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			glViewport(window_width / 2, 0, window_width / 2, window_height);
+			glViewport(window.width / 2, 0, window.width / 2, window.height);
 			glMultiDrawElementsIndirect(GL_TRIANGLES, index_typ,
 			                            command_buffer_offset,
 			                            commands_to_execute, command_stride);
@@ -523,7 +467,7 @@ int main(int argc, char **argv)
 		}
 
 		// Platform stuff
-		glfwSwapBuffers(window);
+		glfwSwapBuffers(window.platform_window);
 		glfwPollEvents();
 		last_time = time;
 	}
