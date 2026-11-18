@@ -1,6 +1,5 @@
 #pragma once
 #include <cstdint>
-#include <glm/fwd.hpp>
 #include <string_view>
 
 namespace renderer
@@ -31,6 +30,13 @@ void upload_view(matrix_ubo mubo, const float *m44) noexcept;
 [[nodiscard]]
 matrix_ubo create_matrix_ubo() noexcept;
 
-bool create_texture(const char *texture_path, uint32_t &out_texture) noexcept;
+struct texture_data
+{
+	uint32_t handle;
+};
 
+bool create_texture(const char *texture_path,
+                    texture_data &out_texture_info) noexcept;
+
+void bind_texture(const texture_data &texture_info) noexcept;
 } // namespace renderer

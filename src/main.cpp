@@ -1,7 +1,6 @@
 #pragma once
 #include "glm/geometric.hpp"
 #include "renderer/renderer.h"
-#include <cstdint>
 #include <string>
 #define STB_IMAGE_IMPLEMENTATION
 
@@ -13,7 +12,6 @@
 #include "glm/fwd.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/trigonometric.hpp"
-#include "glslSemantics.h"
 #include "macros.h"
 #include "platform/platform.h"
 #include "util/util.h"
@@ -35,8 +33,8 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+#pragma region create-shader
 	renderer::shader_program shader{};
-
 	std::string glsl_semantics{};
 	util::read_file(GLSL_SEMANTICS_STR, glsl_semantics);
 
@@ -48,6 +46,7 @@ int main(int argc, char **argv)
 		LOG("Failed creating program, returning");
 		return -1;
 	}
+#pragma endregion
 
 #pragma region view
 	constexpr float camera_height = 5.0f;
@@ -76,10 +75,7 @@ int main(int argc, char **argv)
 
 	dirty::models models = dirty::upload_models();
 
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-
-#pragma region input
+#pragma region input-info
 	// User would defines. Meta meaning to input slots.
 	// enum class gameplay_action : MINE_input::input_slots
 	// {
@@ -111,27 +107,23 @@ int main(int argc, char **argv)
 
 #pragma region texture
 	const char *texture_file = "asset/plank.jpg";
-	uint32_t tex;
+	renderer::texture_data tex{};
 	if (!renderer::create_texture(texture_file, tex))
 	{
 		return -1;
 	}
-	glBindTextureUnit(TEX2D, tex);
+	renderer::bind_texture(tex);
 #pragma endregion
-
-	// First player
-	auto scissor_first_player = [&]()
-	{ glScissor(0, 0, window.width / 2, window.height); };
-	// Second player
-	auto scissor_second_player = [&]()
-	{ glScissor(window.width / 2, 0, window.width / 2, window.height); };
-
 	platform::tick_timer timer{};
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
 
 	glUseProgram(shader.program);
 	glBindVertexArray(models.vao);
 	while (platform::update(window, timer))
 	{
+#pragma region get-input
 		if (glfwGetKey(window.platform_window, GLFW_KEY_ESCAPE))
 		{
 			// this would close after this frame, is that what we want?
@@ -182,7 +174,9 @@ int main(int argc, char **argv)
 		{
 			movement_input.x -= 1;
 		}
+#pragma endregion
 
+#pragma region handle-input
 		if (movement_input != glm::vec3(0))
 		{
 			movement_input = glm::normalize(movement_input);
@@ -192,11 +186,12 @@ int main(int argc, char **argv)
 			                       platform::delta_time(timer));
 			camera1 = glm::translate(camera1, movement);
 		}
+#pragma endregion
 
-		// First player
+#pragma region first-player
 		if (is_two_players)
 		{
-			scissor_first_player();
+			glScissor(0, 0, window.width / 2, window.height);
 			glEnable(GL_SCISSOR_TEST);
 		}
 		else
@@ -224,14 +219,15 @@ int main(int argc, char **argv)
 		{
 			glDisable(GL_SCISSOR_TEST);
 		}
+#pragma endregion
 
-		// Second player
+#pragma region second player
 		if (is_two_players)
 		{
 			glNamedBufferSubData(mubo.handle, sizeof(glm::mat4),
 			                     sizeof(glm::mat4), glm::value_ptr(camera2));
 
-			scissor_second_player();
+			glScissor(window.width / 2, 0, window.width / 2, window.height);
 			glEnable(GL_SCISSOR_TEST);
 			glClearColor(0.12, 0.8, 0.12, 1);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -243,6 +239,7 @@ int main(int argc, char **argv)
 
 			glDisable(GL_SCISSOR_TEST);
 		}
+#pragma endregion
 	}
 
 	glfwTerminate();

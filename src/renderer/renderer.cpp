@@ -2,7 +2,6 @@
 #include "../glslSemantics.h"
 #include "../macros.h"
 #include "../util/util.h"
-#include <cstdint>
 #include <glad/glad.h>
 #include <glm/mat4x4.hpp>
 #include <stb_image.h>
@@ -130,7 +129,7 @@ renderer::matrix_ubo renderer::create_matrix_ubo() noexcept
 }
 
 bool renderer::create_texture(const char *texture_path,
-                              uint32_t &out_texture) noexcept
+                              texture_data &out_texture_info) noexcept
 {
 	int width, height, nr_channels;
 	unsigned char *tex_data =
@@ -142,13 +141,14 @@ bool renderer::create_texture(const char *texture_path,
 		return false;
 	}
 
-	glCreateTextures(GL_TEXTURE_2D, 1, &out_texture);
+	glCreateTextures(GL_TEXTURE_2D, 1, &out_texture_info.handle);
 
-	glTextureParameteri(out_texture, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTextureParameteri(out_texture, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTextureParameteri(out_texture, GL_TEXTURE_MIN_FILTER,
+	glTextureParameteri(out_texture_info.handle, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTextureParameteri(out_texture_info.handle, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTextureParameteri(out_texture_info.handle, GL_TEXTURE_MIN_FILTER,
 	                    GL_LINEAR_MIPMAP_LINEAR);
-	glTextureParameteri(out_texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTextureParameteri(out_texture_info.handle, GL_TEXTURE_MAG_FILTER,
+	                    GL_LINEAR);
 
 	GLenum format;
 	if (nr_channels == 1)
@@ -169,9 +169,14 @@ bool renderer::create_texture(const char *texture_path,
 		LOG("Unknown format with ' " << nr_channels << "' using GL_RED");
 	}
 
-	glTextureStorage2D(out_texture, 1, format, width, height);
-	glTextureSubImage2D(out_texture, 0, 0, 0, width, height, GL_RGB,
+	glTextureStorage2D(out_texture_info.handle, 1, format, width, height);
+	glTextureSubImage2D(out_texture_info.handle, 0, 0, 0, width, height, GL_RGB,
 	                    GL_UNSIGNED_BYTE, tex_data);
 
 	return true;
+}
+
+void renderer::bind_texture(const texture_data &texture_info) noexcept
+{
+	glBindTextureUnit(TEX2D, texture_info.handle);
 }
