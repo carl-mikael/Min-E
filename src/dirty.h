@@ -2,6 +2,7 @@
 
 #include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float3.hpp"
+#include <cstddef>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <optional>
@@ -10,7 +11,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace statics
+namespace dirty
 {
 struct triangle
 {
@@ -72,8 +73,6 @@ using load_func = std::optional<indirect_command>(
 	const char *file, std::vector<vertex> &out_vertices,
 	std::vector<unsigned int> &out_indices);
 
-bool read_file(const char *file_path, std::string &out_content);
-
 triangle create_triangle(const glm::vec2 size);
 
 void draw_triangle(const unsigned int program, const unsigned int vao);
@@ -110,4 +109,12 @@ bool render_obj(std::string file, glm::vec3 pos,
                 std::vector<vertex> &out_vertices,
                 std::vector<unsigned int> &out_indices);
 
-}; // namespace statics
+struct models
+{
+	unsigned vao;
+	size_t nr_commands;
+};
+
+models upload_models();
+
+}; // namespace dirty

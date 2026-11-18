@@ -1,14 +1,11 @@
 #pragma once
 #include "glm/geometric.hpp"
 #include "renderer/renderer.h"
-#include <cstring>
+#include <cstdint>
 #include <string>
-#include <string_view>
-#include <unordered_map>
 #define STB_IMAGE_IMPLEMENTATION
 
-#include "assimp/defs.h"
-#include "assimp/vector3.h"
+#include "dirty.h"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
@@ -19,16 +16,17 @@
 #include "glslSemantics.h"
 #include "macros.h"
 #include "platform/platform.h"
-#include "statics.h"
+#include "util/util.h"
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <iostream>
 #include <stb_image.h>
-#include <vector>
 
 int main(int argc, char **argv)
 {
+	bool is_two_players = false;
+
 	platform::window_data window{};
 	if (!platform::init(800, 600, window))
 	{
@@ -39,7 +37,7 @@ int main(int argc, char **argv)
 	GLuint shader_program;
 
 	std::string glsl_semantics{};
-	statics::read_file(GLSL_SEMANTICS_STR, glsl_semantics);
+	util::read_file(GLSL_SEMANTICS_STR, glsl_semantics);
 
 	const char *vertex_shader_path{"shader/basic.vert"};
 	const char *fragment_shader_path{"shader/basic.frag"};
@@ -60,30 +58,18 @@ int main(int argc, char **argv)
 	glm::mat4 camera2 = glm::lookAt(view_pos, view_target, view_up_axis);
 #pragma endregion
 
-#pragma region uniform-matrices-buffer
-	bool is_two_players = false;
-
+	constexpr float near{0.1f}, far{100.0f};
+	constexpr float fov{glm::radians(45.0f)};
 	auto get_aspect_ratio = [&]()
 	{
 		return (static_cast<float>(window.width) / (is_two_players ? 2 : 1)) /
 		       static_cast<float>(window.height);
 	};
-
-	constexpr float near{0.1f}, far{100.0f};
-	constexpr float fov{glm::radians(45.0f)};
 	auto get_perspective_matrix = [&]()
 	{ return glm::perspective(fov, get_aspect_ratio(), near, far); };
+
+#pragma region uniform-matrices-buffer
 	glm::mat4 perspective = get_perspective_matrix();
-
-	float ortho_near_height = 5.0f;
-	float ortho_near_width = ortho_near_height * get_aspect_ratio();
-	glm::mat4 orthographic =
-		glm::ortho(-ortho_near_width, ortho_near_width, -ortho_near_height,
-	               ortho_near_height, near, far);
-
-	GLuint uniform_matrices_object;
-	glCreateBuffers(1, &uniform_matrices_object);
-
 	struct
 	{
 		alignas(16) glm::mat4 projection;
@@ -93,120 +79,22 @@ int main(int argc, char **argv)
 	ubo_data.projection = perspective;
 	ubo_data.view = camera1;
 
-	glNamedBufferStorage(uniform_matrices_object, 2 * sizeof(glm::mat4),
-	                     &ubo_data, GL_DYNAMIC_STORAGE_BIT);
+	// GLuint uniform_matrices_object =
+	// 	renderer::create_matrix_ubo(&ubo_data, 2 * sizeof(glm::mat4));
 
-	// This is the binding index specified in the uniform block which must
-	// match each other
-	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MATRICES,
-	                 uniform_matrices_object);
-#pragma endregion
+	// glNamedBufferSubData(uniform_matrices_object, 0, sizeof(ubo_data),
+	//                      &ubo_data);
 
-#pragma region create-model-data
-	// These should not store the values after they have been uploaded
-	std::vector<statics::vertex> vertices{};
-	std::vector<unsigned int> indices{};
-
-	static_assert(std::is_same_v<ai_real, float>,
-	              "Assimp isn't built using float");
-	static_assert(sizeof(aiVector3t<ai_real>) == 3 * sizeof(float),
-	              "Assimp vector doesn't match 3 floats");
-
-	const char *cube_file = "asset/cube.obj";
-	const char *tree_file = "asset/tree.obj";
-	const char *golem_file = "asset/StoneGolem.obj";
-	const char *eyeball_file = "asset/eyeball.obj";
-	const char *penguin_file = "asset/penguin.obj";
-
-	const char *badcube =
-		"asset/badcube.obj"; // @WARNING: It's broken to test system
-
-	std::unordered_map<std::string, statics::indirect_instanced> objects{};
-
-	struct
-	{
-		std::string file;
-		glm::vec3 pos;
-	} obj_render_data[]{
-		cube_file,    glm::vec3{0}, eyeball_file, glm::vec3{-3, 0, 5},
-		tree_file,    {0, 0, -30},  golem_file,   {-10, 0, 0},
-		penguin_file, {4, 0, 15},
-	};
-
-	for (int i{0}; i < std::size(obj_render_data); ++i)
-	{
-		if (!statics::render_obj(obj_render_data[i].file,
-		                         obj_render_data[i].pos, objects, vertices,
-		                         indices))
-		{
-			std::cerr << "Failed to add command from file: "
-					  << obj_render_data[i].file << std::endl;
-			return -1;
-		}
-	}
+	renderer::matrix_ubo mubo = renderer::test();
+	renderer::matrix44 m44{};
+	std::memcpy(m44.opaque, glm::value_ptr(perspective), sizeof(perspective));
+	renderer::set_perspective(mubo, m44);
+	std::memcpy(m44.opaque, glm::value_ptr(camera1), sizeof(camera1));
+	renderer::set_view(mubo, m44);
 
 #pragma endregion
-	GLuint vao = statics::upload_objects({vertices}, {indices});
 
-#pragma region upload-commands-and-offsets
-	std::vector<statics::indirect_command> commands{};
-	std::vector<glm::vec3> offsets{};
-	unsigned instances{0};
-	for (auto pair : objects)
-	{
-		// Command
-		statics::indirect_command &command = pair.second.command;
-		command.base_instance = instances;
-		std::vector<glm::vec3> &model_offsets = pair.second.offsets;
-		unsigned model_instances = model_offsets.size();
-		command.instance_count = model_instances;
-		instances += model_instances;
-		commands.push_back(command);
-
-		// Offsets
-		const size_t offset_base = offsets.size();
-		offsets.resize(offset_base + model_instances);
-		std::memcpy(offsets.data() + offset_base, model_offsets.data(),
-		            model_offsets.size() * sizeof(offsets[0]));
-	}
-
-	GLuint offsets_id, offsets_slot{1};
-	glCreateBuffers(1, &offsets_id);
-
-	glNamedBufferStorage(offsets_id, offsets.size() * sizeof(offsets[0]),
-	                     offsets.data(), 0);
-	glVertexArrayVertexBuffer(vao, offsets_slot, offsets_id, 0,
-	                          3 * sizeof(float));
-
-	constexpr GLuint divisor = 1; // Update offset every new instance
-	glVertexArrayBindingDivisor(vao, offsets_slot, divisor);
-
-	glVertexArrayAttribFormat(vao, ATTR_INST_OFFSET, 3, GL_FLOAT, false, 0);
-	glEnableVertexArrayAttrib(vao, ATTR_INST_OFFSET);
-	glVertexArrayAttribBinding(vao, ATTR_INST_OFFSET, offsets_slot);
-
-	// upload draw commands
-	GLuint indirect_commands;
-	glCreateBuffers(1, &indirect_commands);
-	glNamedBufferStorage(indirect_commands,
-	                     std::size(commands) * sizeof(commands[0]),
-	                     commands.data(), 0);
-
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirect_commands);
-#pragma endregion
-
-#pragma region model-matrices
-	std::vector<glm::mat4> models(instances, {1});
-
-	GLuint models_handle;
-	glCreateBuffers(1, &models_handle);
-	glNamedBufferStorage(models_handle, UBO_MAX_SIZE, nullptr,
-	                     GL_DYNAMIC_STORAGE_BIT);
-	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MODELS, models_handle);
-
-	glNamedBufferSubData(models_handle, 0, models.size() * sizeof(models[0]),
-	                     models.data());
-#pragma endregion
+	dirty::models models = dirty::upload_models();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -249,51 +137,11 @@ int main(int argc, char **argv)
 
 #pragma region texture
 	const char *texture_file = "asset/plank.jpg";
-	int width, height, nr_channels;
-	unsigned char *tex_data =
-		stbi_load(texture_file, &width, &height, &nr_channels, 0);
-
-	if (tex_data == nullptr)
+	uint32_t tex;
+	if (!renderer::create_texture(texture_file, tex))
 	{
-		std::cerr << "Couldn't load texture at: " << texture_file << std::endl;
 		return -1;
 	}
-
-	LOG("Loaded texture: " << texture_file << " with width: " << width
-	                       << " height: " << height
-	                       << " channels: " << nr_channels);
-
-	GLuint tex;
-	glCreateTextures(GL_TEXTURE_2D, 1, &tex);
-
-	glTextureParameteri(tex, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTextureParameteri(tex, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTextureParameteri(tex, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTextureParameteri(tex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	GLenum format;
-	if (nr_channels == 1)
-	{
-		format = GL_RED;
-	}
-	else if (nr_channels == 3)
-	{
-		format = GL_RGB8;
-	}
-	else if (nr_channels == 4)
-	{
-		format = GL_RGBA;
-	}
-	else
-	{
-		format = GL_RED;
-		std::cerr << "Unknown format with ' " << nr_channels << "' using GL_RED"
-				  << std::endl;
-	}
-
-	glTextureStorage2D(tex, 1, format, width, height);
-	glTextureSubImage2D(tex, 0, 0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE,
-	                    tex_data);
 	glBindTextureUnit(TEX2D, tex);
 #pragma endregion
 
@@ -310,7 +158,7 @@ int main(int argc, char **argv)
 	double last_time{glfwGetTime()};
 
 	glUseProgram(shader_program);
-	glBindVertexArray(vao);
+	glBindVertexArray(models.vao);
 	while (!glfwWindowShouldClose(window.platform_window))
 	{
 		double time = glfwGetTime();
@@ -329,10 +177,10 @@ int main(int argc, char **argv)
 				LOG("Space! - Changing player count");
 				last_space_click = time;
 				is_two_players = !is_two_players;
-				ubo_data.projection = get_perspective_matrix();
-				glNamedBufferSubData(uniform_matrices_object, 0,
-				                     sizeof(glm::mat4),
-				                     glm::value_ptr(ubo_data.projection));
+				// ubo_data.projection = get_perspective_matrix();
+				// glNamedBufferSubData(uniform_matrices_object, 0,
+				//                      sizeof(glm::mat4),
+				//                      glm::value_ptr(ubo_data.projection));
 			}
 		}
 
@@ -389,8 +237,9 @@ int main(int argc, char **argv)
 			glDisable(GL_SCISSOR_TEST);
 		}
 		ubo_data.view = camera1;
-		glNamedBufferSubData(uniform_matrices_object, sizeof(glm::mat4),
-		                     sizeof(glm::mat4), glm::value_ptr(ubo_data.view));
+		// glNamedBufferSubData(uniform_matrices_object, sizeof(glm::mat4),
+		//                      sizeof(glm::mat4),
+		//                      glm::value_ptr(ubo_data.view));
 
 		glClearColor(0.8, 0.12, 0.12, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -401,8 +250,8 @@ int main(int argc, char **argv)
 			GL_UNSIGNED_INT; // @TODO: Replace with GL_UNSIGNED_SHORT
 		constexpr void *command_buffer_offset =
 			(void *)0; // @TODO: Change this based on which mesh to draw
-		GLsizei commands_to_execute = commands.size();
-		constexpr GLsizei command_stride = sizeof(statics::indirect_command);
+		GLsizei commands_to_execute = models.nr_commands;
+		constexpr GLsizei command_stride = sizeof(dirty::indirect_command);
 		glMultiDrawElementsIndirect(GL_TRIANGLES, index_typ,
 		                            command_buffer_offset, commands_to_execute,
 		                            command_stride);
@@ -415,9 +264,9 @@ int main(int argc, char **argv)
 		if (is_two_players)
 		{
 			ubo_data.view = camera2;
-			glNamedBufferSubData(uniform_matrices_object, sizeof(glm::mat4),
-			                     sizeof(glm::mat4),
-			                     glm::value_ptr(ubo_data.view));
+			// glNamedBufferSubData(uniform_matrices_object, sizeof(glm::mat4),
+			//                      sizeof(glm::mat4),
+			//                      glm::value_ptr(ubo_data.view));
 
 			scissor_second_player();
 			glEnable(GL_SCISSOR_TEST);

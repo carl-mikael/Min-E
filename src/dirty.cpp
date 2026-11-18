@@ -1,9 +1,10 @@
-#include "statics.h"
+#include "dirty.h"
+#include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glslSemantics.h"
 #include "macros.h"
 
-#include <algorithm>
+#include "util/util.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -15,12 +16,9 @@
 #include <emmintrin.h>
 #include <exception>
 #include <fstream>
-#include <functional>
 #include <glad/glad.h>
 #include <immintrin.h>
 #include <iostream>
-#include <iterator>
-#include <optional>
 #include <set>
 #include <span>
 #include <unordered_map>
@@ -28,25 +26,8 @@
 #include <vector>
 #include <xmmintrin.h>
 
-namespace statics
+namespace dirty
 {
-bool read_file(const char *file_path, std::string &out_content)
-{
-	LOG("Opening file: " << file_path);
-
-	std::ifstream file(file_path);
-	if (!file.is_open())
-	{
-		std::cerr << "Failed to open file: " << file_path << std::endl;
-		return false;
-	}
-
-	std::istreambuf_iterator<char> file_start{file}, end{};
-	out_content = {file_start, end};
-
-	return true;
-}
-
 bool could_compile(unsigned int shader, const char *shader_path)
 {
 	int success;
@@ -79,7 +60,7 @@ bool create_shader(unsigned int *out_shader, const char *shader_path,
 	unsigned int shader = *out_shader;
 
 	std::string shader_str{};
-	if (!statics::read_file(shader_path, shader_str))
+	if (!util::read_file(shader_path, shader_str))
 	{
 		return false;
 	}
@@ -90,7 +71,7 @@ bool create_shader(unsigned int *out_shader, const char *shader_path,
 
 	glShaderSource(shader, 1, &shader_src, nullptr);
 	glCompileShader(shader);
-	if (!statics::could_compile(shader, shader_path))
+	if (!dirty::could_compile(shader, shader_path))
 	{
 		return false;
 	}
@@ -194,9 +175,9 @@ void draw_house(const unsigned int program, const triangle tri,
                 const glm::vec3 roof_color)
 {
 	// Wall
-	statics::draw_rectangle(program, tri,
-	                        glm::vec2{0.0f, -0.15f} - tri.size / 2.0f,
-	                        glm::vec2{3.0f, 2.5f}, glm::vec3{0.0f});
+	dirty::draw_rectangle(program, tri,
+	                      glm::vec2{0.0f, -0.15f} - tri.size / 2.0f,
+	                      glm::vec2{3.0f, 2.5f}, glm::vec3{0.0f});
 
 	// Roof
 	int offset_location = glGetUniformLocation(program, "offset");
@@ -212,18 +193,18 @@ void draw_house(const unsigned int program, const triangle tri,
 	int color_location = glGetUniformLocation(program, "color");
 	glUniform3fv(color_location, 1, &roof_color[0]);
 
-	statics::draw_triangle(program, tri.vao);
+	dirty::draw_triangle(program, tri.vao);
 
 	// Door
-	statics::draw_rectangle(program, tri, glm::vec2{-.25f, -1.f},
-	                        glm::vec2{0.50f, 1.}, glm::vec3{0, 0, 1});
+	dirty::draw_rectangle(program, tri, glm::vec2{-.25f, -1.f},
+	                      glm::vec2{0.50f, 1.}, glm::vec3{0, 0, 1});
 
 	// Left Window
-	statics::draw_rectangle(program, tri, glm::vec2{-1.0f, -0.65f},
-	                        glm::vec2{0.50f, 0.5f}, glm::vec3{0, 0, 1});
+	dirty::draw_rectangle(program, tri, glm::vec2{-1.0f, -0.65f},
+	                      glm::vec2{0.50f, 0.5f}, glm::vec3{0, 0, 1});
 	// Right Window
-	statics::draw_rectangle(program, tri, glm::vec2{1.0f - tri.size.x, -0.65f},
-	                        glm::vec2{0.50f, 0.5f}, glm::vec3{0, 0, 1});
+	dirty::draw_rectangle(program, tri, glm::vec2{1.0f - tri.size.x, -0.65f},
+	                      glm::vec2{0.50f, 0.5f}, glm::vec3{0, 0, 1});
 }
 
 cuboid create_cube(float size)
@@ -999,11 +980,11 @@ bool render_obj(std::string file, glm::vec3 pos,
                 std::vector<vertex> &out_vertices,
                 std::vector<unsigned int> &out_indices)
 {
-	statics::load_func *load_function;
+	dirty::load_func *load_function;
 #ifdef MINE_LOADER
-	load_function = statics::load_obj;
+	load_function = dirty::load_obj;
 #else
-	load_function = statics::load_asset;
+	load_function = dirty::load_asset;
 #endif
 	if (objects.contains(file))
 	{
@@ -1032,4 +1013,112 @@ bool render_obj(std::string file, glm::vec3 pos,
 // bool render_objs(std::span<std::string> files, std::span<glm::vec3>
 // positions, )
 
-} // namespace statics
+models upload_models()
+{
+	// These should not store the values after they have been uploaded
+	std::vector<dirty::vertex> vertices{};
+	std::vector<unsigned int> indices{};
+
+	static_assert(std::is_same_v<ai_real, float>,
+	              "Assimp isn't built using float");
+	static_assert(sizeof(aiVector3t<ai_real>) == 3 * sizeof(float),
+	              "Assimp vector doesn't match 3 floats");
+
+	const char *cube_file = "asset/cube.obj";
+	const char *tree_file = "asset/tree.obj";
+	const char *golem_file = "asset/StoneGolem.obj";
+	const char *eyeball_file = "asset/eyeball.obj";
+	const char *penguin_file = "asset/penguin.obj";
+
+	const char *badcube =
+		"asset/badcube.obj"; // @WARNING: It's broken to test system
+
+	std::unordered_map<std::string, dirty::indirect_instanced> objects{};
+
+	struct
+	{
+		std::string file;
+		glm::vec3 pos;
+	} obj_render_data[]{
+		cube_file,    glm::vec3{0}, eyeball_file, glm::vec3{-3, 0, 5},
+		tree_file,    {0, 0, -30},  golem_file,   {-10, 0, 0},
+		penguin_file, {4, 0, 15},
+	};
+
+	for (int i{0}; i < std::size(obj_render_data); ++i)
+	{
+		if (!dirty::render_obj(obj_render_data[i].file, obj_render_data[i].pos,
+		                       objects, vertices, indices))
+		{
+			LOG("Failed to add command from file: " << obj_render_data[i].file);
+			return {};
+		}
+	}
+
+#pragma endregion
+	GLuint vao = dirty::upload_objects({vertices}, {indices});
+
+#pragma region upload-commands-and-offsets
+	std::vector<dirty::indirect_command> commands{};
+	std::vector<glm::vec3> offsets{};
+	unsigned instances{0};
+	for (auto pair : objects)
+	{
+		// Command
+		dirty::indirect_command &command = pair.second.command;
+		command.base_instance = instances;
+		std::vector<glm::vec3> &model_offsets = pair.second.offsets;
+		unsigned model_instances = model_offsets.size();
+		command.instance_count = model_instances;
+		instances += model_instances;
+		commands.push_back(command);
+
+		// Offsets
+		const size_t offset_base = offsets.size();
+		offsets.resize(offset_base + model_instances);
+		std::memcpy(offsets.data() + offset_base, model_offsets.data(),
+		            model_offsets.size() * sizeof(offsets[0]));
+	}
+
+	GLuint offsets_id, offsets_slot{1};
+	glCreateBuffers(1, &offsets_id);
+
+	glNamedBufferStorage(offsets_id, offsets.size() * sizeof(offsets[0]),
+	                     offsets.data(), 0);
+	glVertexArrayVertexBuffer(vao, offsets_slot, offsets_id, 0,
+	                          3 * sizeof(float));
+
+	constexpr GLuint divisor = 1; // Update offset every new instance
+	glVertexArrayBindingDivisor(vao, offsets_slot, divisor);
+
+	glVertexArrayAttribFormat(vao, ATTR_INST_OFFSET, 3, GL_FLOAT, false, 0);
+	glEnableVertexArrayAttrib(vao, ATTR_INST_OFFSET);
+	glVertexArrayAttribBinding(vao, ATTR_INST_OFFSET, offsets_slot);
+
+	// upload draw commands
+	GLuint indirect_commands;
+	glCreateBuffers(1, &indirect_commands);
+	glNamedBufferStorage(indirect_commands,
+	                     std::size(commands) * sizeof(commands[0]),
+	                     commands.data(), 0);
+
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirect_commands);
+#pragma endregion
+
+#pragma region model-matrices
+	std::vector<glm::mat4> models(instances, {1});
+
+	GLuint models_handle;
+	glCreateBuffers(1, &models_handle);
+	glNamedBufferStorage(models_handle, UBO_MAX_SIZE, nullptr,
+	                     GL_DYNAMIC_STORAGE_BIT);
+	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MODELS, models_handle);
+
+	glNamedBufferSubData(models_handle, 0, models.size() * sizeof(models[0]),
+	                     models.data());
+#pragma endregion
+
+	return {.vao = vao, .nr_commands = commands.size()};
+}
+
+} // namespace dirty
