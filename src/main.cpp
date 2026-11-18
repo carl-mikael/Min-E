@@ -26,6 +26,7 @@
 int main(int argc, char **argv)
 {
 	bool is_two_players = false;
+	bool line_mode = false;
 
 	platform::window_data window{};
 	if (!platform::init(800, 600, window))
@@ -50,22 +51,20 @@ int main(int argc, char **argv)
 
 #pragma region view
 	constexpr float camera_height = 5.0f;
-	glm::vec3 view_pos{0, camera_height, 30.0f};
-	glm::vec3 view_target{0, camera_height, 0}; // Look forward
-	glm::vec3 view_up_axis{0, 1, 0};
+	constexpr glm::vec3 view_pos{0, camera_height, 30.0f};
+	constexpr glm::vec3 view_target{0, camera_height, 0}; // Look forward
+	constexpr glm::vec3 view_up_axis{0, 1, 0};
 	glm::mat4 camera1 = glm::lookAt(view_pos, view_target, view_up_axis);
 	glm::mat4 camera2 = glm::lookAt(view_pos, view_target, view_up_axis);
-#pragma endregion
 
 	constexpr float near{0.1f}, far{100.0f};
 	constexpr float fov{glm::radians(45.0f)};
-	auto get_aspect_ratio = [&]()
-	{
-		return (static_cast<float>(window.width) / (is_two_players ? 2 : 1)) /
-		       static_cast<float>(window.height);
-	};
 	auto get_perspective_matrix = [&]()
-	{ return glm::perspective(fov, get_aspect_ratio(), near, far); };
+	{
+		return glm::perspective(fov, get_aspect(window, is_two_players), near,
+		                        far);
+	};
+#pragma endregion
 
 #pragma region uniform-matrices-buffer
 	glm::mat4 perspective = get_perspective_matrix();
@@ -73,15 +72,12 @@ int main(int argc, char **argv)
 	renderer::matrix_ubo mubo = renderer::create_matrix_ubo();
 	renderer::upload_projection(mubo, glm::value_ptr(perspective));
 	renderer::upload_view(mubo, glm::value_ptr(camera1));
-
 #pragma endregion
 
 	dirty::models models = dirty::upload_models();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
-
-	bool line_mode = false;
 
 #pragma region input
 	// User would defines. Meta meaning to input slots.
@@ -113,10 +109,6 @@ int main(int argc, char **argv)
 	double last_f_click{-f_cooldown};
 #pragma endregion
 
-	int color_loc = glGetUniformLocation(shader.program, STR_DEF(COLOR));
-	glm::vec3 color = {0.5, 0.5, 0.5};
-	glProgramUniform3fv(shader.program, color_loc, 1, &color[0]);
-
 #pragma region texture
 	const char *texture_file = "asset/plank.jpg";
 	uint32_t tex;
@@ -134,18 +126,12 @@ int main(int argc, char **argv)
 	auto scissor_second_player = [&]()
 	{ glScissor(window.width / 2, 0, window.width / 2, window.height); };
 
-	double delta_time{0};
-	// Updating last time at the end of the loop. So it reflects what is
-	// says throughout the loop.
-	double last_time{glfwGetTime()};
+	platform::tick_timer timer{};
 
 	glUseProgram(shader.program);
 	glBindVertexArray(models.vao);
-	while (!glfwWindowShouldClose(window.platform_window))
+	while (platform::update(window, timer))
 	{
-		double time = glfwGetTime();
-		delta_time = time - last_time;
-
 		if (glfwGetKey(window.platform_window, GLFW_KEY_ESCAPE))
 		{
 			// this would close after this frame, is that what we want?
@@ -157,12 +143,10 @@ int main(int argc, char **argv)
 			if ((glfwGetTime() - last_space_click) > space_cooldown)
 			{
 				LOG("Space! - Changing player count");
-				last_space_click = time;
+				last_space_click = timer.tick_time;
 				is_two_players = !is_two_players;
-				// ubo_data.projection = get_perspective_matrix();
-				// glNamedBufferSubData(uniform_matrices_object, 0,
-				//                      sizeof(glm::mat4),
-				//                      glm::value_ptr(ubo_data.projection));
+				glNamedBufferSubData(mubo.handle, 0, sizeof(glm::mat4),
+				                     glm::value_ptr(get_perspective_matrix()));
 			}
 		}
 
@@ -204,7 +188,8 @@ int main(int argc, char **argv)
 			movement_input = glm::normalize(movement_input);
 			glm::vec3 movement =
 				movement_input *
-				static_cast<float>(movement_speed * delta_time);
+				static_cast<float>(movement_speed *
+			                       platform::delta_time(timer));
 			camera1 = glm::translate(camera1, movement);
 		}
 
@@ -218,10 +203,8 @@ int main(int argc, char **argv)
 		{
 			glDisable(GL_SCISSOR_TEST);
 		}
-		// ubo_data.view = camera1;
-		// glNamedBufferSubData(uniform_matrices_object, sizeof(glm::mat4),
-		//                      sizeof(glm::mat4),
-		//                      glm::value_ptr(ubo_data.view));
+		glNamedBufferSubData(mubo.handle, sizeof(glm::mat4), sizeof(glm::mat4),
+		                     glm::value_ptr(camera1));
 
 		glClearColor(0.8, 0.12, 0.12, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -245,10 +228,8 @@ int main(int argc, char **argv)
 		// Second player
 		if (is_two_players)
 		{
-			// ubo_data.view = camera2;
-			// glNamedBufferSubData(uniform_matrices_object, sizeof(glm::mat4),
-			//                      sizeof(glm::mat4),
-			//                      glm::value_ptr(ubo_data.view));
+			glNamedBufferSubData(mubo.handle, sizeof(glm::mat4),
+			                     sizeof(glm::mat4), glm::value_ptr(camera2));
 
 			scissor_second_player();
 			glEnable(GL_SCISSOR_TEST);
@@ -262,11 +243,6 @@ int main(int argc, char **argv)
 
 			glDisable(GL_SCISSOR_TEST);
 		}
-
-		// Platform stuff
-		glfwSwapBuffers(window.platform_window);
-		glfwPollEvents();
-		last_time = time;
 	}
 
 	glfwTerminate();

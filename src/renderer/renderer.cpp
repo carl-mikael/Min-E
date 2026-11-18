@@ -12,6 +12,8 @@
 #include <iostream>
 #endif
 
+#define M44Size 64
+
 bool renderer::create_program(const std::string_view &glsl_semantics,
                               const char *vertex_shader_path,
                               const char *fragment_shader_path,
@@ -107,12 +109,12 @@ bool renderer::could_compile(unsigned int shader,
 
 void renderer::upload_projection(matrix_ubo mubo, const float *m44) noexcept
 {
-	glNamedBufferSubData(mubo.handle, 0, 64, m44);
+	glNamedBufferSubData(mubo.handle, 0, M44Size, m44);
 }
 
 void renderer::upload_view(matrix_ubo mubo, const float *m44) noexcept
 {
-	glNamedBufferSubData(mubo.handle, 64, 64, m44);
+	glNamedBufferSubData(mubo.handle, M44Size, M44Size, m44);
 }
 
 renderer::matrix_ubo renderer::create_matrix_ubo() noexcept
@@ -120,7 +122,7 @@ renderer::matrix_ubo renderer::create_matrix_ubo() noexcept
 	GLuint ubo;
 	glCreateBuffers(1, &ubo);
 	matrix_ubo mubo{.handle = ubo};
-	glNamedBufferStorage(ubo, 128, nullptr, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(ubo, 2 * M44Size, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MATRICES, ubo);
 

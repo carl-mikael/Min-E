@@ -9,7 +9,7 @@
 #endif
 
 bool platform::init(int window_width, int window_height,
-                    window_data &out_window)
+                    window_data &out_window) noexcept
 {
 	if (!glfwInit())
 	{
@@ -65,6 +65,25 @@ bool platform::init(int window_width, int window_height,
 		                      nullptr, GL_TRUE);
 	}
 #endif
+
+	return true;
+}
+
+bool platform::update(const platform::window_data &window,
+                      platform::tick_timer &timer) noexcept
+{
+	glfwSwapBuffers(window.platform_window);
+	glfwPollEvents();
+
+	double time = glfwGetTime();
+	timer.last_time = timer.tick_time;
+	timer.tick_time = time;
+
+	if (glfwWindowShouldClose(window.platform_window))
+	{
+		LOG("glfwShouldClose is true, returning false to close");
+		return false;
+	}
 
 	return true;
 }

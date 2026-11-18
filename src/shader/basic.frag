@@ -3,7 +3,7 @@ in vec3 world_pos;
 in vec3 normal;
 in vec2 uv;
 
-uniform vec3 COLOR;
+// uniform vec3 COLOR;
 layout(binding = TEX2D) uniform sampler2D TEXTURE;
 
 vec3 light_pos = vec3(0, 10, 5);
