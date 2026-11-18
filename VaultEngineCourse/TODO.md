@@ -22,9 +22,10 @@ kanban-plugin: board
 
 ## Next
 
+- [ ] Input System
+	- [ ] Support multiple players
 - [ ] Flying camera
-- [ ] Split screen
-	- [ ] Toggle on/off during runtime
+	- [ ] Second player
 - [ ] Scene
 	- [ ] Custom file format
 	Should include:
@@ -38,12 +39,14 @@ kanban-plugin: board
 
 ## Now
 
-- [ ] Input System
-	- [ ] Support multiple players
+- [ ] Remove loose variables from main
 
 
 ## Done
 
+- [ ] Split screen
+	- [x] Toggle on/off during runtime
+- [ ] Delta time
 
 
 ***
