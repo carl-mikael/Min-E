@@ -111,17 +111,13 @@ int main(int argc, char **argv)
 	glDeleteShader(fragment_shader);
 #pragma endregion
 
-	// Breaks aspect ratio
-	glfwSetFramebufferSizeCallback(window,
-	                               [](GLFWwindow *window, int width, int height)
-	                               { glViewport(0, 0, width, height); });
-
 #pragma region view
 	constexpr float camera_height = 5.0f;
 	glm::vec3 view_pos{0, camera_height, 30.0f};
 	glm::vec3 view_target{0, camera_height, 0}; // Look forward
 	glm::vec3 view_up_axis{0, 1, 0};
-	glm::mat4 camera = glm::lookAt(view_pos, view_target, view_up_axis);
+	glm::mat4 camera1 = glm::lookAt(view_pos, view_target, view_up_axis);
+	glm::mat4 camera2 = glm::lookAt(view_pos, view_target, view_up_axis);
 #pragma endregion
 
 #pragma region uniform-matrices-buffer
@@ -131,6 +127,16 @@ int main(int argc, char **argv)
 		return (static_cast<float>(window_width) / (is_two_players ? 2 : 1)) /
 		       static_cast<float>(window_height);
 	};
+
+	// @TODO: Have this in platform layer where it has access to window
+	// width/height
+	glfwSetFramebufferSizeCallback(
+		window,
+		[](GLFWwindow *window, int width, int height)
+		{
+			LOG("TODO: Put FramebufferSizeCallback in platform layer where it "
+		        "has access to window width/height");
+		});
 
 	constexpr float near{0.1f}, far{100.0f};
 	constexpr float fov{glm::radians(45.0f)};
@@ -154,7 +160,7 @@ int main(int argc, char **argv)
 	} ubo_data;
 
 	ubo_data.projection = perspective;
-	ubo_data.view = camera;
+	ubo_data.view = camera1;
 
 	glNamedBufferStorage(uniform_matrices_object, 2 * sizeof(glm::mat4),
 	                     &ubo_data, GL_DYNAMIC_STORAGE_BIT);
@@ -459,10 +465,7 @@ int main(int argc, char **argv)
 			glm::vec3 movement =
 				movement_input *
 				static_cast<float>(movement_speed * delta_time);
-			ubo_data.view = glm::translate(ubo_data.view, movement);
-			glNamedBufferSubData(uniform_matrices_object, sizeof(glm::mat4),
-			                     sizeof(glm::mat4),
-			                     glm::value_ptr(ubo_data.view));
+			camera1 = glm::translate(camera1, movement);
 		}
 
 		// First player
@@ -475,10 +478,15 @@ int main(int argc, char **argv)
 		{
 			glDisable(GL_SCISSOR_TEST);
 		}
-		glViewport(0, 0, window_width / (is_two_players ? 2 : 1),
-		           WINDOW_HEIGHT);
+		ubo_data.view = camera1;
+		glNamedBufferSubData(uniform_matrices_object, sizeof(glm::mat4),
+		                     sizeof(glm::mat4), glm::value_ptr(ubo_data.view));
+
 		glClearColor(0.8, 0.12, 0.12, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glViewport(0, 0, window_width / (is_two_players ? 2 : 1),
+		           WINDOW_HEIGHT);
 		constexpr GLenum index_typ =
 			GL_UNSIGNED_INT; // @TODO: Replace with GL_UNSIGNED_SHORT
 		constexpr void *command_buffer_offset =
@@ -496,12 +504,21 @@ int main(int argc, char **argv)
 		// Second player
 		if (is_two_players)
 		{
+			ubo_data.view = camera2;
+			glNamedBufferSubData(uniform_matrices_object, sizeof(glm::mat4),
+			                     sizeof(glm::mat4),
+			                     glm::value_ptr(ubo_data.view));
+
 			scissor_second_player();
 			glEnable(GL_SCISSOR_TEST);
-			glViewport(window_width / 2, window_height, window_width / 2,
-			           window_height);
 			glClearColor(0.12, 0.8, 0.12, 1);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			glViewport(window_width / 2, 0, window_width / 2, window_height);
+			glMultiDrawElementsIndirect(GL_TRIANGLES, index_typ,
+			                            command_buffer_offset,
+			                            commands_to_execute, command_stride);
+
 			glDisable(GL_SCISSOR_TEST);
 		}
 
