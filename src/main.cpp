@@ -1,6 +1,6 @@
 #pragma once
-#include "glm/ext/vector_float2.hpp"
 #include "glm/geometric.hpp"
+#include "renderer/renderer.h"
 #include <cstring>
 #include <string>
 #include <string_view>
@@ -17,7 +17,6 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/trigonometric.hpp"
 #include "glslSemantics.h"
-#include "input/input.h"
 #include "macros.h"
 #include "platform/platform.h"
 #include "statics.h"
@@ -37,31 +36,20 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	GLuint shader_program, vertex_shader, fragment_shader, geometry_shader;
+	GLuint shader_program;
 
-#pragma region shader-setup
 	std::string glsl_semantics{};
 	statics::read_file(GLSL_SEMANTICS_STR, glsl_semantics);
 
 	const char *vertex_shader_path{"shader/basic.vert"};
 	const char *fragment_shader_path{"shader/basic.frag"};
 
-	if (!statics::create_shader(&vertex_shader, vertex_shader_path,
-	                            GL_VERTEX_SHADER, glsl_semantics) ||
-	    !statics::create_shader(&fragment_shader, fragment_shader_path,
-	                            GL_FRAGMENT_SHADER, glsl_semantics) ||
-	    !statics::create_shader_program(&shader_program, vertex_shader,
-	                                    fragment_shader))
+	if (!renderer::create_program(glsl_semantics, vertex_shader_path,
+	                              fragment_shader_path, shader_program))
 	{
+		LOG("Failed creating program, returning");
 		return -1;
 	}
-
-	glDetachShader(shader_program, vertex_shader);
-	glDetachShader(shader_program, fragment_shader);
-
-	glDeleteShader(vertex_shader);
-	glDeleteShader(fragment_shader);
-#pragma endregion
 
 #pragma region view
 	constexpr float camera_height = 5.0f;
@@ -73,7 +61,6 @@ int main(int argc, char **argv)
 #pragma endregion
 
 #pragma region uniform-matrices-buffer
-
 	bool is_two_players = false;
 
 	auto get_aspect_ratio = [&]()
@@ -158,17 +145,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-// if (!statics::render_obj(badcube, glm::vec3{0}, objects, vertices,
-// indices))
-// {
-// 	return -1;
-// }
-// statics::render_obj(cube_file, glm::vec3{5.0f, 0.0f, 0.0f}, objects,
-//                     vertices, indices);
-// statics::render_obj(tree_file, {0, 0, -30}, objects, vertices,
-// indices); statics::render_obj(golem_file, {-10, 0, 0}, objects,
-// vertices, indices); statics::render_obj(golem_file, {8, 0, -5},
-// objects, vertices, indices);
 #pragma endregion
 	GLuint vao = statics::upload_objects({vertices}, {indices});
 
@@ -221,16 +197,6 @@ int main(int argc, char **argv)
 
 #pragma region model-matrices
 	std::vector<glm::mat4> models(instances, {1});
-
-	constexpr int far_left_pos = -15.0f;
-	constexpr int model_offset = 10.0f;
-	for (int i{0}; i < models.size(); ++i)
-	{
-		// models[i] = glm::translate(
-		// {1}, glm::vec3{far_left_pos + model_offset * i, 0, -20.0f});
-	}
-
-	// models.back() = glm::translate({1}, glm::vec3{0, 0, -10.0f});
 
 	GLuint models_handle;
 	glCreateBuffers(1, &models_handle);

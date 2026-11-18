@@ -40,6 +40,7 @@ kanban-plugin: board
 ## Now
 
 - [ ] Remove loose variables from main
+- [ ] Replace std::cerr with an error macro
 
 
 ## Done
