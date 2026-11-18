@@ -63,6 +63,8 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	bool is_two_players = false;
+
 #ifdef DEBUG
 // Yoinked from: https://learnopengl.com/In-Practice/Debugging
 #pragma region debug_callback
@@ -109,14 +111,10 @@ int main(int argc, char **argv)
 	glDeleteShader(fragment_shader);
 #pragma endregion
 
-	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-
 	// Breaks aspect ratio
 	glfwSetFramebufferSizeCallback(window,
 	                               [](GLFWwindow *window, int width, int height)
 	                               { glViewport(0, 0, width, height); });
-
-	glClearColor(1, 1, 1, 1);
 
 #pragma region view
 	constexpr float camera_height = 5.0f;
@@ -127,14 +125,21 @@ int main(int argc, char **argv)
 #pragma endregion
 
 #pragma region uniform-matrices-buffer
-	constexpr float aspect = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
+	float window_width{WINDOW_WIDTH}, window_height{WINDOW_HEIGHT};
+	auto get_aspect_ratio = [&]()
+	{
+		return (static_cast<float>(window_width) / (is_two_players ? 2 : 1)) /
+		       static_cast<float>(window_height);
+	};
 
 	constexpr float near{0.1f}, far{100.0f};
-	glm::mat4 perspective =
-		glm::perspective(glm::radians(45.0f), aspect, near, far);
+	constexpr float fov{glm::radians(45.0f)};
+	auto get_perspective_matrix = [&]()
+	{ return glm::perspective(fov, get_aspect_ratio(), near, far); };
+	glm::mat4 perspective = get_perspective_matrix();
 
-	constexpr float ortho_near_height = 5.0f;
-	constexpr float ortho_near_width = ortho_near_height * aspect;
+	float ortho_near_height = 5.0f;
+	float ortho_near_width = ortho_near_height * get_aspect_ratio();
 	glm::mat4 orthographic =
 		glm::ortho(-ortho_near_width, ortho_near_width, -ortho_near_height,
 	               ortho_near_height, near, far);
@@ -154,8 +159,8 @@ int main(int argc, char **argv)
 	glNamedBufferStorage(uniform_matrices_object, 2 * sizeof(glm::mat4),
 	                     &ubo_data, GL_DYNAMIC_STORAGE_BIT);
 
-	// This is the binding index specified in the uniform block which must match
-	// each other
+	// This is the binding index specified in the uniform block which must
+	// match each other
 	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MATRICES,
 	                 uniform_matrices_object);
 #pragma endregion
@@ -210,9 +215,10 @@ int main(int argc, char **argv)
 	// }
 	// statics::render_obj(cube_file, glm::vec3{5.0f, 0.0f, 0.0f}, objects,
 	//                     vertices, indices);
-	// statics::render_obj(tree_file, {0, 0, -30}, objects, vertices, indices);
-	// statics::render_obj(golem_file, {-10, 0, 0}, objects, vertices, indices);
-	// statics::render_obj(golem_file, {8, 0, -5}, objects, vertices, indices);
+	// statics::render_obj(tree_file, {0, 0, -30}, objects, vertices,
+	// indices); statics::render_obj(golem_file, {-10, 0, 0}, objects,
+	// vertices, indices); statics::render_obj(golem_file, {8, 0, -5},
+	// objects, vertices, indices);
 #pragma endregion
 	GLuint vao = statics::upload_objects({vertices}, {indices});
 
@@ -303,7 +309,8 @@ int main(int argc, char **argv)
 	// };
 
 	// std::vector<MINE_input::token_binding> bindings{
-	// 	{MINE_input::KEY::W, (MINE_input::input_slots)gameplay_action::FORWARD},
+	// 	{MINE_input::KEY::W,
+	// (MINE_input::input_slots)gameplay_action::FORWARD},
 	// 	{MINE_input::KEY::UP,
 	// 	 (MINE_input::input_slots)gameplay_action::FORWARD}};
 
@@ -374,14 +381,20 @@ int main(int argc, char **argv)
 	glBindTextureUnit(TEX2D, tex);
 #pragma endregion
 
-	glUseProgram(shader_program);
-
-	glBindVertexArray(vao);
+	// First player
+	auto scissor_first_player = [&]()
+	{ glScissor(0, 0, window_width / 2, window_height); };
+	// Second player
+	auto scissor_second_player = [&]()
+	{ glScissor(window_width / 2, 0, window_width / 2, window_height); };
 
 	double delta_time{0};
-	// Updating last time at the end of the loop. So it reflects what is says
-	// throughout the loop.
+	// Updating last time at the end of the loop. So it reflects what is
+	// says throughout the loop.
 	double last_time{glfwGetTime()};
+
+	glUseProgram(shader_program);
+	glBindVertexArray(vao);
 	while (!glfwWindowShouldClose(window))
 	{
 		double time = glfwGetTime();
@@ -395,11 +408,16 @@ int main(int argc, char **argv)
 
 		if (glfwGetKey(window, GLFW_KEY_SPACE))
 		{
-			// if ((glfwGetTime() - last_space_click) > space_cooldown)
-			// {
-			LOG("Space!");
-			last_space_click = glfwGetTime();
-			// }
+			if ((glfwGetTime() - last_space_click) > space_cooldown)
+			{
+				LOG("Space! - Changing player count");
+				last_space_click = time;
+				is_two_players = !is_two_players;
+				ubo_data.projection = get_perspective_matrix();
+				glNamedBufferSubData(uniform_matrices_object, 0,
+				                     sizeof(glm::mat4),
+				                     glm::value_ptr(ubo_data.projection));
+			}
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_F))
@@ -447,8 +465,20 @@ int main(int argc, char **argv)
 			                     glm::value_ptr(ubo_data.view));
 		}
 
+		// First player
+		if (is_two_players)
+		{
+			scissor_first_player();
+			glEnable(GL_SCISSOR_TEST);
+		}
+		else
+		{
+			glDisable(GL_SCISSOR_TEST);
+		}
+		glViewport(0, 0, window_width / (is_two_players ? 2 : 1),
+		           WINDOW_HEIGHT);
+		glClearColor(0.8, 0.12, 0.12, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 		constexpr GLenum index_typ =
 			GL_UNSIGNED_INT; // @TODO: Replace with GL_UNSIGNED_SHORT
 		constexpr void *command_buffer_offset =
@@ -458,7 +488,24 @@ int main(int argc, char **argv)
 		glMultiDrawElementsIndirect(GL_TRIANGLES, index_typ,
 		                            command_buffer_offset, commands_to_execute,
 		                            command_stride);
+		if (is_two_players)
+		{
+			glDisable(GL_SCISSOR_TEST);
+		}
 
+		// Second player
+		if (is_two_players)
+		{
+			scissor_second_player();
+			glEnable(GL_SCISSOR_TEST);
+			glViewport(window_width / 2, window_height, window_width / 2,
+			           window_height);
+			glClearColor(0.12, 0.8, 0.12, 1);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glDisable(GL_SCISSOR_TEST);
+		}
+
+		// Platform stuff
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 		last_time = time;
