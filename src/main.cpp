@@ -1,4 +1,6 @@
 #pragma once
+#include "glm/ext/vector_float2.hpp"
+#include "glm/geometric.hpp"
 #include <cstring>
 #include <string>
 #include <string_view>
@@ -12,6 +14,7 @@
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/fwd.hpp"
+#include "glm/gtc/type_ptr.hpp"
 #include "glm/trigonometric.hpp"
 #include "glslSemantics.h"
 #include "input/input.h"
@@ -26,8 +29,6 @@
 
 int main(int argc, char **argv)
 {
-	MINE_input::create();
-
 	if (!glfwInit())
 	{
 		std::cerr << "Failed Init" << std::endl;
@@ -136,7 +137,7 @@ int main(int argc, char **argv)
 	constexpr float ortho_near_width = ortho_near_height * aspect;
 	glm::mat4 orthographic =
 		glm::ortho(-ortho_near_width, ortho_near_width, -ortho_near_height,
-		           ortho_near_height, near, far);
+	               ortho_near_height, near, far);
 
 	GLuint uniform_matrices_object;
 	glCreateBuffers(1, &uniform_matrices_object);
@@ -197,7 +198,7 @@ int main(int argc, char **argv)
 		                         indices))
 		{
 			std::cerr << "Failed to add command from file: "
-			          << obj_render_data[i].file << std::endl;
+					  << obj_render_data[i].file << std::endl;
 			return -1;
 		}
 	}
@@ -292,24 +293,26 @@ int main(int argc, char **argv)
 
 #pragma region input
 	// User would defines. Meta meaning to input slots.
-	enum class gameplay_action : MINE_input::input_slots
-	{
-		NONE,
-		FORWARD,
-		LEFT,
-		RIGHT,
-		DOWN,
-	};
+	// enum class gameplay_action : MINE_input::input_slots
+	// {
+	// 	NONE,
+	// 	FORWARD,
+	// 	LEFT,
+	// 	RIGHT,
+	// 	DOWN,
+	// };
 
-	std::vector<MINE_input::token_binding> bindings{
-		{MINE_input::KEY::W, (MINE_input::input_slots)gameplay_action::FORWARD},
-		{MINE_input::KEY::UP,
-		 (MINE_input::input_slots)gameplay_action::FORWARD}};
+	// std::vector<MINE_input::token_binding> bindings{
+	// 	{MINE_input::KEY::W, (MINE_input::input_slots)gameplay_action::FORWARD},
+	// 	{MINE_input::KEY::UP,
+	// 	 (MINE_input::input_slots)gameplay_action::FORWARD}};
 
-	MINE_input::bind(bindings);
+	// MINE_input::bind(bindings);
 
 	// LOG("Forward: " << forward);
 	// LOG("Left: " << left);
+
+	float movement_speed{30};
 
 	constexpr float space_cooldown = 0.2f;
 	double last_space_click{-space_cooldown};
@@ -362,7 +365,7 @@ int main(int argc, char **argv)
 	{
 		format = GL_RED;
 		std::cerr << "Unknown format with ' " << nr_channels << "' using GL_RED"
-		          << std::endl;
+				  << std::endl;
 	}
 
 	glTextureStorage2D(tex, 1, format, width, height);
@@ -375,8 +378,15 @@ int main(int argc, char **argv)
 
 	glBindVertexArray(vao);
 
+	double delta_time{0};
+	// Updating last time at the end of the loop. So it reflects what is says
+	// throughout the loop.
+	double last_time{glfwGetTime()};
 	while (!glfwWindowShouldClose(window))
 	{
+		double time = glfwGetTime();
+		delta_time = time - last_time;
+
 		if (glfwGetKey(window, GLFW_KEY_ESCAPE))
 		{
 			// this would close after this frame, is that what we want?
@@ -403,6 +413,40 @@ int main(int argc, char **argv)
 			}
 		}
 
+		glm::vec3 movement_input{0};
+
+		if (glfwGetKey(window, GLFW_KEY_W))
+		{
+			movement_input.z += 1;
+		}
+
+		if (glfwGetKey(window, GLFW_KEY_S))
+		{
+			movement_input.z -= 1;
+		}
+
+		if (glfwGetKey(window, GLFW_KEY_A))
+		{
+			movement_input.x += 1;
+		}
+
+		if (glfwGetKey(window, GLFW_KEY_D))
+		{
+			movement_input.x -= 1;
+		}
+
+		if (movement_input != glm::vec3(0))
+		{
+			movement_input = glm::normalize(movement_input);
+			glm::vec3 movement =
+				movement_input *
+				static_cast<float>(movement_speed * delta_time);
+			ubo_data.view = glm::translate(ubo_data.view, movement);
+			glNamedBufferSubData(uniform_matrices_object, sizeof(glm::mat4),
+			                     sizeof(glm::mat4),
+			                     glm::value_ptr(ubo_data.view));
+		}
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		constexpr GLenum index_typ =
@@ -417,6 +461,7 @@ int main(int argc, char **argv)
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+		last_time = time;
 	}
 
 	glfwTerminate();
