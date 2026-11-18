@@ -34,16 +34,15 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	GLuint shader_program;
+	renderer::shader_program shader{};
 
 	std::string glsl_semantics{};
 	util::read_file(GLSL_SEMANTICS_STR, glsl_semantics);
 
 	const char *vertex_shader_path{"shader/basic.vert"};
 	const char *fragment_shader_path{"shader/basic.frag"};
-
 	if (!renderer::create_program(glsl_semantics, vertex_shader_path,
-	                              fragment_shader_path, shader_program))
+	                              fragment_shader_path, shader))
 	{
 		LOG("Failed creating program, returning");
 		return -1;
@@ -70,27 +69,10 @@ int main(int argc, char **argv)
 
 #pragma region uniform-matrices-buffer
 	glm::mat4 perspective = get_perspective_matrix();
-	struct
-	{
-		alignas(16) glm::mat4 projection;
-		alignas(16) glm::mat4 view;
-	} ubo_data;
 
-	ubo_data.projection = perspective;
-	ubo_data.view = camera1;
-
-	// GLuint uniform_matrices_object =
-	// 	renderer::create_matrix_ubo(&ubo_data, 2 * sizeof(glm::mat4));
-
-	// glNamedBufferSubData(uniform_matrices_object, 0, sizeof(ubo_data),
-	//                      &ubo_data);
-
-	renderer::matrix_ubo mubo = renderer::test();
-	renderer::matrix44 m44{};
-	std::memcpy(m44.opaque, glm::value_ptr(perspective), sizeof(perspective));
-	renderer::set_perspective(mubo, m44);
-	std::memcpy(m44.opaque, glm::value_ptr(camera1), sizeof(camera1));
-	renderer::set_view(mubo, m44);
+	renderer::matrix_ubo mubo = renderer::create_matrix_ubo();
+	renderer::upload_projection(mubo, glm::value_ptr(perspective));
+	renderer::upload_view(mubo, glm::value_ptr(camera1));
 
 #pragma endregion
 
@@ -131,9 +113,9 @@ int main(int argc, char **argv)
 	double last_f_click{-f_cooldown};
 #pragma endregion
 
-	int color_loc = glGetUniformLocation(shader_program, STR_DEF(COLOR));
+	int color_loc = glGetUniformLocation(shader.program, STR_DEF(COLOR));
 	glm::vec3 color = {0.5, 0.5, 0.5};
-	glProgramUniform3fv(shader_program, color_loc, 1, &color[0]);
+	glProgramUniform3fv(shader.program, color_loc, 1, &color[0]);
 
 #pragma region texture
 	const char *texture_file = "asset/plank.jpg";
@@ -157,7 +139,7 @@ int main(int argc, char **argv)
 	// says throughout the loop.
 	double last_time{glfwGetTime()};
 
-	glUseProgram(shader_program);
+	glUseProgram(shader.program);
 	glBindVertexArray(models.vao);
 	while (!glfwWindowShouldClose(window.platform_window))
 	{
@@ -236,7 +218,7 @@ int main(int argc, char **argv)
 		{
 			glDisable(GL_SCISSOR_TEST);
 		}
-		ubo_data.view = camera1;
+		// ubo_data.view = camera1;
 		// glNamedBufferSubData(uniform_matrices_object, sizeof(glm::mat4),
 		//                      sizeof(glm::mat4),
 		//                      glm::value_ptr(ubo_data.view));
@@ -263,7 +245,7 @@ int main(int argc, char **argv)
 		// Second player
 		if (is_two_players)
 		{
-			ubo_data.view = camera2;
+			// ubo_data.view = camera2;
 			// glNamedBufferSubData(uniform_matrices_object, sizeof(glm::mat4),
 			//                      sizeof(glm::mat4),
 			//                      glm::value_ptr(ubo_data.view));

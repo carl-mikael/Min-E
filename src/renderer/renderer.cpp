@@ -2,7 +2,6 @@
 #include "../glslSemantics.h"
 #include "../macros.h"
 #include "../util/util.h"
-#include <cstddef>
 #include <cstdint>
 #include <glad/glad.h>
 #include <glm/mat4x4.hpp>
@@ -13,10 +12,10 @@
 #include <iostream>
 #endif
 
-bool renderer::create_program(const std::string_view glsl_semantics,
+bool renderer::create_program(const std::string_view &glsl_semantics,
                               const char *vertex_shader_path,
                               const char *fragment_shader_path,
-                              uint32_t &out_program)
+                              shader_program &out_program) noexcept
 {
 	GLuint vertex_shader, fragment_shader, geometry_shader;
 
@@ -28,35 +27,35 @@ bool renderer::create_program(const std::string_view glsl_semantics,
 		return false;
 	}
 
-	out_program = glCreateProgram();
+	GLuint program = glCreateProgram();
+	glAttachShader(program, vertex_shader);
+	glAttachShader(program, fragment_shader);
 
-	glAttachShader(out_program, vertex_shader);
-	glAttachShader(out_program, fragment_shader);
-
-	glLinkProgram(out_program);
+	glLinkProgram(program);
 
 	int success;
 	char info_log[LOG_SIZE];
-	glGetProgramiv(out_program, GL_LINK_STATUS, &success);
+	glGetProgramiv(program, GL_LINK_STATUS, &success);
 	if (!success)
 	{
-		glGetProgramInfoLog(out_program, sizeof(info_log), nullptr, info_log);
+		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
 		LOG("Failed to compile shader program: " << info_log);
 		return false;
 	}
 
-	glDetachShader(out_program, vertex_shader);
-	glDetachShader(out_program, fragment_shader);
+	glDetachShader(program, vertex_shader);
+	glDetachShader(program, fragment_shader);
 
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
 
+	out_program.program = program;
 	return true;
 }
 
 bool renderer::create_shader(unsigned int *out_shader, const char *shader_path,
                              const unsigned long type,
-                             const std::string_view glsl_semantics)
+                             const std::string_view &glsl_semantics) noexcept
 {
 	if (!out_shader)
 	{
@@ -88,7 +87,8 @@ bool renderer::create_shader(unsigned int *out_shader, const char *shader_path,
 	return true;
 }
 
-bool renderer::could_compile(unsigned int shader, const char *shader_path)
+bool renderer::could_compile(unsigned int shader,
+                             const char *shader_path) noexcept
 {
 	int success;
 	char info_log[LOG_SIZE];
@@ -105,41 +105,30 @@ bool renderer::could_compile(unsigned int shader, const char *shader_path)
 	return true;
 }
 
-void renderer::set_perspective(matrix_ubo &ubo, matrix44 perspective)
+void renderer::upload_projection(matrix_ubo mubo, const float *m44) noexcept
 {
-	glNamedBufferSubData(ubo.handle, 0, sizeof(matrix44), &perspective);
+	glNamedBufferSubData(mubo.handle, 0, 64, m44);
 }
 
-void renderer::set_view(matrix_ubo &ubo, matrix44 view)
+void renderer::upload_view(matrix_ubo mubo, const float *m44) noexcept
 {
-	glNamedBufferSubData(ubo.handle, M44Size, sizeof(matrix44), &view);
+	glNamedBufferSubData(mubo.handle, 64, 64, m44);
 }
 
-renderer::matrix_ubo renderer::test()
+renderer::matrix_ubo renderer::create_matrix_ubo() noexcept
 {
 	GLuint ubo;
 	glCreateBuffers(1, &ubo);
 	matrix_ubo mubo{.handle = ubo};
-	glNamedBufferStorage(ubo, sizeof(mubo.opaque), nullptr,
-	                     GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(ubo, 128, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MATRICES, ubo);
 
 	return mubo;
 }
 
-uint32_t renderer::create_matrix_ubo(void *initial_data, size_t bytes)
-{
-	GLuint ubo;
-	glCreateBuffers(1, &ubo);
-	glNamedBufferStorage(ubo, bytes, initial_data, GL_DYNAMIC_STORAGE_BIT);
-
-	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MATRICES, ubo);
-
-	return ubo;
-}
-
-bool renderer::create_texture(const char *texture_path, uint32_t &out_texture)
+bool renderer::create_texture(const char *texture_path,
+                              uint32_t &out_texture) noexcept
 {
 	int width, height, nr_channels;
 	unsigned char *tex_data =

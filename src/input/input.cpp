@@ -1,8 +1,5 @@
 #include "input.h"
 
-#include "../macros.h"
-#include <iostream>
-
 namespace // Input manager state
 {
 struct action_slot

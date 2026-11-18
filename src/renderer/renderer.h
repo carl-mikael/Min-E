@@ -5,36 +5,32 @@
 
 namespace renderer
 {
-bool create_program(const std::string_view glsl_semantics,
+struct shader_program
+{
+	uint32_t program;
+};
+
+bool create_program(const std::string_view &glsl_semantics,
                     const char *vertex_shader_path,
-                    const char *fragment_shader_path, uint32_t &out_program);
+                    const char *fragment_shader_path,
+                    shader_program &out_program) noexcept;
 
 bool create_shader(unsigned int *out_shader, const char *shader_path,
                    const unsigned long type,
-                   const std::string_view glsl_semantics);
+                   const std::string_view &glsl_semantics) noexcept;
 
-bool could_compile(unsigned int shader, const char *shader_path);
-// Technique from: https://iquilezles.org/articles/cppencapsulation/
+bool could_compile(unsigned int shader, const char *shader_path) noexcept;
 
-#define M44Size 64
 struct matrix_ubo
 {
 	uint32_t handle;
-	alignas(16) char opaque[M44Size * 2];
-};
-struct matrix44
-{
-	alignas(16) char opaque[M44Size];
 };
 
-void set_perspective(matrix_ubo &ubo, matrix44 perspective);
-void set_view(matrix_ubo &ubo, matrix44 view);
-matrix_ubo test();
+void upload_projection(matrix_ubo mubo, const float *m44) noexcept;
+void upload_view(matrix_ubo mubo, const float *m44) noexcept;
+[[nodiscard]]
+matrix_ubo create_matrix_ubo() noexcept;
 
-// void set_view(matrix_ubo &ubo, glm::mat4 view);
-
-uint32_t create_matrix_ubo(void *initial_data, size_t bytes);
-
-bool create_texture(const char *texture_path, uint32_t &out_texture);
+bool create_texture(const char *texture_path, uint32_t &out_texture) noexcept;
 
 } // namespace renderer
