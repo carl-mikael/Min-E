@@ -2,6 +2,12 @@ add_rules("mode.debug", "mode.release")
 ---@diagnostic disable-next-line
 add_rules("plugin.compile_commands.autoupdate", { outputdir = ".zed" })
 
+set_warnings("all", "extra")
+
+if is_mode("debug") then
+    add_cxflags("/RTC1")
+end
+
 option("log")
     set_default(false)
     set_showmenu(true)

@@ -92,10 +92,7 @@ bool create_shader_program(unsigned int *out_shader_program,
 	glAttachShader(program, vertex_shader);
 	glAttachShader(program, fragment_shader);
 
-	if (geometry_shader != -1)
-	{
-		glAttachShader(program, geometry_shader);
-	}
+	glAttachShader(program, geometry_shader);
 
 	glLinkProgram(program);
 
@@ -321,8 +318,9 @@ bool generate_sort_of_sphere(std::vector<float> &out_vertices,
 	LOG("Sphere vertex count:" << out_vertices.size() / 3);
 
 	// out_indices
-	unsigned int top_most_index = 0;
-	unsigned int bottom_most_index = out_vertices.size() / 3 - 1;
+	uint32_t top_most_index = 0;
+	uint32_t bottom_most_index =
+		static_cast<uint32_t>(out_vertices.size() / 3 - 1);
 
 	for (int i = 0; i < rings - 1; i++)
 	{
@@ -507,7 +505,8 @@ indirect_draw_info create_indirect()
 		sizeof(cube_vertices) / sizeof(cube_vertices[0]);
 	constexpr int nr_cube_instances_to_draw = 1;
 
-	const unsigned int nr_sphere_indices = sphere_indices.size();
+	const uint32_t nr_sphere_indices =
+		static_cast<uint32_t>(sphere_indices.size());
 	constexpr int nr_sphers_instances_to_draw = 1;
 	indirect_command draw_commands[]{
 		{
@@ -635,14 +634,14 @@ load_asset(const char *file, std::vector<vertex> &out_vertices,
 	int base_vertex{(int)out_vertices.size()};
 
 	int model_base_index{0};
-	for (int mesh_idx{0}; mesh_idx < scene_node->mNumMeshes; ++mesh_idx)
+	for (uint32_t mesh_idx{0}; mesh_idx < scene_node->mNumMeshes; ++mesh_idx)
 	{
 		aiMesh *ai_mesh = scene_node->mMeshes[mesh_idx];
 		index_count += ai_mesh->mNumFaces * 3;
 
 		// Need this before resize so we know where to copy the new mem to
-		int vertex_offset = out_vertices.size();
-		int index_offset = out_indices.size();
+		uint32_t vertex_offset = static_cast<uint32_t>(out_vertices.size());
+		uint32_t index_offset = static_cast<uint32_t>(out_indices.size());
 
 		out_vertices.resize(out_vertices.size() +
 		                    (size_t)ai_mesh->mNumVertices);
@@ -650,7 +649,7 @@ load_asset(const char *file, std::vector<vertex> &out_vertices,
 
 		// std::memcpy(out_vertices.data() + vertex_offset, ai_mesh->mVertices,
 		//             ai_mesh->mNumVertices * sizeof(out_vertices[0]));
-		for (int i{0}; i < ai_mesh->mNumVertices; ++i)
+		for (uint32_t i{0}; i < ai_mesh->mNumVertices; ++i)
 		{
 			vertex v{};
 			v.pos.x = ai_mesh->mVertices[i].x;
@@ -664,9 +663,9 @@ load_asset(const char *file, std::vector<vertex> &out_vertices,
 			out_vertices[vertex_offset + i] = v;
 		}
 
-		for (int face_idx{0}; face_idx < ai_mesh->mNumFaces; ++face_idx)
+		for (uint32_t face_idx{0}; face_idx < ai_mesh->mNumFaces; ++face_idx)
 		{
-			for (int index{0}; index < 3; ++index)
+			for (uint32_t index{0}; index < 3; ++index)
 			{
 				aiFace face = ai_mesh->mFaces[face_idx];
 				out_indices[index_offset + face_idx * 3 + index] =
@@ -741,7 +740,7 @@ template <typename T>
 bool set_values(size_t &delim_idx, const std::string_view &line, T *values,
                 const std::string_view &delims, int count)
 {
-	int nchars;
+	size_t nchars;
 	size_t offset{delim_idx + 1};
 	bool consumed_line = false;
 	for (int i{0}; i < count; ++i)
@@ -806,7 +805,7 @@ bool load_scene(const char *file, scene_data &out_scene)
 				std::vector<float> &vertices = out_scene.object_data.positions;
 				uint32_t instances{0};
 
-				for (int i{0}; true; ++i)
+				while (true)
 				{
 					++instances;
 					float pos[3];
@@ -927,7 +926,7 @@ std::optional<indirect_command> load_obj(const char *file,
 			{
 				int facei[3];
 				face faces[4];
-				int face_count{0};
+				size_t face_count{0};
 				while (true)
 				{
 					bool consumed_line =
@@ -955,8 +954,9 @@ std::optional<indirect_command> load_obj(const char *file,
 					}
 					else
 					{
-						if (f.pos >= positions.size() ||
-						    f.normal >= normals.size() || f.uv >= uvs.size())
+						if (f.pos >= (int)positions.size() ||
+						    f.normal >= (int)normals.size() ||
+						    f.uv >= (int)uvs.size())
 						{
 							LOG("Face index out of bounds");
 							return {};
@@ -981,9 +981,9 @@ std::optional<indirect_command> load_obj(const char *file,
 						}
 						else
 						{
-							if (f.pos >= positions.size() ||
-							    f.normal >= normals.size() ||
-							    f.uv >= uvs.size())
+							if (f.pos >= (int)positions.size() ||
+							    f.normal >= (int)normals.size() ||
+							    f.uv >= (int)uvs.size())
 							{
 								LOG("Face index out of bounds");
 								return {};
@@ -1107,12 +1107,12 @@ models upload_models()
 
 	const char *cube_file = "asset/model/cube.obj";
 	const char *tree_file = "asset/model/tree.obj";
-	const char *golem_file = "asset/model/StoneGolem.obj";
-	const char *eyeball_file = "asset/model/eyeball.obj";
-	const char *penguin_file = "asset/model/penguin.obj";
+	// const char *golem_file = "asset/model/StoneGolem.obj";
+	// const char *eyeball_file = "asset/model/eyeball.obj";
+	// const char *penguin_file = "asset/model/penguin.obj";
 
-	const char *badcube =
-		"asset/badcube.obj"; // @WARNING: It's broken to test system
+	// const char *badcube =
+	// 	"asset/badcube.obj"; // @WARNING: It's broken to test system
 
 	std::unordered_map<std::string, dirty::indirect_instanced> objects{};
 
@@ -1124,13 +1124,11 @@ models upload_models()
 		// cube_file,    glm::vec3{0}, eyeball_file, glm::vec3{-3, 0, 5},
 		// tree_file,    {0, 0, -30},  golem_file,   {-10, 0, 0},
 		// penguin_file, {4, 0, 15},
-		cube_file,
-		glm::vec3{0},
-		tree_file,
-		glm::vec3{0},
+		{cube_file, glm::vec3{0}},
+		{tree_file, glm::vec3{0}},
 	};
 
-	for (int i{0}; i < std::size(obj_render_data); ++i)
+	for (uint32_t i{0}; i < std::size(obj_render_data); ++i)
 	{
 		if (!dirty::render_obj(obj_render_data[i].file, obj_render_data[i].pos,
 		                       objects, vertices, indices))
@@ -1153,7 +1151,7 @@ models upload_models()
 		dirty::indirect_command &command = pair.second.command;
 		command.base_instance = instances;
 		std::vector<glm::vec3> &model_offsets = pair.second.offsets;
-		unsigned model_instances = model_offsets.size();
+		uint32_t model_instances = static_cast<uint32_t>(model_offsets.size());
 		command.instance_count = model_instances;
 		instances += model_instances;
 		commands.push_back(command);

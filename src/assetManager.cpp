@@ -6,10 +6,6 @@
 #include <cstdint>
 #include <vector>
 
-#ifdef DEBUG
-#include <iostream>
-#endif
-
 namespace // Helpers
 {
 bool load_asset(const char *file, am::models_data &out_models) noexcept
@@ -35,26 +31,21 @@ bool load_asset(const char *file, am::models_data &out_models) noexcept
 		return false;
 	}
 
-	unsigned int index_count{0};
-	unsigned int first_index{(unsigned int)out_models.indices.size()};
-	int base_vertex{(int)out_models.vertices.size()};
-
 	int model_base_index{0};
-	for (int mesh_idx{0}; mesh_idx < scene_node->mNumMeshes; ++mesh_idx)
+	for (uint32_t mesh_idx{0}; mesh_idx < scene_node->mNumMeshes; ++mesh_idx)
 	{
 		aiMesh *ai_mesh = scene_node->mMeshes[mesh_idx];
-		index_count += ai_mesh->mNumFaces * 3;
 
 		// Need this before resize so we know where to copy the new mem to
-		int vertex_offset = out_models.vertices.size();
-		int index_offset = out_models.indices.size();
+		size_t vertex_offset = out_models.vertices.size();
+		size_t index_offset = out_models.indices.size();
 
 		out_models.vertices.resize(out_models.vertices.size() +
 		                           (size_t)ai_mesh->mNumVertices);
 		out_models.indices.resize(out_models.indices.size() +
 		                          ai_mesh->mNumFaces * 3);
 
-		for (int i{0}; i < ai_mesh->mNumVertices; ++i)
+		for (uint32_t i{0}; i < ai_mesh->mNumVertices; ++i)
 		{
 			am::vertex v{};
 			v.pos[0] = ai_mesh->mVertices[i].x;
@@ -68,7 +59,7 @@ bool load_asset(const char *file, am::models_data &out_models) noexcept
 			out_models.vertices[vertex_offset + i] = v;
 		}
 
-		for (int face_idx{0}; face_idx < ai_mesh->mNumFaces; ++face_idx)
+		for (uint32_t face_idx{0}; face_idx < ai_mesh->mNumFaces; ++face_idx)
 		{
 			for (int index{0}; index < 3; ++index)
 			{
@@ -92,7 +83,7 @@ bool am::load_models(const char *files[], uint32_t file_count,
 {
 	size_t handle_count = static_cast<size_t>(file_count);
 	std::vector<model_handle> handles(handle_count);
-	for (int i{0}; i < file_count; ++i)
+	for (uint32_t i{0}; i < file_count; ++i)
 	{
 		const char *file = *(files + i);
 		LOG("loading model from file: " << file);
@@ -101,7 +92,8 @@ bool am::load_models(const char *files[], uint32_t file_count,
 		mh.first_index = out_models.indices.size();
 		mh.base_vertex = out_models.vertices.size();
 		load_asset(file, out_models);
-		mh.index_count = out_models.indices.size() - mh.first_index;
+		mh.index_count =
+			static_cast<uint32_t>(out_models.indices.size() - mh.first_index);
 		handles[i] = mh;
 	}
 

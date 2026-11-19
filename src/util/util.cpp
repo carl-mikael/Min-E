@@ -2,10 +2,6 @@
 #include "../macros.h"
 #include <fstream>
 
-#ifdef DEBUG
-#include <iostream>
-#endif
-
 bool util::read_file(const char *file_path, std::string &out_content)
 {
 	std::ifstream file(file_path);

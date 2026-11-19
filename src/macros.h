@@ -12,8 +12,9 @@
 	"#version " STR_DEF(GLSL_VERSION) " core\n" + semantics + "#line 1\n"
 
 #ifdef MINE_LOG
+#include <iostream> // IWYU pragma: export
 #define LOG(msg)                                                               \
-	std::cout << __FILE__ << "::" << __func__ << ": " << msg << std::endl
+std::cout << __FILE__ << "::" << __func__ << ": " << msg << std::endl
 #else
 #define LOG(msg)
 #endif

@@ -3,13 +3,18 @@
 // Example:
 [
   {
-    "label": "Min-E Debug+Logs+custom-loader",
-    "command": "xmake f -m debug --log=y --custom-loader=y",
-  },
-  {
-    "label": "Min-E Debug+Logs+integrated-loader",
+    "label": "Min-E Debug+Logs",
     "command": "xmake f -m debug --log=y --custom-loader=n",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "reveal": "always",
+    "hide": "never",
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
   },
+  // {
+  //   "label": "Min-E Debug+Logs+integrated-loader",
+  //   "command": "xmake f -m debug --log=y --custom-loader=n",
+  // },
   {
     "label": "Min-E Build",
     "command": "xmake",

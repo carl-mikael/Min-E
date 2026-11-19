@@ -4,10 +4,6 @@
 #include "GLFW/glfw3.h"
 #include <glad/glad.h>
 
-#ifdef DEBUG
-#include <iostream>
-#endif
-
 bool platform::init(int window_width, int window_height,
                     window_data &out_window) noexcept
 {
@@ -26,7 +22,7 @@ bool platform::init(int window_width, int window_height,
 #endif
 
 	out_window.platform_window =
-		glfwCreateWindow(800, 600, "MinE", nullptr, nullptr);
+		glfwCreateWindow(window_width, window_height, "MinE", nullptr, nullptr);
 	glfwGetWindowSize(out_window.platform_window, &out_window.width,
 	                  &out_window.height);
 

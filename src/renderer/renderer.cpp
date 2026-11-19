@@ -38,7 +38,7 @@ bool renderer::create_program(const std::string_view &glsl_semantics,
                               const char *fragment_shader_path,
                               shader_program &out_program) noexcept
 {
-	GLuint vertex_shader, fragment_shader, geometry_shader;
+	GLuint vertex_shader, fragment_shader;
 
 	if (!renderer::create_shader(&vertex_shader, vertex_shader_path,
 	                             GL_VERTEX_SHADER, glsl_semantics) ||
@@ -233,8 +233,7 @@ renderer::handle renderer::upload_objects(const float_view &vertices,
 	return h;
 }
 
-void renderer::upload_draw_commands(const handle &handle,
-                                    const command_view &commands) noexcept
+void renderer::upload_draw_commands(const command_view &commands) noexcept
 {
 	// upload draw commands
 	GLuint indirect_commands;

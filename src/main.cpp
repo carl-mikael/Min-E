@@ -26,11 +26,7 @@
 #include <glm/glm.hpp>
 #include <stb_image.h>
 
-#ifdef DEBUG
-#include <iostream> // For LOG
-#endif
-
-int main(int argc, char **argv)
+int main(int, char **)
 {
 	bool is_two_players = false;
 	bool line_mode = false;
@@ -69,14 +65,14 @@ int main(int argc, char **argv)
 
 	std::vector<renderer::draw_command> draw_commands{};
 	uint32_t tot_instances{0};
-	for (int i{0}; i < scene.object_data.ids.size(); ++i)
+	for (size_t i{0}; i < scene.object_data.ids.size(); ++i)
 	{
 		renderer::draw_command command{};
 		uint32_t model_idx = scene.object_data.ids[i];
 		const auto &m_handle = m_handles.handles[model_idx];
 		command.index_count = m_handle.index_count;
-		command.first_index = m_handle.first_index;
-		command.base_vertex = m_handle.base_vertex;
+		command.first_index = static_cast<uint32_t>(m_handle.first_index);
+		command.base_vertex = static_cast<uint32_t>(m_handle.base_vertex);
 		command.base_instance = tot_instances;
 		// Using i instead of model_idx allows for creating seperate instances
 		// of the same mesh data
@@ -94,7 +90,7 @@ int main(int argc, char **argv)
 	renderer::command_view cv{.data = draw_commands.data(),
 	                          .bytes = sizeof(draw_commands[0]) *
 	                                   draw_commands.size()};
-	renderer::upload_draw_commands(handle, cv);
+	renderer::upload_draw_commands(cv);
 
 	renderer::upload_instance_offsets(
 		handle, {.data = scene.object_data.positions.data(),
@@ -119,8 +115,6 @@ int main(int argc, char **argv)
 #pragma endregion
 
 #pragma region view
-	constexpr float camera_height = 5.0f;
-
 	glm::vec3 start_pos{};
 	std::memcpy(&start_pos, &scene.start_pos, sizeof(scene.start_pos));
 	glm::vec3 goal_pos{};
@@ -274,7 +268,7 @@ int main(int argc, char **argv)
 		glNamedBufferSubData(mubo.handle, sizeof(glm::mat4), sizeof(glm::mat4),
 		                     glm::value_ptr(camera1));
 
-		glClearColor(0.8, 0.12, 0.12, 1);
+		glClearColor(0.8f, 0.12f, 0.12f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glViewport(0, 0, window.width / (is_two_players ? 2 : 1),
@@ -287,7 +281,7 @@ int main(int argc, char **argv)
 		// GLsizei commands_to_execute = models.nr_commands;
 		// constexpr GLsizei command_stride = sizeof(dirty::indirect_command);
 		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0,
-		                            draw_commands.size(),
+		                            static_cast<int>(draw_commands.size()),
 		                            sizeof(renderer::draw_command));
 
 		if (is_two_players)
@@ -304,7 +298,7 @@ int main(int argc, char **argv)
 
 			glScissor(window.width / 2, 0, window.width / 2, window.height);
 			glEnable(GL_SCISSOR_TEST);
-			glClearColor(0.12, 0.8, 0.12, 1);
+			glClearColor(0.12f, 0.8f, 0.12f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			// glViewport(window.width / 2, 0, window.width / 2, window.height);
