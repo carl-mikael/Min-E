@@ -26,6 +26,15 @@ kanban-plugin: board
 	- [ ] Support multiple players
 - [ ] Flying camera
 	- [ ] Second player
+- [ ] Swap between scenes in runtime
+	- [ ] Teleport the players back to start
+- [ ] Remove loose variables from main
+- [ ] Replace std::cerr with an error macro
+- [ ] 3 person camera with mouse control
+
+
+## Now
+
 - [ ] Scene
 	- [ ] Custom file format
 	Should include:
@@ -33,14 +42,6 @@ kanban-plugin: board
 	- [ ] A start pos
 	- [ ] A goal pos
 	- [ ] Object positions
-- [ ] Swap between scenes in runtime
-	- [ ] Teleport the players back to start
-
-
-## Now
-
-- [ ] Remove loose variables from main
-- [ ] Replace std::cerr with an error macro
 
 
 ## Done
