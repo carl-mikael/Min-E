@@ -18,6 +18,8 @@ kanban-plugin: board
 - [ ] Update command buffer dynamically.
 	Use 2 buffers to ping-pong between. So all the work stays on the GPU.
 	Update draw count based on it.
+- [ ] 3 person camera with mouse control. Extra
+- [ ] Replace std::cerr with an error macro
 
 
 ## Next
@@ -26,26 +28,28 @@ kanban-plugin: board
 	- [ ] Support multiple players
 - [ ] Flying camera
 	- [ ] Second player
-- [ ] Swap between scenes in runtime
-	- [ ] Teleport the players back to start
 - [ ] Remove loose variables from main
-- [ ] Replace std::cerr with an error macro
-- [ ] 3 person camera with mouse control
 
 
 ## Now
 
-- [ ] Scene
-	- [ ] Custom file format
-	Should include:
-	- [ ] Scene name
-	- [ ] A start pos
-	- [ ] A goal pos
-	- [ ] Object positions
+- [ ] Scenes in runtime
+	- [ ] Switch scene
+	- [ ] Teleport the players back to start
 
 
 ## Done
 
+- [ ] Use scene
+	- [x] render objects
+	- [x] spawn camera at start pos
+- [ ] Scene
+	- [x] Custom file format
+	Should include:
+	- [x] Scene name
+	- [x] A start pos
+	- [x] A goal pos
+	- [x] Object positions
 - [ ] Split screen
 	- [x] Toggle on/off during runtime
 - [ ] Delta time
