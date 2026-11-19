@@ -4,6 +4,7 @@
 #include "renderer/renderer.h"
 #include <cassert>
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <vector>
 #define STB_IMAGE_IMPLEMENTATION
@@ -115,11 +116,14 @@ int main(int argc, char **argv)
 
 #pragma region view
 	constexpr float camera_height = 5.0f;
-	constexpr glm::vec3 view_pos{0, camera_height, 30.0f};
-	constexpr glm::vec3 view_target{0, camera_height, 0}; // Look forward
+
+	glm::vec3 start_pos{};
+	std::memcpy(&start_pos, &scene.start_pos, sizeof(scene.start_pos));
+	glm::vec3 goal_pos{};
 	constexpr glm::vec3 view_up_axis{0, 1, 0};
-	glm::mat4 camera1 = glm::lookAt(view_pos, view_target, view_up_axis);
-	glm::mat4 camera2 = glm::lookAt(view_pos, view_target, view_up_axis);
+	std::memcpy(&goal_pos, &scene.goal_pos, sizeof(scene.goal_pos));
+	glm::mat4 camera1 = glm::lookAt(start_pos, goal_pos, view_up_axis);
+	glm::mat4 camera2 = glm::lookAt(start_pos, goal_pos, view_up_axis);
 
 	constexpr float near{0.1f}, far{100.0f};
 	constexpr float fov{glm::radians(45.0f)};
@@ -137,8 +141,6 @@ int main(int argc, char **argv)
 	renderer::upload_projection(mubo, glm::value_ptr(perspective));
 	renderer::upload_view(mubo, glm::value_ptr(camera1));
 #pragma endregion
-
-	// dirty::models models = dirty::upload_models();
 
 #pragma region input-info
 	// User would defines. Meta meaning to input slots.
@@ -185,7 +187,6 @@ int main(int argc, char **argv)
 	glEnable(GL_CULL_FACE);
 
 	glUseProgram(shader.program);
-	// glBindVertexArray(models.vao);
 	glBindVertexArray(handle.id);
 	while (platform::update(window, timer))
 	{
