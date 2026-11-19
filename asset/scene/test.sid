@@ -1,0 +1,11 @@
+# Scene id: id
+sid 42
+# start pos: pos
+sp 0/0/0
+# goal pos: pos
+gp 0/0/-10
+
+# object id: instance positions [1+]
+o 0 -5/0/0 0/0/0
+
+o 4 8/0/0
