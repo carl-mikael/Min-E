@@ -63,8 +63,8 @@ struct draw_command
 {
 	uint32_t index_count;
 	uint32_t instance_count;
-	size_t first_index;
-	size_t base_vertex;
+	uint32_t first_index;
+	uint32_t base_vertex;
 	uint32_t base_instance;
 };
 
@@ -76,4 +76,12 @@ struct command_view
 
 void upload_draw_commands(const handle &handle,
                           const command_view &commands) noexcept;
+
+struct models_view
+{
+	const float *data;
+	size_t bytes;
+};
+
+void upload_models(const models_view &models) noexcept;
 } // namespace renderer

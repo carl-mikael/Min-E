@@ -241,3 +241,13 @@ void renderer::upload_draw_commands(const handle &handle,
 
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirect_commands);
 }
+
+void renderer::upload_models(const models_view &models) noexcept
+{
+	GLuint models_handle;
+	glCreateBuffers(1, &models_handle);
+	glNamedBufferStorage(models_handle, UBO_MAX_SIZE, models.data,
+	                     GL_DYNAMIC_STORAGE_BIT);
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MODELS, models_handle);
+}

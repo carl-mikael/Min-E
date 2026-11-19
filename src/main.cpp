@@ -82,8 +82,7 @@ int main(int argc, char **argv)
 		command.first_index = m_handle.first_index;
 		command.base_vertex = m_handle.base_vertex;
 		command.base_instance = tot_instances;
-		command.instance_count =
-			scene.object_data.instances[model_idx]; //.positions.size() / 3;
+		command.instance_count = scene.object_data.instances[model_idx];
 		tot_instances += command.instance_count;
 		draw_commands.push_back(command);
 	}
@@ -92,6 +91,12 @@ int main(int argc, char **argv)
 	                          .bytes = sizeof(draw_commands[0]) *
 	                                   draw_commands.size()};
 	renderer::upload_draw_commands(handle, cv);
+
+	std::vector<glm::mat4> models{2, glm::mat4{1.0f}};
+	renderer::models_view mv{};
+	mv.data = glm::value_ptr(models.front());
+	mv.bytes = sizeof(glm::mat4) * models.size();
+	renderer::upload_models(mv);
 
 #pragma region create-shader
 	renderer::shader_program shader{};
