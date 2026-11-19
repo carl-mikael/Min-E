@@ -3,7 +3,9 @@
 #include "glm/geometric.hpp"
 #include "renderer/renderer.h"
 #include <cassert>
+#include <cstdint>
 #include <string>
+#include <vector>
 #define STB_IMAGE_IMPLEMENTATION
 
 #include "dirty.h"
@@ -61,13 +63,35 @@ int main(int argc, char **argv)
 	{
 		return -1;
 	}
-
 	const float *vertex_data = am::get_data(m_data.vertices.front());
 	am::model_data_sizes mds = am::get_bytes(m_data);
+
 	renderer::vertices_view v_vertices{vertex_data, mds.vertices_size};
 	renderer::indices_view v_indices{m_data.indices.data(), mds.indices_size};
 
 	renderer::handle handle = renderer::upload_objects(v_vertices, v_indices);
+
+	std::vector<renderer::draw_command> draw_commands{};
+	uint32_t tot_instances{0};
+	for (int i{0}; i < scene.object_data.ids.size(); ++i)
+	{
+		renderer::draw_command command{};
+		uint32_t model_idx = scene.object_data.ids[i];
+		const auto &m_handle = m_handles.handles[model_idx];
+		command.index_count = m_handle.index_count;
+		command.first_index = m_handle.first_index;
+		command.base_vertex = m_handle.base_vertex;
+		command.base_instance = tot_instances;
+		command.instance_count =
+			scene.object_data.instances[model_idx]; //.positions.size() / 3;
+		tot_instances += command.instance_count;
+		draw_commands.push_back(command);
+	}
+
+	renderer::command_view cv{.data = draw_commands.data(),
+	                          .bytes = sizeof(draw_commands[0]) *
+	                                   draw_commands.size()};
+	renderer::upload_draw_commands(handle, cv);
 
 #pragma region create-shader
 	renderer::shader_program shader{};
@@ -109,7 +133,7 @@ int main(int argc, char **argv)
 	renderer::upload_view(mubo, glm::value_ptr(camera1));
 #pragma endregion
 
-	dirty::models models = dirty::upload_models();
+	// dirty::models models = dirty::upload_models();
 
 #pragma region input-info
 	// User would defines. Meta meaning to input slots.
@@ -243,15 +267,17 @@ int main(int argc, char **argv)
 
 		glViewport(0, 0, window.width / (is_two_players ? 2 : 1),
 		           window.height);
-		constexpr GLenum index_typ =
-			GL_UNSIGNED_INT; // @TODO: Replace with GL_UNSIGNED_SHORT
-		constexpr void *command_buffer_offset =
-			(void *)0; // @TODO: Change this based on which mesh to draw
-		GLsizei commands_to_execute = models.nr_commands;
-		constexpr GLsizei command_stride = sizeof(dirty::indirect_command);
-		glMultiDrawElementsIndirect(GL_TRIANGLES, index_typ,
-		                            command_buffer_offset, commands_to_execute,
-		                            command_stride);
+
+		// constexpr GLenum index_typ =
+		// 	GL_UNSIGNED_INT; // @TODO: Replace with GL_UNSIGNED_SHORT
+		// constexpr void *command_buffer_offset =
+		// 	(void *)0; // @TODO: Change this based on which mesh to draw
+		// GLsizei commands_to_execute = models.nr_commands;
+		// constexpr GLsizei command_stride = sizeof(dirty::indirect_command);
+		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0,
+		                            draw_commands.size(),
+		                            sizeof(renderer::draw_command));
+
 		if (is_two_players)
 		{
 			glDisable(GL_SCISSOR_TEST);
@@ -269,10 +295,10 @@ int main(int argc, char **argv)
 			glClearColor(0.12, 0.8, 0.12, 1);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			glViewport(window.width / 2, 0, window.width / 2, window.height);
-			glMultiDrawElementsIndirect(GL_TRIANGLES, index_typ,
-			                            command_buffer_offset,
-			                            commands_to_execute, command_stride);
+			// glViewport(window.width / 2, 0, window.width / 2, window.height);
+			// glMultiDrawElementsIndirect(GL_TRIANGLES, index_typ,
+			//                             command_buffer_offset,
+			//                             commands_to_execute, command_stride);
 
 			glDisable(GL_SCISSOR_TEST);
 		}

@@ -230,3 +230,14 @@ renderer::handle renderer::upload_objects(const vertices_view &vertices,
 	handle h{.id = vao};
 	return h;
 }
+
+void renderer::upload_draw_commands(const handle &handle,
+                                    const command_view &commands) noexcept
+{
+	// upload draw commands
+	GLuint indirect_commands;
+	glCreateBuffers(1, &indirect_commands);
+	glNamedBufferStorage(indirect_commands, commands.bytes, commands.data, 0);
+
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirect_commands);
+}

@@ -3,6 +3,7 @@
 #include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include <cstddef>
+#include <cstdint>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <optional>
@@ -99,8 +100,9 @@ indirect_draw_info create_indirect();
 
 struct scene_object_data
 {
-	uint32_t id;
-	std::vector<float[3]> positions;
+	std::vector<uint32_t> ids;
+	std::vector<uint32_t> instances;
+	std::vector<float> positions;
 };
 
 struct scene_data
@@ -108,7 +110,7 @@ struct scene_data
 	uint32_t id;
 	float start_pos[3];
 	float goal_pos[3];
-	std::vector<scene_object_data> objects;
+	scene_object_data object_data;
 };
 
 bool load_scene(const char *file, scene_data &out_scene);

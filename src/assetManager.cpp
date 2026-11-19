@@ -4,6 +4,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <cstdint>
+#include <vector>
 
 #ifdef DEBUG
 #include <iostream>
@@ -89,6 +90,8 @@ bool am::load_models(const char *files[], uint32_t file_count,
                      models_data &out_models,
                      model_handles &out_model_handles) noexcept
 {
+	size_t handle_count = static_cast<size_t>(file_count);
+	std::vector<model_handle> handles(handle_count);
 	for (int i{0}; i < file_count; ++i)
 	{
 		const char *file = *(files + i);
@@ -99,8 +102,10 @@ bool am::load_models(const char *files[], uint32_t file_count,
 		mh.base_vertex = out_models.vertices.size();
 		load_asset(file, out_models);
 		mh.index_count = out_models.indices.size() - mh.first_index;
-		out_model_handles.handles.push_back(mh);
+		handles[i] = mh;
 	}
+
+	out_model_handles.handles = std::move(handles);
 
 	return true;
 }

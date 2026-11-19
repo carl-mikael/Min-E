@@ -801,17 +801,22 @@ bool load_scene(const char *file, scene_data &out_scene)
 			case 'o':
 				uint32_t id{};
 				set_values(delim_idx, line, &id, " ", 1);
+				out_scene.object_data.ids.push_back(id);
 				LOG("Object id: " << id);
+				std::vector<float> &vertices = out_scene.object_data.positions;
+				size_t instances{0};
 
-				std::vector<glm::vec3> positions{};
 				for (int i{0}; true; ++i)
 				{
-					glm::vec3 pos{};
+					++instances;
+					float pos[3];
 
 					bool consumed_line =
 						set_values(delim_idx, line, &pos[0], " /", 3);
 
-					positions.push_back(pos);
+					vertices.push_back(pos[0]);
+					vertices.push_back(pos[1]);
+					vertices.push_back(pos[2]);
 
 					if (consumed_line)
 					{
@@ -819,19 +824,26 @@ bool load_scene(const char *file, scene_data &out_scene)
 					}
 				}
 
-				scene_object_data sod{
-					.id = id,
-					.positions = std::vector<float[3]>(positions.size())};
-				std::memcpy(sod.positions.data(), positions.data(),
-				            sizeof(glm::vec3) * positions.size());
+				out_scene.object_data.instances.push_back(instances);
 
-				for (const auto &p : sod.positions)
-				{
-					LOG("P: " << p[0] << p[1] << p[2]);
-				}
+				break;
+			}
+			break;
 
-				out_scene.objects.push_back(std::move(sod));
-
+		case 2:
+			switch (pack_as_int(line[0], line[1]))
+			{
+			case pack_as_int('s', 'p'):
+				set_values(delim_idx, line, &out_scene.start_pos[0], " /", 3);
+				LOG("start pos: " << out_scene.start_pos[0]
+				                  << out_scene.start_pos[1]
+				                  << out_scene.start_pos[2]);
+				break;
+			case pack_as_int('g', 'p'):
+				set_values(delim_idx, line, &out_scene.goal_pos[0], " /", 3);
+				LOG("goal pos: " << out_scene.goal_pos[0]
+				                 << out_scene.goal_pos[1]
+				                 << out_scene.goal_pos[2]);
 				break;
 			}
 			break;
