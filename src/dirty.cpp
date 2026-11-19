@@ -804,7 +804,7 @@ bool load_scene(const char *file, scene_data &out_scene)
 				out_scene.object_data.ids.push_back(id);
 				LOG("Object id: " << id);
 				std::vector<float> &vertices = out_scene.object_data.positions;
-				size_t instances{0};
+				uint32_t instances{0};
 
 				for (int i{0}; true; ++i)
 				{

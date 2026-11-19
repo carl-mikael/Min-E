@@ -78,10 +78,18 @@ int main(int argc, char **argv)
 		command.first_index = m_handle.first_index;
 		command.base_vertex = m_handle.base_vertex;
 		command.base_instance = tot_instances;
-		command.instance_count = scene.object_data.instances[model_idx];
+		// Using i instead of model_idx allows for creating seperate instances
+		// of the same mesh data
+		command.instance_count = scene.object_data.instances[i];
 		tot_instances += command.instance_count;
 		draw_commands.push_back(command);
 	}
+
+	std::vector<glm::mat4> models(draw_commands.size(), glm::mat4{1.0f});
+	renderer::float_view models_view{
+		.data = glm::value_ptr(models.front()),
+		.bytes = sizeof(glm::mat4) * models.size(),
+	};
 
 	renderer::command_view cv{.data = draw_commands.data(),
 	                          .bytes = sizeof(draw_commands[0]) *
@@ -93,11 +101,6 @@ int main(int argc, char **argv)
 	             .bytes = scene.object_data.positions.size() *
 	                      sizeof(scene.object_data.positions[0])});
 
-	std::vector<glm::mat4> models{2, glm::mat4{1.0f}};
-	renderer::float_view models_view{
-		.data = glm::value_ptr(models.front()),
-		.bytes = sizeof(glm::mat4) * models.size(),
-	};
 	renderer::upload_models(models_view);
 
 #pragma region create-shader
