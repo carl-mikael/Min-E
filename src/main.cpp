@@ -2,6 +2,7 @@
 #include "assetManager.h"
 #include "glm/geometric.hpp"
 #include "renderer/renderer.h"
+#include <cassert>
 #include <string>
 #define STB_IMAGE_IMPLEMENTATION
 
@@ -42,13 +43,13 @@ int main(int argc, char **argv)
 		"asset/model/tree.obj",
 	};
 
-	am::models_data md{};
-	am::model_handles mhs{};
-	if (!am::load_models(files, std::size(files), md, mhs))
+	am::models_data m_data{};
+	am::model_handles m_handles{};
+	if (!am::load_models(files, std::size(files), m_data, m_handles))
 	{
 		return -1;
 	}
-	for (const auto &mh : mhs.handles)
+	for (const auto &mh : m_handles.handles)
 	{
 		LOG("mh - index count: " << mh.index_count
 		                         << " first index: " << mh.first_index
@@ -61,11 +62,12 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	renderer::vertices_view vv{&md.vertices.front().pos[0],
-	                           md.vertices.size() * sizeof(md.vertices[0])};
-	renderer::indices_view iv{md.indices.data(),
-	                          md.indices.size() * sizeof(md.indices[0])};
-	renderer::handle handle = renderer::upload_objects(vv, iv);
+	const float *vertex_data = am::get_data(m_data.vertices.front());
+	am::model_data_sizes mds = am::get_bytes(m_data);
+	renderer::vertices_view v_vertices{vertex_data, mds.vertices_size};
+	renderer::indices_view v_indices{m_data.indices.data(), mds.indices_size};
+
+	renderer::handle handle = renderer::upload_objects(v_vertices, v_indices);
 
 #pragma region create-shader
 	renderer::shader_program shader{};

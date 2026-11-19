@@ -9,8 +9,8 @@ namespace am
 struct model_handle
 {
 	uint32_t index_count;
-	uint32_t first_index;
-	uint32_t base_vertex;
+	size_t first_index;
+	size_t base_vertex;
 };
 
 // Right now I'm assuming vertex layout & attributes. Not a big fan of this but
@@ -25,6 +25,11 @@ struct vertex
 	float uv[2];
 };
 
+inline constexpr const float *get_data(const vertex &vert) noexcept
+{
+	return &vert.pos[0];
+}
+
 struct models_data
 {
 	// @TODO: AGHHHHHHHH, create arena for asset manager. Don't use std::vector.
@@ -37,6 +42,19 @@ struct model_handles
 {
 	std::vector<model_handle> handles;
 };
+
+struct model_data_sizes
+{
+	size_t vertices_size;
+	size_t indices_size;
+};
+
+inline constexpr const model_data_sizes
+get_bytes(const models_data &md) noexcept
+{
+	return {.vertices_size = md.vertices.size() * sizeof(md.vertices[0]),
+	        .indices_size = md.indices.size() * sizeof(md.indices[0])};
+}
 
 bool load_models(const char *files[], uint32_t file_count,
                  models_data &out_models,

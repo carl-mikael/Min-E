@@ -40,14 +40,14 @@ void bind_texture(const texture_data &texture_info) noexcept;
 
 struct vertices_view
 {
-	float *data;
-	size_t bytes;
+	const float *data;
+	const size_t bytes;
 };
 
 struct indices_view
 {
-	uint32_t *data;
-	size_t bytes;
+	const uint32_t *data;
+	const size_t bytes;
 };
 
 struct handle
