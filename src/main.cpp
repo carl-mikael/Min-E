@@ -1,5 +1,6 @@
 #pragma once
 #include "assetManager.h"
+#include "glm/ext/vector_float4.hpp"
 #include "glm/geometric.hpp"
 #include "renderer/renderer.h"
 #include <cassert>
@@ -251,6 +252,8 @@ int main(int argc, char **argv)
 				movement_input *
 				static_cast<float>(movement_speed *
 			                       platform::delta_time(timer));
+
+			movement = glm::vec3(-camera1 * glm::vec4(movement, 0));
 			camera1 = glm::translate(camera1, movement);
 		}
 #pragma endregion
