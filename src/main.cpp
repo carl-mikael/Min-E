@@ -86,6 +86,11 @@ int main(int argc, char **argv)
 	                                   draw_commands.size()};
 	renderer::upload_draw_commands(handle, cv);
 
+	renderer::upload_instance_offsets(
+		handle, {.data = scene.object_data.positions.data(),
+	             .bytes = scene.object_data.positions.size() *
+	                      sizeof(scene.object_data.positions[0])});
+
 	std::vector<glm::mat4> models{2, glm::mat4{1.0f}};
 	renderer::float_view models_view{
 		.data = glm::value_ptr(models.front()),

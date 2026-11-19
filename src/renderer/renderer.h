@@ -77,4 +77,7 @@ void upload_draw_commands(const handle &handle,
                           const command_view &commands) noexcept;
 
 void upload_models(const float_view &models) noexcept;
+
+void upload_instance_offsets(const handle &handle,
+                             const float_view &offsets) noexcept;
 } // namespace renderer

@@ -195,7 +195,9 @@ renderer::handle renderer::upload_objects(const float_view &vertices,
 	GLuint &ebo = buffer_handles[1];
 	glCreateBuffers(nr_handles, buffer_handles);
 
-	constexpr unsigned int vbo_slot{0};
+	// @TODO: Manage slots somehow. This can't be the same as the slot for
+	// instances
+	constexpr unsigned int vertex_slot{0};
 
 	// 0 = can't interact with it again from client side.
 	constexpr GLbitfield no_client_side_access = GL_DYNAMIC_STORAGE_BIT;
@@ -206,21 +208,21 @@ renderer::handle renderer::upload_objects(const float_view &vertices,
 
 	constexpr GLintptr position_offset = 0;
 	constexpr GLsizei stride = 8 * sizeof(float);
-	glVertexArrayVertexBuffer(vao, vbo_slot, vbo, position_offset, stride);
+	glVertexArrayVertexBuffer(vao, vertex_slot, vbo, position_offset, stride);
 
 	glEnableVertexArrayAttrib(vao, ATTR_POS);
 	glVertexArrayAttribFormat(vao, ATTR_POS, 3, GL_FLOAT, GL_FALSE, 0);
-	glVertexArrayAttribBinding(vao, ATTR_POS, vbo_slot);
+	glVertexArrayAttribBinding(vao, ATTR_POS, vertex_slot);
 
 	glEnableVertexArrayAttrib(vao, ATTR_NORMAL);
 	glVertexArrayAttribFormat(vao, ATTR_NORMAL, 3, GL_FLOAT, GL_FALSE,
 	                          3 * sizeof(float));
-	glVertexArrayAttribBinding(vao, ATTR_NORMAL, vbo_slot);
+	glVertexArrayAttribBinding(vao, ATTR_NORMAL, vertex_slot);
 
 	glEnableVertexArrayAttrib(vao, ATTR_UV);
 	glVertexArrayAttribFormat(vao, ATTR_UV, 2, GL_FLOAT, GL_FALSE,
 	                          6 * sizeof(float));
-	glVertexArrayAttribBinding(vao, ATTR_UV, vbo_slot);
+	glVertexArrayAttribBinding(vao, ATTR_UV, vertex_slot);
 
 	// indices
 	glNamedBufferStorage(ebo, indices.bytes, indices.data,
@@ -252,16 +254,25 @@ void renderer::upload_models(const float_view &models) noexcept
 	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MODELS, models_handle);
 }
 
-// void renderer::upload_instance_positions() noexcept
-// {
-// 	glNamedBufferStorage(instance_offsets, sizeof(offsets), offsets, 0);
+void renderer::upload_instance_offsets(const handle &handle,
+                                       const float_view &offsets) noexcept
+{
+	GLuint instance_offsets;
 
-// 	glVertexArrayVertexBuffer(vao, offsets_slot, instance_offsets, 0,
-// 	                          3 * sizeof(float));
+	// @TODO: don't hardcode it. This can't be the same as the slot used for
+	// vertex data
+	constexpr uint32_t offsets_slot{1};
 
-// 	glVertexArrayAttribFormat(vao, ATTR_INST_OFFSET, 3, GL_FLOAT, false, 0);
-// 	glEnableVertexArrayAttrib(vao, ATTR_INST_OFFSET);
-// 	glVertexArrayAttribBinding(vao, ATTR_INST_OFFSET, offsets_slot);
+	glCreateBuffers(1, &instance_offsets);
+	glNamedBufferStorage(instance_offsets, offsets.bytes, offsets.data, 0);
 
-// 	glVertexArrayBindingDivisor(vao, offsets_slot, 1);
-// }
+	glVertexArrayVertexBuffer(handle.id, offsets_slot, instance_offsets, 0,
+	                          3 * sizeof(float));
+
+	glVertexArrayAttribFormat(handle.id, ATTR_INST_OFFSET, 3, GL_FLOAT, false,
+	                          0);
+	glEnableVertexArrayAttrib(handle.id, ATTR_INST_OFFSET);
+	glVertexArrayAttribBinding(handle.id, ATTR_INST_OFFSET, offsets_slot);
+
+	glVertexArrayBindingDivisor(handle.id, offsets_slot, 1);
+}
