@@ -5,6 +5,7 @@
 #include "macros.h"
 
 #include "util/util.h"
+#include <array>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -21,6 +22,7 @@
 #include <iostream>
 #include <set>
 #include <span>
+#include <string_view>
 #include <unordered_map>
 #include <vcruntime_typeinfo.h>
 #include <vector>
@@ -36,8 +38,8 @@ bool could_compile(unsigned int shader, const char *shader_path)
 	if (!success)
 	{
 		glGetShaderInfoLog(shader, sizeof(info_log), nullptr, info_log);
-		std::cerr << "Failed to compile shader: " << shader_path
-				  << " info_log: " << info_log << std::endl;
+		LOG("Failed to compile shader: " << shader_path
+		                                 << " info_log: " << info_log);
 
 		return false;
 	}
@@ -52,7 +54,7 @@ bool create_shader(unsigned int *out_shader, const char *shader_path,
 {
 	if (!out_shader)
 	{
-		std::cerr << "shader id is nullptr" << std::endl;
+		LOG("shader id is nullptr");
 		return false;
 	}
 
@@ -103,8 +105,7 @@ bool create_shader_program(unsigned int *out_shader_program,
 	if (!success)
 	{
 		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
-		std::cerr << "Failed to compile shader program: " << info_log
-				  << std::endl;
+		LOG("Failed to compile shader program: " << info_log);
 		return false;
 	}
 
@@ -617,7 +618,7 @@ load_asset(const char *file, std::vector<vertex> &out_vertices,
 		aiProcess_ValidateDataStructure | aiProcess_PreTransformVertices;
 	if (!importer.ValidateFlags(process_flags))
 	{
-		std::cerr << "process flags for importing are invalid" << std::endl;
+		LOG("process flags for importing are invalid");
 		return {};
 	}
 
@@ -625,7 +626,7 @@ load_asset(const char *file, std::vector<vertex> &out_vertices,
 	std::string error = importer.GetErrorString();
 	if (scene_node == nullptr)
 	{
-		std::cerr << "Error reading file: " << error << std::endl;
+		LOG("Error reading file: " << error);
 		return {};
 	}
 
@@ -739,15 +740,15 @@ constexpr uint16_t pack_as_int(char a, char b) noexcept
 }
 
 template <typename T>
-bool set_values(size_t &delim_idx, const std::string &line, T *values,
-                int count)
+bool set_values(size_t &delim_idx, const std::string_view &line, T *values,
+                const std::string_view &delims, int count)
 {
 	int nchars;
 	size_t offset{delim_idx + 1};
 	bool consumed_line = false;
 	for (int i{0}; i < count; ++i)
 	{
-		delim_idx = line.find_first_of(" /", offset);
+		delim_idx = line.find_first_of(delims, offset);
 
 		consumed_line = delim_idx == std::string::npos;
 
@@ -767,6 +768,81 @@ bool set_values(size_t &delim_idx, const std::string &line, T *values,
 	return false;
 }
 
+bool load_scene(const char *file, scene_data &out_scene)
+{
+	LOG("Loading scene" << file);
+
+	std::ifstream file_stream{file, std::ios::binary};
+	if (!file_stream.is_open())
+	{
+		LOG("Failed to load scene: " << file);
+		return false;
+	}
+
+	std::string_view line_view{};
+	std::string_view token{};
+	std::string line{};
+	while (std::getline(file_stream, line))
+	{
+		line_view = line;
+		size_t delim_idx = line_view.find_first_of(" ");
+		token = line_view.substr(0, delim_idx);
+		switch (delim_idx)
+		{
+		case 3:
+			assert(token == "sid");
+			set_values(delim_idx, line, &out_scene.id, " ", 1);
+			LOG("SID: " << out_scene.id);
+			break;
+
+		case 1:
+			switch (line[0])
+			{
+			case '#':
+				break;
+			case 'o':
+				uint32_t id{};
+				set_values(delim_idx, line, &id, " ", 1);
+				LOG("Object id: " << id);
+
+				std::vector<glm::vec3> positions{};
+				for (int i{0}; true; ++i)
+				{
+					glm::vec3 pos{};
+
+					bool consumed_line =
+						set_values(delim_idx, line, &pos[0], " /", 3);
+
+					positions.push_back(pos);
+
+					if (consumed_line)
+					{
+						break;
+					}
+				}
+
+				scene_object_data sod{
+					.id = id,
+					.positions = std::vector<float[3]>(positions.size())};
+				std::memcpy(sod.positions.data(), positions.data(),
+				            sizeof(glm::vec3) * positions.size());
+
+				for (const auto &p : sod.positions)
+				{
+					LOG("P: " << p[0] << p[1] << p[2]);
+				}
+
+				out_scene.objects.push_back(std::move(sod));
+
+				break;
+			}
+			break;
+		}
+	}
+
+	return true;
+}
+
 std::optional<indirect_command> load_obj(const char *file,
                                          std::vector<vertex> &out_vertices,
                                          std::vector<unsigned int> &out_indices)
@@ -776,7 +852,7 @@ std::optional<indirect_command> load_obj(const char *file,
 	std::ifstream file_stream{file, std::ios::binary};
 	if (!file_stream.is_open())
 	{
-		std::cerr << "Failed to open obj file: " << file << std::endl;
+		LOG("Failed to open obj file: " << file);
 		return {};
 	}
 
@@ -812,6 +888,7 @@ std::optional<indirect_command> load_obj(const char *file,
 	unsigned int first_index{(unsigned int)out_indices.size()};
 	int base_vertex{(int)out_vertices.size()};
 
+	std::string delims{" /"};
 	std::string line{};
 	while (std::getline(file_stream, line))
 	{
@@ -827,7 +904,7 @@ std::optional<indirect_command> load_obj(const char *file,
 			case 'v':
 			{
 				glm::vec3 pos{};
-				set_values(delim_idx, line, &pos[0], 3);
+				set_values(delim_idx, line, &pos[0], delims, 3);
 				positions.push_back(pos);
 			}
 			break;
@@ -844,7 +921,7 @@ std::optional<indirect_command> load_obj(const char *file,
 				while (true)
 				{
 					bool consumed_line =
-						set_values(delim_idx, line, &facei[0], 3);
+						set_values(delim_idx, line, &facei[0], delims, 3);
 
 					assert(face_count < std::size(faces));
 
@@ -871,8 +948,7 @@ std::optional<indirect_command> load_obj(const char *file,
 						if (f.pos >= positions.size() ||
 						    f.normal >= normals.size() || f.uv >= uvs.size())
 						{
-							std::cerr << "Face index out of bounds"
-									  << std::endl;
+							LOG("Face index out of bounds");
 							return {};
 						}
 
@@ -899,8 +975,7 @@ std::optional<indirect_command> load_obj(const char *file,
 							    f.normal >= normals.size() ||
 							    f.uv >= uvs.size())
 							{
-								std::cerr << "Face index out of bounds"
-										  << std::endl;
+								LOG("Face index out of bounds");
 								return {};
 							}
 
@@ -939,7 +1014,7 @@ std::optional<indirect_command> load_obj(const char *file,
 			case pack_as_int('v', 'n'):
 			{
 				glm::vec3 normal{};
-				set_values(delim_idx, line, &normal[0], 3);
+				set_values(delim_idx, line, &normal[0], delims, 3);
 				normals.push_back(normal);
 			}
 			break;
@@ -947,7 +1022,7 @@ std::optional<indirect_command> load_obj(const char *file,
 			case pack_as_int('v', 't'):
 			{
 				glm::vec2 uv{};
-				set_values(delim_idx, line, &uv[0], 2);
+				set_values(delim_idx, line, &uv[0], delims, 2);
 				uvs.push_back(uv);
 				break;
 			}
@@ -1002,16 +1077,12 @@ bool render_obj(std::string file, glm::vec3 pos,
 	}
 	else
 	{
-		std::cerr << "render_obj - couldn't get command from load_obj"
-				  << std::endl;
+		LOG("render_obj - couldn't get command from load_obj");
 		return false;
 	}
 
 	return true;
 }
-
-// bool render_objs(std::span<std::string> files, std::span<glm::vec3>
-// positions, )
 
 models upload_models()
 {
@@ -1024,11 +1095,11 @@ models upload_models()
 	static_assert(sizeof(aiVector3t<ai_real>) == 3 * sizeof(float),
 	              "Assimp vector doesn't match 3 floats");
 
-	const char *cube_file = "asset/cube.obj";
-	const char *tree_file = "asset/tree.obj";
-	const char *golem_file = "asset/StoneGolem.obj";
-	const char *eyeball_file = "asset/eyeball.obj";
-	const char *penguin_file = "asset/penguin.obj";
+	const char *cube_file = "asset/model/cube.obj";
+	const char *tree_file = "asset/model/tree.obj";
+	const char *golem_file = "asset/model/StoneGolem.obj";
+	const char *eyeball_file = "asset/model/eyeball.obj";
+	const char *penguin_file = "asset/model/penguin.obj";
 
 	const char *badcube =
 		"asset/badcube.obj"; // @WARNING: It's broken to test system

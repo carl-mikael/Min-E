@@ -18,18 +18,27 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
-#include <iostream>
 #include <stb_image.h>
+
+#ifdef DEBUG
+#include <iostream> // For LOG
+#endif
 
 int main(int argc, char **argv)
 {
 	bool is_two_players = false;
 	bool line_mode = false;
 
+	dirty::scene_data scene{};
+	if (!dirty::load_scene("asset/scene/test.sid", scene))
+	{
+		return -1;
+	}
+
 	platform::window_data window{};
 	if (!platform::init(800, 600, window))
 	{
-		std::cerr << "platform::init failed" << std::endl;
+		LOG("platform::init failed");
 		return -1;
 	}
 

@@ -97,6 +97,22 @@ unsigned int create_instanced_cubes();
 
 indirect_draw_info create_indirect();
 
+struct scene_object_data
+{
+	uint32_t id;
+	std::vector<float[3]> positions;
+};
+
+struct scene_data
+{
+	uint32_t id;
+	float start_pos[3];
+	float goal_pos[3];
+	std::vector<scene_object_data> objects;
+};
+
+bool load_scene(const char *file, scene_data &out_scene);
+
 load_func load_asset;
 
 unsigned upload_objects(std::span<vertex> vertices,
