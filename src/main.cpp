@@ -30,14 +30,29 @@ int main(int argc, char **argv)
 	bool is_two_players = false;
 	bool line_mode = false;
 
+	platform::window_data window{};
+	if (!platform::init(800, 600, window))
+	{
+		LOG("platform::init failed");
+		return -1;
+	}
+
 	const char *files[]{
 		"asset/model/cube.obj",
 		"asset/model/tree.obj",
 	};
 
-	if (!am::load_models(files, std::size(files)))
+	am::models_data md{};
+	am::model_handles mhs{};
+	if (!am::load_models(files, std::size(files), md, mhs))
 	{
 		return -1;
+	}
+	for (const auto &mh : mhs.handles)
+	{
+		LOG("mh - index count: " << mh.index_count
+		                         << " first index: " << mh.first_index
+		                         << " base vertex: " << mh.base_vertex);
 	}
 
 	dirty::scene_data scene{};
@@ -46,12 +61,11 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	platform::window_data window{};
-	if (!platform::init(800, 600, window))
-	{
-		LOG("platform::init failed");
-		return -1;
-	}
+	renderer::vertices_view vv{&md.vertices.front().pos[0],
+	                           md.vertices.size() * sizeof(md.vertices[0])};
+	renderer::indices_view iv{md.indices.data(),
+	                          md.indices.size() * sizeof(md.indices[0])};
+	renderer::handle handle = renderer::upload_objects(vv, iv);
 
 #pragma region create-shader
 	renderer::shader_program shader{};
@@ -140,7 +154,8 @@ int main(int argc, char **argv)
 	glEnable(GL_CULL_FACE);
 
 	glUseProgram(shader.program);
-	glBindVertexArray(models.vao);
+	// glBindVertexArray(models.vao);
+	glBindVertexArray(handle.id);
 	while (platform::update(window, timer))
 	{
 #pragma region get-input

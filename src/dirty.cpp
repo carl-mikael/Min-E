@@ -694,8 +694,6 @@ unsigned upload_objects(std::span<vertex> vertices, std::span<GLuint> indices)
 	GLuint buffer_handles[nr_handles];
 	GLuint &vbo = buffer_handles[0];
 	GLuint &ebo = buffer_handles[1];
-	// GLuint &instance_offsets = buffer_handles[2];
-	// GLuint &indirect_commands = buffer_handles[3];
 	glCreateBuffers(nr_handles, buffer_handles);
 
 	constexpr unsigned int vbo_slot{0};
@@ -1111,9 +1109,13 @@ models upload_models()
 		std::string file;
 		glm::vec3 pos;
 	} obj_render_data[]{
-		cube_file,    glm::vec3{0}, eyeball_file, glm::vec3{-3, 0, 5},
-		tree_file,    {0, 0, -30},  golem_file,   {-10, 0, 0},
-		penguin_file, {4, 0, 15},
+		// cube_file,    glm::vec3{0}, eyeball_file, glm::vec3{-3, 0, 5},
+		// tree_file,    {0, 0, -30},  golem_file,   {-10, 0, 0},
+		// penguin_file, {4, 0, 15},
+		cube_file,
+		glm::vec3{0},
+		tree_file,
+		glm::vec3{0},
 	};
 
 	for (int i{0}; i < std::size(obj_render_data); ++i)

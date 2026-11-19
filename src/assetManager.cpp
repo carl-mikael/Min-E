@@ -9,22 +9,9 @@
 #include <iostream>
 #endif
 
-bool am::load_models(const char *files[], uint32_t count)
+namespace // Helpers
 {
-	std::vector<vertex> vertices{};
-	std::vector<unsigned int> indices{};
-
-	for (int i{0}; i < count; ++i)
-	{
-		LOG("loading model from file: " << *(files + i));
-	}
-
-	return true;
-}
-
-namespace
-{
-bool load_asset(const char *file, am::mesh_data &out_mesh)
+bool load_asset(const char *file, am::models_data &out_models) noexcept
 {
 	LOG("Integrated loader, loading: " << file);
 	Assimp::Importer importer;
@@ -48,8 +35,8 @@ bool load_asset(const char *file, am::mesh_data &out_mesh)
 	}
 
 	unsigned int index_count{0};
-	unsigned int first_index{(unsigned int)out_mesh.indices.size()};
-	int base_vertex{(int)out_mesh.vertices.size()};
+	unsigned int first_index{(unsigned int)out_models.indices.size()};
+	int base_vertex{(int)out_models.vertices.size()};
 
 	int model_base_index{0};
 	for (int mesh_idx{0}; mesh_idx < scene_node->mNumMeshes; ++mesh_idx)
@@ -58,13 +45,13 @@ bool load_asset(const char *file, am::mesh_data &out_mesh)
 		index_count += ai_mesh->mNumFaces * 3;
 
 		// Need this before resize so we know where to copy the new mem to
-		int vertex_offset = out_mesh.vertices.size();
-		int index_offset = out_mesh.indices.size();
+		int vertex_offset = out_models.vertices.size();
+		int index_offset = out_models.indices.size();
 
-		out_mesh.vertices.resize(out_mesh.vertices.size() +
-		                         (size_t)ai_mesh->mNumVertices);
-		out_mesh.indices.resize(out_mesh.indices.size() +
-		                        ai_mesh->mNumFaces * 3);
+		out_models.vertices.resize(out_models.vertices.size() +
+		                           (size_t)ai_mesh->mNumVertices);
+		out_models.indices.resize(out_models.indices.size() +
+		                          ai_mesh->mNumFaces * 3);
 
 		for (int i{0}; i < ai_mesh->mNumVertices; ++i)
 		{
@@ -77,7 +64,7 @@ bool load_asset(const char *file, am::mesh_data &out_mesh)
 			v.normal[2] = ai_mesh->mNormals[i].z;
 			v.uv[0] = ai_mesh->mTextureCoords[0][i].x;
 			v.uv[1] = ai_mesh->mTextureCoords[0][i].y;
-			out_mesh.vertices[vertex_offset + i] = v;
+			out_models.vertices[vertex_offset + i] = v;
 		}
 
 		for (int face_idx{0}; face_idx < ai_mesh->mNumFaces; ++face_idx)
@@ -85,7 +72,7 @@ bool load_asset(const char *file, am::mesh_data &out_mesh)
 			for (int index{0}; index < 3; ++index)
 			{
 				aiFace face = ai_mesh->mFaces[face_idx];
-				out_mesh.indices[index_offset + face_idx * 3 + index] =
+				out_models.indices[index_offset + face_idx * 3 + index] =
 					model_base_index + face.mIndices[index];
 			}
 		}
@@ -97,3 +84,23 @@ bool load_asset(const char *file, am::mesh_data &out_mesh)
 	return true;
 }
 } // namespace
+
+bool am::load_models(const char *files[], uint32_t file_count,
+                     models_data &out_models,
+                     model_handles &out_model_handles) noexcept
+{
+	for (int i{0}; i < file_count; ++i)
+	{
+		const char *file = *(files + i);
+		LOG("loading model from file: " << file);
+
+		model_handle mh{};
+		mh.first_index = out_models.indices.size();
+		mh.base_vertex = out_models.vertices.size();
+		load_asset(file, out_models);
+		mh.index_count = out_models.indices.size() - mh.first_index;
+		out_model_handles.handles.push_back(mh);
+	}
+
+	return true;
+}

@@ -18,8 +18,6 @@ bool create_shader(unsigned int *out_shader, const char *shader_path,
                    const unsigned long type,
                    const std::string_view &glsl_semantics) noexcept;
 
-bool could_compile(unsigned int shader, const char *shader_path) noexcept;
-
 struct matrix_ubo
 {
 	uint32_t handle;
@@ -39,4 +37,25 @@ bool create_texture(const char *texture_path,
                     texture_data &out_texture_info) noexcept;
 
 void bind_texture(const texture_data &texture_info) noexcept;
+
+struct vertices_view
+{
+	float *data;
+	size_t bytes;
+};
+
+struct indices_view
+{
+	uint32_t *data;
+	size_t bytes;
+};
+
+struct handle
+{
+	uint32_t id;
+};
+
+[[nodiscard]]
+handle upload_objects(const vertices_view &vertices,
+                      const indices_view &indices);
 } // namespace renderer

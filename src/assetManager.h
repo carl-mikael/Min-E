@@ -5,9 +5,12 @@
 // Asset manager
 namespace am
 {
-struct resource
+
+struct model_handle
 {
-	uint32_t id;
+	uint32_t index_count;
+	uint32_t first_index;
+	uint32_t base_vertex;
 };
 
 // Right now I'm assuming vertex layout & attributes. Not a big fan of this but
@@ -22,7 +25,7 @@ struct vertex
 	float uv[2];
 };
 
-struct mesh_data
+struct models_data
 {
 	// @TODO: AGHHHHHHHH, create arena for asset manager. Don't use std::vector.
 	// Replace std::vector.
@@ -30,9 +33,12 @@ struct mesh_data
 	std::vector<uint32_t> indices;
 };
 
-struct models
+struct model_handles
 {
+	std::vector<model_handle> handles;
 };
 
-bool load_models(const char *files[], uint32_t count);
+bool load_models(const char *files[], uint32_t file_count,
+                 models_data &out_models,
+                 model_handles &out_model_handles) noexcept;
 } // namespace am

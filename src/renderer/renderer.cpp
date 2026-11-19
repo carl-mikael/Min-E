@@ -13,6 +13,26 @@
 
 #define M44Size 64
 
+namespace // Helpers
+{
+bool could_compile(unsigned int shader, const char *shader_path) noexcept
+{
+	int success;
+	char info_log[LOG_SIZE];
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+	if (!success)
+	{
+		glGetShaderInfoLog(shader, sizeof(info_log), nullptr, info_log);
+		LOG("Failed to compile shader: " << shader_path
+		                                 << " info_log: " << info_log);
+
+		return false;
+	}
+
+	return true;
+}
+} // namespace
+
 bool renderer::create_program(const std::string_view &glsl_semantics,
                               const char *vertex_shader_path,
                               const char *fragment_shader_path,
@@ -80,26 +100,8 @@ bool renderer::create_shader(unsigned int *out_shader, const char *shader_path,
 
 	glShaderSource(shader, 1, &shader_src, nullptr);
 	glCompileShader(shader);
-	if (!renderer::could_compile(shader, shader_path))
+	if (!could_compile(shader, shader_path))
 	{
-		return false;
-	}
-
-	return true;
-}
-
-bool renderer::could_compile(unsigned int shader,
-                             const char *shader_path) noexcept
-{
-	int success;
-	char info_log[LOG_SIZE];
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(shader, sizeof(info_log), nullptr, info_log);
-		LOG("Failed to compile shader: " << shader_path
-		                                 << " info_log: " << info_log);
-
 		return false;
 	}
 
@@ -179,4 +181,52 @@ bool renderer::create_texture(const char *texture_path,
 void renderer::bind_texture(const texture_data &texture_info) noexcept
 {
 	glBindTextureUnit(TEX2D, texture_info.handle);
+}
+
+renderer::handle renderer::upload_objects(const vertices_view &vertices,
+                                          const indices_view &indices)
+{
+	GLuint vao;
+	glCreateVertexArrays(1, &vao);
+
+	constexpr int nr_handles = 2;
+	GLuint buffer_handles[nr_handles];
+	GLuint &vbo = buffer_handles[0];
+	GLuint &ebo = buffer_handles[1];
+	glCreateBuffers(nr_handles, buffer_handles);
+
+	constexpr unsigned int vbo_slot{0};
+
+	// 0 = can't interact with it again from client side.
+	constexpr GLbitfield no_client_side_access = GL_DYNAMIC_STORAGE_BIT;
+
+	// vertices
+	glNamedBufferStorage(vbo, vertices.bytes, vertices.data,
+	                     no_client_side_access);
+
+	constexpr GLintptr position_offset = 0;
+	constexpr GLsizei stride = 8 * sizeof(float);
+	glVertexArrayVertexBuffer(vao, vbo_slot, vbo, position_offset, stride);
+
+	glEnableVertexArrayAttrib(vao, ATTR_POS);
+	glVertexArrayAttribFormat(vao, ATTR_POS, 3, GL_FLOAT, GL_FALSE, 0);
+	glVertexArrayAttribBinding(vao, ATTR_POS, vbo_slot);
+
+	glEnableVertexArrayAttrib(vao, ATTR_NORMAL);
+	glVertexArrayAttribFormat(vao, ATTR_NORMAL, 3, GL_FLOAT, GL_FALSE,
+	                          3 * sizeof(float));
+	glVertexArrayAttribBinding(vao, ATTR_NORMAL, vbo_slot);
+
+	glEnableVertexArrayAttrib(vao, ATTR_UV);
+	glVertexArrayAttribFormat(vao, ATTR_UV, 2, GL_FLOAT, GL_FALSE,
+	                          6 * sizeof(float));
+	glVertexArrayAttribBinding(vao, ATTR_UV, vbo_slot);
+
+	// indices
+	glNamedBufferStorage(ebo, indices.bytes, indices.data,
+	                     no_client_side_access);
+	glVertexArrayElementBuffer(vao, ebo);
+
+	handle h{.id = vao};
+	return h;
 }
