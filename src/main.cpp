@@ -1,4 +1,5 @@
 #pragma once
+#include "assetManager.h"
 #include "glm/geometric.hpp"
 #include "renderer/renderer.h"
 #include <string>
@@ -28,6 +29,16 @@ int main(int argc, char **argv)
 {
 	bool is_two_players = false;
 	bool line_mode = false;
+
+	const char *files[]{
+		"asset/model/cube.obj",
+		"asset/model/tree.obj",
+	};
+
+	if (!am::load_models(files, std::size(files)))
+	{
+		return -1;
+	}
 
 	dirty::scene_data scene{};
 	if (!dirty::load_scene("asset/scene/test.sid", scene))
