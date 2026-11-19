@@ -183,7 +183,7 @@ void renderer::bind_texture(const texture_data &texture_info) noexcept
 	glBindTextureUnit(TEX2D, texture_info.handle);
 }
 
-renderer::handle renderer::upload_objects(const vertices_view &vertices,
+renderer::handle renderer::upload_objects(const float_view &vertices,
                                           const indices_view &indices)
 {
 	GLuint vao;
@@ -242,7 +242,7 @@ void renderer::upload_draw_commands(const handle &handle,
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirect_commands);
 }
 
-void renderer::upload_models(const models_view &models) noexcept
+void renderer::upload_models(const float_view &models) noexcept
 {
 	GLuint models_handle;
 	glCreateBuffers(1, &models_handle);
@@ -251,3 +251,17 @@ void renderer::upload_models(const models_view &models) noexcept
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MODELS, models_handle);
 }
+
+// void renderer::upload_instance_positions() noexcept
+// {
+// 	glNamedBufferStorage(instance_offsets, sizeof(offsets), offsets, 0);
+
+// 	glVertexArrayVertexBuffer(vao, offsets_slot, instance_offsets, 0,
+// 	                          3 * sizeof(float));
+
+// 	glVertexArrayAttribFormat(vao, ATTR_INST_OFFSET, 3, GL_FLOAT, false, 0);
+// 	glEnableVertexArrayAttrib(vao, ATTR_INST_OFFSET);
+// 	glVertexArrayAttribBinding(vao, ATTR_INST_OFFSET, offsets_slot);
+
+// 	glVertexArrayBindingDivisor(vao, offsets_slot, 1);
+// }

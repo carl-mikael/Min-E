@@ -38,7 +38,7 @@ bool create_texture(const char *texture_path,
 
 void bind_texture(const texture_data &texture_info) noexcept;
 
-struct vertices_view
+struct float_view
 {
 	const float *data;
 	const size_t bytes;
@@ -56,8 +56,7 @@ struct handle
 };
 
 [[nodiscard]]
-handle upload_objects(const vertices_view &vertices,
-                      const indices_view &indices);
+handle upload_objects(const float_view &vertices, const indices_view &indices);
 
 struct draw_command
 {
@@ -77,11 +76,5 @@ struct command_view
 void upload_draw_commands(const handle &handle,
                           const command_view &commands) noexcept;
 
-struct models_view
-{
-	const float *data;
-	size_t bytes;
-};
-
-void upload_models(const models_view &models) noexcept;
+void upload_models(const float_view &models) noexcept;
 } // namespace renderer

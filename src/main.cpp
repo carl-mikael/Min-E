@@ -51,12 +51,6 @@ int main(int argc, char **argv)
 	{
 		return -1;
 	}
-	for (const auto &mh : m_handles.handles)
-	{
-		LOG("mh - index count: " << mh.index_count
-		                         << " first index: " << mh.first_index
-		                         << " base vertex: " << mh.base_vertex);
-	}
 
 	dirty::scene_data scene{};
 	if (!dirty::load_scene("asset/scene/test.sid", scene))
@@ -66,7 +60,7 @@ int main(int argc, char **argv)
 	const float *vertex_data = am::get_data(m_data.vertices.front());
 	am::model_data_sizes mds = am::get_bytes(m_data);
 
-	renderer::vertices_view v_vertices{vertex_data, mds.vertices_size};
+	renderer::float_view v_vertices{vertex_data, mds.vertices_size};
 	renderer::indices_view v_indices{m_data.indices.data(), mds.indices_size};
 
 	renderer::handle handle = renderer::upload_objects(v_vertices, v_indices);
@@ -93,10 +87,11 @@ int main(int argc, char **argv)
 	renderer::upload_draw_commands(handle, cv);
 
 	std::vector<glm::mat4> models{2, glm::mat4{1.0f}};
-	renderer::models_view mv{};
-	mv.data = glm::value_ptr(models.front());
-	mv.bytes = sizeof(glm::mat4) * models.size();
-	renderer::upload_models(mv);
+	renderer::float_view models_view{
+		.data = glm::value_ptr(models.front()),
+		.bytes = sizeof(glm::mat4) * models.size(),
+	};
+	renderer::upload_models(models_view);
 
 #pragma region create-shader
 	renderer::shader_program shader{};
