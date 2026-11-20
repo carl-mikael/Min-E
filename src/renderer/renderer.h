@@ -4,6 +4,11 @@
 
 namespace renderer
 {
+struct slots
+{
+	uint16_t used;
+};
+
 struct shader_program
 {
 	uint32_t program;
@@ -53,10 +58,11 @@ struct indices_view
 struct handle
 {
 	uint32_t id;
+	uint32_t slot;
 };
 
-[[nodiscard]]
-handle upload_objects(const float_view &vertices, const indices_view &indices);
+bool upload_objects(const float_view &vertices, const indices_view &indices,
+                    slots &slots, handle &out_handle) noexcept;
 
 struct draw_command
 {
@@ -83,8 +89,27 @@ commands_handle upload_draw_commands(const command_view &commands) noexcept;
 
 void use_draw_commands(const commands_handle &handle) noexcept;
 
-void upload_models(const float_view &models) noexcept;
+struct models_handle
+{
+	uint32_t handle;
+};
+[[nodiscard]]
+models_handle upload_models(const float_view &models) noexcept;
 
-void upload_instance_offsets(const handle &handle,
-                             const float_view &offsets) noexcept;
+void use_models(const models_handle &models_handle) noexcept;
+
+struct instance_offsets_handle
+{
+	uint32_t handle;
+	uint32_t slot;
+};
+
+bool upload_instance_offsets(const handle &handle, const float_view &offsets,
+                             slots &slots,
+                             instance_offsets_handle &out_handle) noexcept;
+
+void use_instance_offsets(
+	const handle &handle,
+	const instance_offsets_handle &instance_offsets_handle) noexcept;
+
 } // namespace renderer

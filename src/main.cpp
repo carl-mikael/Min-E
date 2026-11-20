@@ -55,7 +55,12 @@ int main(int, char **)
 	renderer::float_view v_vertices{vertex_data, mds.vertices_size};
 	renderer::indices_view v_indices{m_data.indices.data(), mds.indices_size};
 
-	renderer::handle handle = renderer::upload_objects(v_vertices, v_indices);
+	renderer::slots slots{};
+	renderer::handle handle{};
+	if (!renderer::upload_objects(v_vertices, v_indices, slots, handle))
+	{
+		return -1;
+	}
 
 	std::vector<renderer::draw_command> draw_commands{};
 	am::scene_data scene{};
@@ -94,12 +99,18 @@ int main(int, char **)
 	renderer::commands_handle command_handle =
 		renderer::upload_draw_commands(cv);
 
-	renderer::upload_instance_offsets(
-		handle, {.data = scene.object_data.positions.data(),
-	             .bytes = scene.object_data.positions.size() *
-	                      sizeof(scene.object_data.positions[0])});
+	renderer::instance_offsets_handle instance_offsets_handle{};
+	if (!renderer::upload_instance_offsets(
+			handle,
+			{.data = scene.object_data.positions.data(),
+	         .bytes = scene.object_data.positions.size() *
+	                  sizeof(scene.object_data.positions[0])},
+			slots, instance_offsets_handle))
+	{
+		return -1;
+	}
 
-	renderer::upload_models(models_view);
+	auto models_handle = renderer::upload_models(models_view);
 
 	std::vector<renderer::draw_command> draw_commands2{};
 	am::scene_data scene2{};
@@ -132,18 +143,27 @@ int main(int, char **)
 	renderer::commands_handle command_handle2 =
 		renderer::upload_draw_commands(cv2);
 
-	// renderer::upload_instance_offsets(
-	// 	handle, {.data = scene2.object_data.positions.data(),
-	//              .bytes = scene2.object_data.positions.size() *
-	//                       sizeof(scene2.object_data.positions[0])});
+	renderer::instance_offsets_handle instance_offsets_handle2{};
+	renderer::upload_instance_offsets(
+		handle,
+		{.data = scene2.object_data.positions.data(),
+	     .bytes = scene2.object_data.positions.size() *
+	              sizeof(scene2.object_data.positions[0])},
+		slots, instance_offsets_handle2);
 
-	// std::vector<glm::mat4> models2(draw_commands2.size(), glm::mat4{1.0f});
-	// renderer::float_view models_view2{
-	// 	.data = glm::value_ptr(models2.front()),
-	// 	.bytes = sizeof(glm::mat4) * models2.size(),
-	// };
+	std::vector<glm::mat4> models2(draw_commands2.size(), glm::mat4{1.0f});
+	renderer::float_view models_view2{
+		.data = glm::value_ptr(models2.front()),
+		.bytes = sizeof(glm::mat4) * models2.size(),
+	};
 
-	// renderer::upload_models(models_view2);
+	// renderer::models_handle models_handle2 =
+	// 	renderer::upload_models(models_view2);
+
+	renderer::use_models(models_handle);
+
+	// renderer::use_instance_offsets(handle, instance_offsets_handle2)e
+	renderer::use_instance_offsets(handle, instance_offsets_handle);
 
 	// you need to change the glMultiDrawElementsIndirect as well
 	// renderer::use_draw_commands(command_handle2);

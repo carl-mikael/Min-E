@@ -2,6 +2,8 @@
 #include "../glslSemantics.h"
 #include "../macros.h"
 #include "../util/util.h"
+#include <bit>
+#include <cstdint>
 #include <glad/glad.h>
 #include <glm/mat4x4.hpp>
 #include <stb_image.h>
@@ -31,6 +33,26 @@ bool could_compile(unsigned int shader, const char *shader_path) noexcept
 
 	return true;
 }
+
+bool set_unused_slot(renderer::slots &slots, uint32_t &out_slot) noexcept
+{
+	uint32_t slots_left = std::countl_zero(slots.used);
+	if (slots_left == 0)
+	{
+		LOG("No free slot, setting out_slot to 0");
+		out_slot = 0;
+		return false;
+	}
+
+	LOG("slots_left: " << slots_left);
+	out_slot = 16 - slots_left;
+	uint32_t mask = uint32_t{1} << out_slot;
+	LOG("Taking slot: " << out_slot << " (mask: " << mask << ")");
+
+	slots.used |= mask;
+	return true;
+}
+
 } // namespace
 
 bool renderer::create_program(const std::string_view &glsl_semantics,
@@ -183,8 +205,9 @@ void renderer::bind_texture(const texture_data &texture_info) noexcept
 	glBindTextureUnit(TEX2D, texture_info.handle);
 }
 
-renderer::handle renderer::upload_objects(const float_view &vertices,
-                                          const indices_view &indices)
+bool renderer::upload_objects(const float_view &vertices,
+                              const indices_view &indices, slots &slots,
+                              handle &out_handle) noexcept
 {
 	GLuint vao;
 	glCreateVertexArrays(1, &vao);
@@ -195,9 +218,13 @@ renderer::handle renderer::upload_objects(const float_view &vertices,
 	GLuint &ebo = buffer_handles[1];
 	glCreateBuffers(nr_handles, buffer_handles);
 
-	// @TODO: Manage slots somehow. This can't be the same as the slot for
-	// instances
-	constexpr unsigned int vertex_slot{0};
+	uint32_t slot;
+	if (!set_unused_slot(slots, slot))
+	{
+		LOG("No free slot, returning false");
+		return false;
+	}
+	LOG("USING SLOT: " << slot);
 
 	// 0 = can't interact with it again from client side.
 	constexpr GLbitfield no_client_side_access = GL_DYNAMIC_STORAGE_BIT;
@@ -208,29 +235,30 @@ renderer::handle renderer::upload_objects(const float_view &vertices,
 
 	constexpr GLintptr position_offset = 0;
 	constexpr GLsizei stride = 8 * sizeof(float);
-	glVertexArrayVertexBuffer(vao, vertex_slot, vbo, position_offset, stride);
+	glVertexArrayVertexBuffer(vao, slot, vbo, position_offset, stride);
 
 	glEnableVertexArrayAttrib(vao, ATTR_POS);
 	glVertexArrayAttribFormat(vao, ATTR_POS, 3, GL_FLOAT, GL_FALSE, 0);
-	glVertexArrayAttribBinding(vao, ATTR_POS, vertex_slot);
+	glVertexArrayAttribBinding(vao, ATTR_POS, slot);
 
 	glEnableVertexArrayAttrib(vao, ATTR_NORMAL);
 	glVertexArrayAttribFormat(vao, ATTR_NORMAL, 3, GL_FLOAT, GL_FALSE,
 	                          3 * sizeof(float));
-	glVertexArrayAttribBinding(vao, ATTR_NORMAL, vertex_slot);
+	glVertexArrayAttribBinding(vao, ATTR_NORMAL, slot);
 
 	glEnableVertexArrayAttrib(vao, ATTR_UV);
 	glVertexArrayAttribFormat(vao, ATTR_UV, 2, GL_FLOAT, GL_FALSE,
 	                          6 * sizeof(float));
-	glVertexArrayAttribBinding(vao, ATTR_UV, vertex_slot);
+	glVertexArrayAttribBinding(vao, ATTR_UV, slot);
 
 	// indices
 	glNamedBufferStorage(ebo, indices.bytes, indices.data,
 	                     no_client_side_access);
 	glVertexArrayElementBuffer(vao, ebo);
 
-	handle h{.id = vao};
-	return h;
+	out_handle.id = vao;
+	out_handle.slot = slot;
+	return true;
 }
 
 renderer::commands_handle
@@ -249,35 +277,56 @@ void renderer::use_draw_commands(const commands_handle &handle) noexcept
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, handle.handle);
 }
 
-void renderer::upload_models(const float_view &models) noexcept
+renderer::models_handle
+renderer::upload_models(const float_view &models) noexcept
 {
 	GLuint models_handle;
 	glCreateBuffers(1, &models_handle);
 	glNamedBufferStorage(models_handle, UBO_MAX_SIZE, models.data,
 	                     GL_DYNAMIC_STORAGE_BIT);
 
-	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MODELS, models_handle);
+	return {.handle = models_handle};
 }
 
-void renderer::upload_instance_offsets(const handle &handle,
-                                       const float_view &offsets) noexcept
+void renderer::use_models(const models_handle &models_handle) noexcept
+{
+	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MODELS, models_handle.handle);
+}
+
+bool renderer::upload_instance_offsets(
+	const handle &handle, const float_view &offsets, slots &slots,
+	instance_offsets_handle &out_handle) noexcept
 {
 	GLuint instance_offsets;
 
-	// @TODO: don't hardcode it. This can't be the same as the slot used for
-	// vertex data
-	constexpr uint32_t offsets_slot{1};
+	uint32_t slot;
+	if (!set_unused_slot(slots, slot))
+	{
+		LOG("No free slot returning");
+		return false;
+	}
 
 	glCreateBuffers(1, &instance_offsets);
 	glNamedBufferStorage(instance_offsets, offsets.bytes, offsets.data, 0);
 
-	glVertexArrayVertexBuffer(handle.id, offsets_slot, instance_offsets, 0,
+	glVertexArrayVertexBuffer(handle.id, slot, instance_offsets, 0,
 	                          3 * sizeof(float));
 
 	glVertexArrayAttribFormat(handle.id, ATTR_INST_OFFSET, 3, GL_FLOAT, false,
 	                          0);
-	glEnableVertexArrayAttrib(handle.id, ATTR_INST_OFFSET);
-	glVertexArrayAttribBinding(handle.id, ATTR_INST_OFFSET, offsets_slot);
 
-	glVertexArrayBindingDivisor(handle.id, offsets_slot, 1);
+	glVertexArrayBindingDivisor(handle.id, slot, 1);
+
+	out_handle.handle = instance_offsets;
+	out_handle.slot = slot;
+	return true;
+}
+
+void renderer::use_instance_offsets(
+	const handle &handle,
+	const instance_offsets_handle &instance_offsets_handle) noexcept
+{
+	glVertexArrayAttribBinding(handle.id, ATTR_INST_OFFSET,
+	                           instance_offsets_handle.slot);
+	glEnableVertexArrayAttrib(handle.id, ATTR_INST_OFFSET);
 }
