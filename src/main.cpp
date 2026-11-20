@@ -49,11 +49,6 @@ int main(int, char **)
 		return -1;
 	}
 
-	am::scene_data scene{};
-	if (!am::load_scene("asset/scene/test.sid", scene))
-	{
-		return -1;
-	}
 	const float *vertex_data = am::get_data(m_data.vertices.front());
 	am::model_data_sizes mds = am::get_bytes(m_data);
 
@@ -63,6 +58,11 @@ int main(int, char **)
 	renderer::handle handle = renderer::upload_objects(v_vertices, v_indices);
 
 	std::vector<renderer::draw_command> draw_commands{};
+	am::scene_data scene{};
+	if (!am::load_scene("asset/scene/test.sid", scene))
+	{
+		return -1;
+	}
 	uint32_t tot_instances{0};
 	for (size_t i{0}; i < scene.object_data.ids.size(); ++i)
 	{
@@ -74,8 +74,8 @@ int main(int, char **)
 		command.first_index = static_cast<uint32_t>(m_handle.first_index);
 		command.base_vertex = static_cast<uint32_t>(m_handle.base_vertex);
 		command.base_instance = tot_instances;
-		// Using i instead of model_idx allows for creating seperate instances
-		// of the same mesh data
+		// Using i instead of model_idx allows for creating seperate
+		// instances of the same mesh data
 		command.instance_count = scene.object_data.instances[i];
 		tot_instances += command.instance_count;
 		draw_commands.push_back(command);
@@ -90,7 +90,9 @@ int main(int, char **)
 	renderer::command_view cv{.data = draw_commands.data(),
 	                          .bytes = sizeof(draw_commands[0]) *
 	                                   draw_commands.size()};
-	renderer::upload_draw_commands(cv);
+
+	renderer::commands_handle command_handle =
+		renderer::upload_draw_commands(cv);
 
 	renderer::upload_instance_offsets(
 		handle, {.data = scene.object_data.positions.data(),
@@ -98,6 +100,54 @@ int main(int, char **)
 	                      sizeof(scene.object_data.positions[0])});
 
 	renderer::upload_models(models_view);
+
+	std::vector<renderer::draw_command> draw_commands2{};
+	am::scene_data scene2{};
+	if (!am::load_scene("asset/scene/scene2.sid", scene2))
+	{
+		return -1;
+	}
+	uint32_t tot_instances2{0};
+	for (size_t i{0}; i < scene2.object_data.ids.size(); ++i)
+	{
+		renderer::draw_command command{};
+		uint32_t model_idx = scene2.object_data.ids[i];
+		assert(model_idx < m_handles.handles.size());
+		const auto &m_handle = m_handles.handles[model_idx];
+		command.index_count = m_handle.index_count;
+		command.first_index = static_cast<uint32_t>(m_handle.first_index);
+		command.base_vertex = static_cast<uint32_t>(m_handle.base_vertex);
+		command.base_instance = tot_instances2;
+		// Using i instead of model_idx allows for creating seperate
+		// instances of the same mesh data
+		command.instance_count = scene2.object_data.instances[i];
+		tot_instances2 += command.instance_count;
+		draw_commands2.push_back(command);
+	}
+
+	renderer::command_view cv2{.data = draw_commands2.data(),
+	                           .bytes = sizeof(draw_commands2[0]) *
+	                                    draw_commands2.size()};
+
+	renderer::commands_handle command_handle2 =
+		renderer::upload_draw_commands(cv2);
+
+	// renderer::upload_instance_offsets(
+	// 	handle, {.data = scene2.object_data.positions.data(),
+	//              .bytes = scene2.object_data.positions.size() *
+	//                       sizeof(scene2.object_data.positions[0])});
+
+	// std::vector<glm::mat4> models2(draw_commands2.size(), glm::mat4{1.0f});
+	// renderer::float_view models_view2{
+	// 	.data = glm::value_ptr(models2.front()),
+	// 	.bytes = sizeof(glm::mat4) * models2.size(),
+	// };
+
+	// renderer::upload_models(models_view2);
+
+	// you need to change the glMultiDrawElementsIndirect as well
+	// renderer::use_draw_commands(command_handle2);
+	renderer::use_draw_commands(command_handle);
 
 #pragma region create-shader
 	renderer::shader_program shader{};

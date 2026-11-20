@@ -73,7 +73,15 @@ struct command_view
 	const size_t bytes;
 };
 
-void upload_draw_commands(const command_view &commands) noexcept;
+struct commands_handle
+{
+	uint32_t handle;
+};
+
+[[nodiscard]]
+commands_handle upload_draw_commands(const command_view &commands) noexcept;
+
+void use_draw_commands(const commands_handle &handle) noexcept;
 
 void upload_models(const float_view &models) noexcept;
 

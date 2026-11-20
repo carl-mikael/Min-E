@@ -233,14 +233,20 @@ renderer::handle renderer::upload_objects(const float_view &vertices,
 	return h;
 }
 
-void renderer::upload_draw_commands(const command_view &commands) noexcept
+renderer::commands_handle
+renderer::upload_draw_commands(const command_view &commands) noexcept
 {
 	// upload draw commands
 	GLuint indirect_commands;
 	glCreateBuffers(1, &indirect_commands);
 	glNamedBufferStorage(indirect_commands, commands.bytes, commands.data, 0);
 
-	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, indirect_commands);
+	return {.handle = indirect_commands};
+}
+
+void renderer::use_draw_commands(const commands_handle &handle) noexcept
+{
+	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, handle.handle);
 }
 
 void renderer::upload_models(const float_view &models) noexcept
