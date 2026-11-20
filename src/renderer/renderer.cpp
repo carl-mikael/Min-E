@@ -282,8 +282,12 @@ renderer::upload_models(const float_view &models) noexcept
 {
 	GLuint models_handle;
 	glCreateBuffers(1, &models_handle);
-	glNamedBufferStorage(models_handle, UBO_MAX_SIZE, models.data,
+	// Need nullptr when allocating more than that's being uploaded.
+	// Otherwise it keeps reading past the data end of the data.
+	glNamedBufferStorage(models_handle, UBO_MAX_SIZE, nullptr,
 	                     GL_DYNAMIC_STORAGE_BIT);
+
+	glNamedBufferSubData(models_handle, 0, models.bytes, models.data);
 
 	return {.handle = models_handle};
 }

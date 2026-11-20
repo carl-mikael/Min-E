@@ -4,7 +4,7 @@
 // "Lucky"! the pragma once is ignored by GLSL
 #pragma once
 
-#define UBO_MAX_SIZE 65536
+#define UBO_MAX_SIZE 16384
 #define MAT4_SIZE 64
 
 // Attributes, OpenGL guarantees that 0-15 exists. Reminder: Mat4 takes up 4.
