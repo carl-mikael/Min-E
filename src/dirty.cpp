@@ -10,7 +10,6 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <cassert>
-#include <charconv>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -730,128 +729,6 @@ unsigned upload_objects(std::span<vertex> vertices, std::span<GLuint> indices)
 	return vao;
 }
 
-constexpr uint16_t pack_as_int(char a, char b) noexcept
-{
-	return static_cast<uint16_t>(static_cast<uint8_t>(a) << 8 |
-	                             static_cast<uint8_t>(b));
-}
-
-template <typename T>
-bool set_values(size_t &delim_idx, const std::string_view &line, T *values,
-                const std::string_view &delims, int count)
-{
-	size_t nchars;
-	size_t offset{delim_idx + 1};
-	bool consumed_line = false;
-	for (int i{0}; i < count; ++i)
-	{
-		delim_idx = line.find_first_of(delims, offset);
-
-		consumed_line = delim_idx == std::string::npos;
-
-		nchars = consumed_line ? line.length() - offset : delim_idx - offset;
-
-		std::from_chars(line.data() + offset, line.data() + offset + nchars,
-		                values[i]);
-
-		if (consumed_line)
-		{
-			return true;
-		}
-
-		offset = delim_idx + 1;
-	}
-
-	return false;
-}
-
-bool load_scene(const char *file, scene_data &out_scene)
-{
-	LOG("Loading scene" << file);
-
-	std::ifstream file_stream{file, std::ios::binary};
-	if (!file_stream.is_open())
-	{
-		LOG("Failed to load scene: " << file);
-		return false;
-	}
-
-	std::string_view line_view{};
-	std::string_view token{};
-	std::string line{};
-	while (std::getline(file_stream, line))
-	{
-		line_view = line;
-		size_t delim_idx = line_view.find_first_of(" ");
-		token = line_view.substr(0, delim_idx);
-		switch (delim_idx)
-		{
-		case 3:
-			assert(token == "sid");
-			set_values(delim_idx, line, &out_scene.id, " ", 1);
-			LOG("SID: " << out_scene.id);
-			break;
-
-		case 1:
-			switch (line[0])
-			{
-			case '#':
-				break;
-			case 'o':
-				uint32_t id{};
-				set_values(delim_idx, line, &id, " ", 1);
-				out_scene.object_data.ids.push_back(id);
-				LOG("Object id: " << id);
-				std::vector<float> &vertices = out_scene.object_data.positions;
-				uint32_t instances{0};
-
-				while (true)
-				{
-					++instances;
-					float pos[3];
-
-					bool consumed_line =
-						set_values(delim_idx, line, &pos[0], " /", 3);
-
-					vertices.push_back(pos[0]);
-					vertices.push_back(pos[1]);
-					vertices.push_back(pos[2]);
-
-					if (consumed_line)
-					{
-						break;
-					}
-				}
-
-				out_scene.object_data.instances.push_back(instances);
-
-				break;
-			}
-			break;
-
-		case 2:
-			switch (pack_as_int(line[0], line[1]))
-			{
-			case pack_as_int('s', 'p'):
-				set_values(delim_idx, line, &out_scene.start_pos[0], " /", 3);
-				LOG("start pos: " << out_scene.start_pos[0]
-				                  << out_scene.start_pos[1]
-				                  << out_scene.start_pos[2]);
-				break;
-			case pack_as_int('g', 'p'):
-				set_values(delim_idx, line, &out_scene.goal_pos[0], " /", 3);
-				LOG("goal pos: " << out_scene.goal_pos[0]
-				                 << out_scene.goal_pos[1]
-				                 << out_scene.goal_pos[2]);
-				break;
-			}
-			break;
-		}
-	}
-
-	return true;
-}
-
 std::optional<indirect_command> load_obj(const char *file,
                                          std::vector<vertex> &out_vertices,
                                          std::vector<unsigned int> &out_indices)
@@ -913,7 +790,7 @@ std::optional<indirect_command> load_obj(const char *file,
 			case 'v':
 			{
 				glm::vec3 pos{};
-				set_values(delim_idx, line, &pos[0], delims, 3);
+				util::set_values(delim_idx, line, &pos[0], delims, 3);
 				positions.push_back(pos);
 			}
 			break;
@@ -930,7 +807,7 @@ std::optional<indirect_command> load_obj(const char *file,
 				while (true)
 				{
 					bool consumed_line =
-						set_values(delim_idx, line, &facei[0], delims, 3);
+						util::set_values(delim_idx, line, &facei[0], delims, 3);
 
 					assert(face_count < std::size(faces));
 
@@ -1019,20 +896,20 @@ std::optional<indirect_command> load_obj(const char *file,
 
 		case 2:
 			// Packing the chars into an int to compare it
-			switch (pack_as_int(line[0], line[1]))
+			switch (util::pack_as_int(line[0], line[1]))
 			{
-			case pack_as_int('v', 'n'):
+			case util::pack_as_int('v', 'n'):
 			{
 				glm::vec3 normal{};
-				set_values(delim_idx, line, &normal[0], delims, 3);
+				util::set_values(delim_idx, line, &normal[0], delims, 3);
 				normals.push_back(normal);
 			}
 			break;
 
-			case pack_as_int('v', 't'):
+			case util::pack_as_int('v', 't'):
 			{
 				glm::vec2 uv{};
-				set_values(delim_idx, line, &uv[0], delims, 2);
+				util::set_values(delim_idx, line, &uv[0], delims, 2);
 				uvs.push_back(uv);
 				break;
 			}

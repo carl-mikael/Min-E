@@ -1,9 +1,13 @@
 #include "assetManager.h"
 #include "macros.h"
+#include "util/util.h"
+
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <cassert>
 #include <cstdint>
+#include <fstream>
 #include <vector>
 
 namespace // Helpers
@@ -98,6 +102,84 @@ bool am::load_models(const char *files[], uint32_t file_count,
 	}
 
 	out_model_handles.handles = std::move(handles);
+
+	return true;
+}
+
+bool am::load_scene(const char *file, scene_data &out_scene) noexcept
+{
+	LOG("Loading scene" << file);
+
+	std::ifstream file_stream{file, std::ios::binary};
+	if (!file_stream.is_open())
+	{
+		LOG("Failed to load scene: " << file);
+		return false;
+	}
+
+	std::string_view line_view{};
+	std::string_view token{};
+	std::string line{};
+	while (std::getline(file_stream, line))
+	{
+		line_view = line;
+		size_t delim_idx = line_view.find_first_of(" ");
+		token = line_view.substr(0, delim_idx);
+
+		if ("sid" == token)
+		{
+			util::set_values(delim_idx, line, &out_scene.id, " ", 1);
+			LOG("SID: " << out_scene.id);
+		}
+		else if ("#" == token)
+		{
+		}
+		else if ("\r" == token)
+		{
+		}
+		else if ("o" == token)
+		{
+			uint32_t id{};
+			util::set_values(delim_idx, line, &id, " ", 1);
+			out_scene.object_data.ids.push_back(id);
+			LOG("Object id: " << id);
+			std::vector<float> &vertices = out_scene.object_data.positions;
+			uint32_t instances{0};
+
+			while (true)
+			{
+				++instances;
+				float pos[3];
+
+				bool consumed_line =
+					util::set_values(delim_idx, line, &pos[0], " /", 3);
+
+				vertices.push_back(pos[0]);
+				vertices.push_back(pos[1]);
+				vertices.push_back(pos[2]);
+
+				if (consumed_line)
+				{
+					break;
+				}
+			}
+
+			out_scene.object_data.instances.push_back(instances);
+		}
+		else if ("sp" == token)
+		{
+			util::set_values(delim_idx, line, &out_scene.start_pos[0], " /", 3);
+			LOG("start pos: " << out_scene.start_pos[0]
+			                  << out_scene.start_pos[1]
+			                  << out_scene.start_pos[2]);
+		}
+		else if ("gp" == token)
+		{
+			util::set_values(delim_idx, line, &out_scene.goal_pos[0], " /", 3);
+			LOG("goal pos: " << out_scene.goal_pos[0] << out_scene.goal_pos[1]
+			                 << out_scene.goal_pos[2]);
+		}
+	}
 
 	return true;
 }

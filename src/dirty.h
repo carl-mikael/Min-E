@@ -3,7 +3,6 @@
 #include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include <cstddef>
-#include <cstdint>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <optional>
@@ -97,23 +96,6 @@ pyramid create_pyramid();
 unsigned int create_instanced_cubes();
 
 indirect_draw_info create_indirect();
-
-struct scene_object_data
-{
-	std::vector<uint32_t> ids;
-	std::vector<uint32_t> instances;
-	std::vector<float> positions;
-};
-
-struct scene_data
-{
-	uint32_t id;
-	float start_pos[3];
-	float goal_pos[3];
-	scene_object_data object_data;
-};
-
-bool load_scene(const char *file, scene_data &out_scene);
 
 load_func load_asset;
 

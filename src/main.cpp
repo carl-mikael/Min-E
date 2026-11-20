@@ -10,7 +10,6 @@
 #include <vector>
 #define STB_IMAGE_IMPLEMENTATION
 
-#include "dirty.h"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/matrix_transform.hpp"
@@ -50,8 +49,8 @@ int main(int, char **)
 		return -1;
 	}
 
-	dirty::scene_data scene{};
-	if (!dirty::load_scene("asset/scene/test.sid", scene))
+	am::scene_data scene{};
+	if (!am::load_scene("asset/scene/test.sid", scene))
 	{
 		return -1;
 	}
@@ -69,6 +68,7 @@ int main(int, char **)
 	{
 		renderer::draw_command command{};
 		uint32_t model_idx = scene.object_data.ids[i];
+		assert(model_idx < m_handles.handles.size());
 		const auto &m_handle = m_handles.handles[model_idx];
 		command.index_count = m_handle.index_count;
 		command.first_index = static_cast<uint32_t>(m_handle.first_index);

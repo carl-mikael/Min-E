@@ -59,4 +59,21 @@ get_bytes(const models_data &md) noexcept
 bool load_models(const char *files[], uint32_t file_count,
                  models_data &out_models,
                  model_handles &out_model_handles) noexcept;
+
+struct scene_object_data
+{
+	std::vector<uint32_t> ids;
+	std::vector<uint32_t> instances;
+	std::vector<float> positions;
+};
+
+struct scene_data
+{
+	uint32_t id;
+	float start_pos[3];
+	float goal_pos[3];
+	scene_object_data object_data;
+};
+
+bool load_scene(const char *file, scene_data &out_scene) noexcept;
 } // namespace am
