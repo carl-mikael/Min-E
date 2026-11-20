@@ -8,6 +8,7 @@
 #include <cassert>
 #include <cstdint>
 #include <fstream>
+#include <string_view>
 #include <vector>
 
 namespace // Helpers
@@ -126,19 +127,32 @@ bool am::load_scene(const char *file, scene_data &out_scene) noexcept
 		size_t delim_idx = line_view.find_first_of(" ");
 		token = line_view.substr(0, delim_idx);
 
-		if ("sid" == token)
+		// Didn't find delim: skip to next line
+		if (std::string_view::npos == delim_idx)
+		{
+			continue;
+		}
+
+		// Parse token. Pack char tokens into uint32_t to use switch
+		switch (util::pack_as_int(token.data(), (int)delim_idx))
+		{
+		case util::pack_as_int("sid", 3):
 		{
 			util::set_values(delim_idx, line, &out_scene.id, " ", 1);
 			LOG("SID: " << out_scene.id);
 		}
-		else if ("#" == token)
+		break;
+
+		case util::pack_as_int("#", 1):
+			break;
+
+		case util::pack_as_int("\r", 1):
+			break;
+
+		case util::pack_as_int("o", 1):
 		{
-		}
-		else if ("\r" == token)
-		{
-		}
-		else if ("o" == token)
-		{
+			// Multiples objects with the same id is allowd: same mesh data but
+			// seperate instance groups
 			uint32_t id{};
 			util::set_values(delim_idx, line, &id, " ", 1);
 			out_scene.object_data.ids.push_back(id);
@@ -166,18 +180,27 @@ bool am::load_scene(const char *file, scene_data &out_scene) noexcept
 
 			out_scene.object_data.instances.push_back(instances);
 		}
-		else if ("sp" == token)
+		break;
+
+		case util::pack_as_int("sp", 2):
 		{
 			util::set_values(delim_idx, line, &out_scene.start_pos[0], " /", 3);
 			LOG("start pos: " << out_scene.start_pos[0]
 			                  << out_scene.start_pos[1]
 			                  << out_scene.start_pos[2]);
 		}
-		else if ("gp" == token)
+		break;
+
+		case util::pack_as_int("gp", 2):
 		{
 			util::set_values(delim_idx, line, &out_scene.goal_pos[0], " /", 3);
 			LOG("goal pos: " << out_scene.goal_pos[0] << out_scene.goal_pos[1]
 			                 << out_scene.goal_pos[2]);
+		}
+		break;
+
+		default:
+			break;
 		}
 	}
 

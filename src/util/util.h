@@ -1,15 +1,20 @@
 #pragma once
+#include <cassert>
 #include <charconv>
+#include <cstdint>
 #include <string>
 
 namespace util
 {
 bool read_file(const char *file_path, std::string &out_content);
 
-inline constexpr uint16_t pack_as_int(char a, char b) noexcept
+inline constexpr uint32_t pack_as_int(const char *c4, const int count) noexcept
 {
-	return static_cast<uint16_t>(static_cast<uint8_t>(a) << 8 |
-	                             static_cast<uint8_t>(b));
+	assert(count > 0 && count < 5);
+	return static_cast<uint32_t>(c4[0]) << 24 |
+	       (count > 1 ? static_cast<uint32_t>(c4[1]) : 0 << 16) |
+	       (count > 2 ? static_cast<uint32_t>(c4[2]) : 0 << 8) |
+	       (count > 3 ? static_cast<uint32_t>(c4[3]) : 0);
 }
 
 template <typename T>

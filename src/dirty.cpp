@@ -753,6 +753,7 @@ std::optional<indirect_command> load_obj(const char *file,
 	};
 
 	// Not sure how this works, followed:
+	//
 	// https://www.geeksforgeeks.org/cpp/implement-custom-hash-functions-for-user-defined-types-in-std-unordered_map/
 	struct face_hasher
 	{
@@ -896,9 +897,9 @@ std::optional<indirect_command> load_obj(const char *file,
 
 		case 2:
 			// Packing the chars into an int to compare it
-			switch (util::pack_as_int(line[0], line[1]))
+			switch (util::pack_as_int(line.data(), 2))
 			{
-			case util::pack_as_int('v', 'n'):
+			case util::pack_as_int("vn", 2):
 			{
 				glm::vec3 normal{};
 				util::set_values(delim_idx, line, &normal[0], delims, 3);
@@ -906,7 +907,7 @@ std::optional<indirect_command> load_obj(const char *file,
 			}
 			break;
 
-			case util::pack_as_int('v', 't'):
+			case util::pack_as_int("vt", 2):
 			{
 				glm::vec2 uv{};
 				util::set_values(delim_idx, line, &uv[0], delims, 2);
