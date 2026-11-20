@@ -62,6 +62,14 @@ int main(int, char **)
 		return -1;
 	}
 
+	struct test_scene
+	{
+		renderer::commands_handle commands_handle;
+		renderer::models_handle models_handle;
+		renderer::instance_offsets_handle offsets_handle;
+		int nr_commands;
+	} test_scene1, test_scene2;
+
 	std::vector<renderer::draw_command> draw_commands{};
 	am::scene_data scene{};
 	if (!am::load_scene("asset/scene/test.sid", scene))
@@ -86,6 +94,8 @@ int main(int, char **)
 		draw_commands.push_back(command);
 	}
 
+	test_scene1.nr_commands = static_cast<int>(draw_commands.size());
+
 	std::vector<glm::mat4> models(draw_commands.size(), glm::mat4{1.0f});
 	renderer::float_view models_view{
 		.data = glm::value_ptr(models.front()),
@@ -96,21 +106,19 @@ int main(int, char **)
 	                          .bytes = sizeof(draw_commands[0]) *
 	                                   draw_commands.size()};
 
-	renderer::commands_handle command_handle =
-		renderer::upload_draw_commands(cv);
+	test_scene1.commands_handle = renderer::upload_draw_commands(cv);
 
-	renderer::instance_offsets_handle instance_offsets_handle{};
 	if (!renderer::upload_instance_offsets(
 			handle,
 			{.data = scene.object_data.positions.data(),
 	         .bytes = scene.object_data.positions.size() *
 	                  sizeof(scene.object_data.positions[0])},
-			slots, instance_offsets_handle))
+			slots, test_scene1.offsets_handle))
 	{
 		return -1;
 	}
 
-	auto models_handle = renderer::upload_models(models_view);
+	test_scene1.models_handle = renderer::upload_models(models_view);
 
 	std::vector<renderer::draw_command> draw_commands2{};
 	am::scene_data scene2{};
@@ -136,20 +144,20 @@ int main(int, char **)
 		draw_commands2.push_back(command);
 	}
 
+	test_scene2.nr_commands = (int)draw_commands2.size();
+
 	renderer::command_view cv2{.data = draw_commands2.data(),
 	                           .bytes = sizeof(draw_commands2[0]) *
 	                                    draw_commands2.size()};
 
-	renderer::commands_handle command_handle2 =
-		renderer::upload_draw_commands(cv2);
+	test_scene2.commands_handle = renderer::upload_draw_commands(cv2);
 
-	renderer::instance_offsets_handle instance_offsets_handle2{};
 	renderer::upload_instance_offsets(
 		handle,
 		{.data = scene2.object_data.positions.data(),
 	     .bytes = scene2.object_data.positions.size() *
 	              sizeof(scene2.object_data.positions[0])},
-		slots, instance_offsets_handle2);
+		slots, test_scene2.offsets_handle);
 
 	std::vector<glm::mat4> models2(draw_commands2.size(), glm::mat4{1.0f});
 	renderer::float_view models_view2{
@@ -157,17 +165,13 @@ int main(int, char **)
 		.bytes = sizeof(glm::mat4) * models2.size(),
 	};
 
-	// renderer::models_handle models_handle2 =
-	// 	renderer::upload_models(models_view2);
+	test_scene2.models_handle = renderer::upload_models(models_view2);
 
-	renderer::use_models(models_handle);
-
-	// renderer::use_instance_offsets(handle, instance_offsets_handle2)e
-	renderer::use_instance_offsets(handle, instance_offsets_handle);
-
-	// you need to change the glMultiDrawElementsIndirect as well
-	// renderer::use_draw_commands(command_handle2);
-	renderer::use_draw_commands(command_handle);
+	test_scene current;
+	current = test_scene1;
+	renderer::use_models(current.models_handle);
+	renderer::use_instance_offsets(handle, current.offsets_handle);
+	renderer::use_draw_commands(current.commands_handle);
 
 #pragma region create-shader
 	renderer::shader_program shader{};
@@ -234,10 +238,12 @@ int main(int, char **)
 
 	float movement_speed{30};
 
-	constexpr float space_cooldown = 0.2f;
-	double last_space_click{-space_cooldown};
-	constexpr float f_cooldown = 0.2f;
-	double last_f_click{-f_cooldown};
+	constexpr double key_cooldown{0.2f};
+	double last_space_click{-key_cooldown};
+	double last_f_click{-key_cooldown};
+	double last_c_click{-key_cooldown};
+
+	bool is_first_scene{true};
 #pragma endregion
 
 #pragma region texture
@@ -265,9 +271,22 @@ int main(int, char **)
 			glfwSetWindowShouldClose(window.platform_window, true);
 		}
 
+		if (glfwGetKey(window.platform_window, GLFW_KEY_C))
+		{
+			if ((glfwGetTime() - last_c_click) > key_cooldown)
+			{
+				current = is_first_scene ? test_scene2 : test_scene1;
+				is_first_scene = !is_first_scene;
+				renderer::use_models(current.models_handle);
+				renderer::use_instance_offsets(handle, current.offsets_handle);
+				renderer::use_draw_commands(current.commands_handle);
+				last_c_click = glfwGetTime();
+			}
+		}
+
 		if (glfwGetKey(window.platform_window, GLFW_KEY_SPACE))
 		{
-			if ((glfwGetTime() - last_space_click) > space_cooldown)
+			if ((glfwGetTime() - last_space_click) > key_cooldown)
 			{
 				LOG("Space! - Changing player count");
 				last_space_click = timer.tick_time;
@@ -279,7 +298,7 @@ int main(int, char **)
 
 		if (glfwGetKey(window.platform_window, GLFW_KEY_F))
 		{
-			if ((glfwGetTime() - last_f_click) > f_cooldown)
+			if ((glfwGetTime() - last_f_click) > key_cooldown)
 			{
 				LOG("f!");
 				line_mode = !line_mode;
@@ -351,7 +370,7 @@ int main(int, char **)
 		// GLsizei commands_to_execute = models.nr_commands;
 		// constexpr GLsizei command_stride = sizeof(dirty::indirect_command);
 		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0,
-		                            static_cast<int>(draw_commands.size()),
+		                            current.nr_commands,
 		                            sizeof(renderer::draw_command));
 
 		if (is_two_players)
