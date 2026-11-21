@@ -402,6 +402,70 @@ int main(int, char **)
 						}
 					});
 
+	input::bind_key(player_1, GLFW_KEY_A, GLFW_PRESS | GLFW_RELEASE,
+	                &movement_input,
+	                [](void *data, int new_state)
+	                {
+						auto v3 = (glm::vec3 *)data;
+						if (new_state == GLFW_PRESS)
+						{
+							if ((input::get_key_state(GLFW_KEY_D) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->x = 0;
+							}
+							else
+							{
+								v3->x = -1;
+							}
+						}
+
+						if (new_state == GLFW_RELEASE)
+						{
+							if ((input::get_key_state(GLFW_KEY_D) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->x = 1;
+							}
+							else
+							{
+								v3->x = 0;
+							}
+						}
+					});
+
+	input::bind_key(player_1, GLFW_KEY_D, GLFW_PRESS | GLFW_RELEASE,
+	                &movement_input,
+	                [](void *data, int new_state)
+	                {
+						auto v3 = (glm::vec3 *)data;
+						if (new_state == GLFW_PRESS)
+						{
+							if ((input::get_key_state(GLFW_KEY_A) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->x = 0;
+							}
+							else
+							{
+								v3->x = 1;
+							}
+						}
+
+						if (new_state == GLFW_RELEASE)
+						{
+							if ((input::get_key_state(GLFW_KEY_A) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->x = -1;
+							}
+							else
+							{
+								v3->x = 0;
+							}
+						}
+					});
+
 	glfwSetKeyCallback(window.platform_window,
 	                   [](GLFWwindow *window, int key, int scancode, int action,
 	                      int mods) { input::execute_action(key, action); });
