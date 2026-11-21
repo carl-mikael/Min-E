@@ -3,11 +3,13 @@
 #include "glm/ext/vector_float4.hpp"
 #include "glm/geometric.hpp"
 #include "glm/matrix.hpp"
+#include "input/input.h"
 #include "renderer/renderer.h"
 #include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #define STB_IMAGE_IMPLEMENTATION
 
@@ -262,6 +264,33 @@ int main(int, char **)
 	double last_space_click{-key_cooldown};
 	double last_f_click{-key_cooldown};
 	double last_c_click{-key_cooldown};
+
+	struct tdata
+	{
+		float ms;
+	} data;
+	data.ms = movement_speed;
+
+	input::input_owner player_1{};
+	input::input_owner player_2{};
+	input::get_owner(player_1);
+	input::get_owner(player_2);
+
+	input::bind_key(
+		player_1, GLFW_KEY_1, &data, [](void *data)
+		{ LOG("OONE, ms: " << reinterpret_cast<tdata *>(data)->ms); });
+	// input::bind_key(player_2, GLFW_KEY_2, [](void *) { LOG("TTWWWWWo"); });
+
+	glfwSetKeyCallback(
+		window.platform_window,
+		[](GLFWwindow *window, int key, int scancode, int action, int mods)
+		{
+			if (action != GLFW_PRESS)
+			{
+				return;
+			}
+			input::execute_action(key);
+		});
 
 	bool is_first_scene{true};
 #pragma endregion
