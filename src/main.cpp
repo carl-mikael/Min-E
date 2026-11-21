@@ -1,11 +1,11 @@
 #pragma once
 #include "assetManager.h"
-#include "glm/ext/vector_float4.hpp"
 #include "glm/geometric.hpp"
 #include "glm/matrix.hpp"
 #include "input/input.h"
 #include "renderer/renderer.h"
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -32,8 +32,9 @@ int main(int, char **)
 {
 	bool is_two_players = false;
 	bool line_mode = false;
-
 	bool is_first_scene{true};
+	glm::vec3 movement_input{0};
+	platform::tick_timer timer{};
 
 	platform::window_data window{};
 	if (!platform::init(800, 600, window))
@@ -211,14 +212,16 @@ int main(int, char **)
 #pragma endregion
 
 #pragma region view
-	constexpr glm::vec3 view_up_axis{0, 1, 0};
+	static constexpr glm::vec3 view_up_axis{0, 1, 0};
 
 	glm::mat4 camera1;
 	glm::mat4 camera2;
 	auto set_cameras = [&]()
 	{
-		camera1 = glm::lookAt(current->start, current->goal, view_up_axis);
-		camera2 = glm::lookAt(current->start, current->goal, view_up_axis);
+		camera1 = glm::inverse(
+			glm::lookAt(current->start, current->goal, view_up_axis));
+		camera2 = glm::inverse(
+			glm::lookAt(current->start, current->goal, view_up_axis));
 	};
 	set_cameras();
 
@@ -226,8 +229,8 @@ int main(int, char **)
 	constexpr float fov{glm::radians(45.0f)};
 	auto get_perspective_matrix = [&]()
 	{
-		return glm::perspective(fov, get_aspect(window, is_two_players), near,
-		                        far);
+		return glm::perspective(
+			fov, platform::get_aspect(window, is_two_players), near, far);
 	};
 #pragma endregion
 
@@ -236,37 +239,11 @@ int main(int, char **)
 
 	renderer::matrix_ubo mubo = renderer::create_matrix_ubo();
 	renderer::upload_projection(mubo, glm::value_ptr(perspective));
-	renderer::upload_view(mubo, glm::value_ptr(camera1));
+	// renderer::upload_view(mubo, glm::value_ptr(glm::inverse(camera1)));
 #pragma endregion
 
 #pragma region input-info
-	// User would defines. Meta meaning to input slots.
-	// enum class gameplay_action : MINE_input::input_slots
-	// {
-	// 	NONE,
-	// 	FORWARD,
-	// 	LEFT,
-	// 	RIGHT,
-	// 	DOWN,
-	// };
-
-	// std::vector<MINE_input::token_binding> bindings{
-	// 	{MINE_input::KEY::W,
-	// (MINE_input::input_slots)gameplay_action::FORWARD},
-	// 	{MINE_input::KEY::UP,
-	// 	 (MINE_input::input_slots)gameplay_action::FORWARD}};
-
-	// MINE_input::bind(bindings);
-
-	// LOG("Forward: " << forward);
-	// LOG("Left: " << left);
-
-	float movement_speed{20};
-
-	constexpr double key_cooldown{0.2f};
-	double last_space_click{-key_cooldown};
-	double last_f_click{-key_cooldown};
-	double last_c_click{-key_cooldown};
+	constexpr float movement_speed{20};
 
 	input::input_owner player_1{};
 	input::input_owner player_2{};
@@ -278,45 +255,156 @@ int main(int, char **)
 		test_scene **current_pp;
 		test_scene *first;
 		test_scene *second;
-		bool *first_scene;
+		bool *bfirst_scene;
 		renderer::handle rend_obj_handle;
+		glm::mat4 *cam1;
+		glm::mat4 *cam2;
 	} td;
 
 	td.current_pp = (&current);
 	td.first = &test_scene1;
 	td.second = &test_scene2;
-	td.first_scene = &is_first_scene;
+	td.bfirst_scene = &is_first_scene;
 	td.rend_obj_handle = handle;
+	td.cam1 = &camera1;
+	td.cam2 = &camera2;
+
+	input::bind_key(player_1, GLFW_KEY_ESCAPE, GLFW_PRESS, &window,
+	                [](void *data, int)
+	                {
+						glfwSetWindowShouldClose(
+							((platform::window_data *)data)->platform_window,
+							true);
+					});
+
+	struct switch_player_count_context
+	{
+		bool *is_two_players;
+		renderer::matrix_ubo *mubo;
+		platform::window_data *window;
+	} spcc;
+
+	spcc.is_two_players = &is_two_players;
+	spcc.mubo = &mubo;
+	spcc.window = &window;
 
 	input::bind_key(
-		player_1, GLFW_KEY_1, &td,
-		[](void *data)
+		player_1, GLFW_KEY_SPACE, GLFW_PRESS, &spcc,
+		[](void *data, int)
+		{
+			LOG("Space! - Changing player count");
+			auto spcc = (switch_player_count_context *)data;
+			*spcc->is_two_players = !*spcc->is_two_players;
+
+			glm::mat4 perspective = glm::perspective(
+				fov, platform::get_aspect(*spcc->window, *spcc->is_two_players),
+				near, far);
+
+			glNamedBufferSubData(spcc->mubo->handle, 0, sizeof(glm::mat4),
+		                         glm::value_ptr(perspective));
+		});
+
+	input::bind_key(player_1, GLFW_KEY_F, GLFW_PRESS, &line_mode,
+	                [](void *data, int)
+	                {
+						LOG("f!");
+						bool *line_mode = (bool *)data;
+						*line_mode = !*line_mode;
+						glPolygonMode(GL_FRONT_AND_BACK,
+		                              *line_mode ? GL_LINE : GL_FILL);
+					});
+
+	input::bind_key(
+		player_1, GLFW_KEY_C, GLFW_PRESS, &td,
+		[](void *data, int)
 		{
 			LOG("YUP: ");
 			tdata *td = reinterpret_cast<tdata *>(data);
 
-			*td->first_scene = !(*td->first_scene);
+			*td->bfirst_scene = !(*td->bfirst_scene);
 			test_scene *current_p = (*td->current_pp);
-			current_p = (*td->first_scene) ? td->first : td->second;
+			current_p = (*td->bfirst_scene) ? td->first : td->second;
 			(*td->current_pp) = current_p;
+
+			*td->cam1 = glm::inverse(
+				glm::lookAt(current_p->start, current_p->goal, view_up_axis));
+			*td->cam2 = glm::inverse(
+				glm::lookAt(current_p->start, current_p->goal, view_up_axis));
 
 			renderer::use_models(current_p->di.models_handle);
 			renderer::use_instance_offsets(td->rend_obj_handle,
 		                                   current_p->di.offsets_handle);
 			renderer::use_draw_commands(current_p->di.commands_handle);
 		});
-	// input::bind_key(player_2, GLFW_KEY_2, [](void *) { LOG("TTWWWWWo"); });
 
-	glfwSetKeyCallback(
-		window.platform_window,
-		[](GLFWwindow *window, int key, int scancode, int action, int mods)
-		{
-			if (action != GLFW_PRESS)
-			{
-				return;
-			}
-			input::execute_action(key);
-		});
+	input::bind_key(player_1, GLFW_KEY_W, GLFW_PRESS | GLFW_RELEASE,
+	                &movement_input,
+	                [](void *data, int new_state)
+	                {
+						auto v3 = (glm::vec3 *)data;
+						if (new_state == GLFW_PRESS)
+						{
+							if ((input::get_key_state(GLFW_KEY_S) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								LOG("S DOWN");
+								v3->z = 0;
+							}
+							else
+							{
+								v3->z = -1;
+							}
+						}
+
+						if (new_state == GLFW_RELEASE)
+						{
+							if ((input::get_key_state(GLFW_KEY_S) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->z = 1;
+							}
+							else
+							{
+								v3->z = 0;
+							}
+						}
+					});
+
+	input::bind_key(player_1, GLFW_KEY_S, GLFW_PRESS | GLFW_RELEASE,
+	                &movement_input,
+	                [](void *data, int new_state)
+	                {
+						auto v3 = (glm::vec3 *)data;
+						if (new_state == GLFW_PRESS)
+						{
+							if ((input::get_key_state(GLFW_KEY_W) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->z = 0;
+							}
+							else
+							{
+								v3->z = 1;
+							}
+						}
+
+						if (new_state == GLFW_RELEASE)
+						{
+							if ((input::get_key_state(GLFW_KEY_W) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->z = -1;
+							}
+							else
+							{
+								v3->z = 0;
+							}
+						}
+					});
+
+	glfwSetKeyCallback(window.platform_window,
+	                   [](GLFWwindow *window, int key, int scancode, int action,
+	                      int mods) { input::execute_action(key, action); });
 #pragma endregion
 
 #pragma region texture
@@ -328,8 +416,6 @@ int main(int, char **)
 	}
 	renderer::bind_texture(tex);
 #pragma endregion
-	platform::tick_timer timer{};
-
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 
@@ -338,71 +424,15 @@ int main(int, char **)
 	while (platform::update(window, timer))
 	{
 #pragma region get-input
-		if (glfwGetKey(window.platform_window, GLFW_KEY_ESCAPE))
-		{
-			// this would close after this frame, is that what we want?
-			glfwSetWindowShouldClose(window.platform_window, true);
-		}
+		// if (glfwGetKey(window.platform_window, GLFW_KEY_A))
+		// {
+		// 	movement_input.x -= 1;
+		// }
 
-		if (glfwGetKey(window.platform_window, GLFW_KEY_C))
-		{
-			if ((glfwGetTime() - last_c_click) > key_cooldown)
-			{
-				current = is_first_scene ? &test_scene2 : &test_scene1;
-				is_first_scene = !is_first_scene;
-				renderer::use_models(current->di.models_handle);
-				renderer::use_instance_offsets(handle,
-				                               current->di.offsets_handle);
-				renderer::use_draw_commands(current->di.commands_handle);
-				set_cameras();
-				last_c_click = glfwGetTime();
-			}
-		}
-
-		if (glfwGetKey(window.platform_window, GLFW_KEY_SPACE))
-		{
-			if ((glfwGetTime() - last_space_click) > key_cooldown)
-			{
-				LOG("Space! - Changing player count");
-				last_space_click = timer.tick_time;
-				is_two_players = !is_two_players;
-				glNamedBufferSubData(mubo.handle, 0, sizeof(glm::mat4),
-				                     glm::value_ptr(get_perspective_matrix()));
-			}
-		}
-
-		if (glfwGetKey(window.platform_window, GLFW_KEY_F))
-		{
-			if ((glfwGetTime() - last_f_click) > key_cooldown)
-			{
-				LOG("f!");
-				line_mode = !line_mode;
-				glPolygonMode(GL_FRONT_AND_BACK, line_mode ? GL_LINE : GL_FILL);
-				last_f_click = glfwGetTime();
-			}
-		}
-
-		glm::vec3 movement_input{0};
-
-		if (glfwGetKey(window.platform_window, GLFW_KEY_W))
-		{
-			movement_input.z -= 1;
-		}
-
-		if (glfwGetKey(window.platform_window, GLFW_KEY_S))
-		{
-			movement_input.z += 1;
-		}
-
-		if (glfwGetKey(window.platform_window, GLFW_KEY_A))
-		{
-			movement_input.x -= 1;
-		}
-
-		if (glfwGetKey(window.platform_window, GLFW_KEY_D))
-		{
-			movement_input.x += 1;
-		}
+		// if (glfwGetKey(window.platform_window, GLFW_KEY_D))
+		// {
+		// 	movement_input.x += 1;
+		// }
 #pragma endregion
 
 #pragma region handle-input
@@ -414,13 +444,7 @@ int main(int, char **)
 				static_cast<float>(movement_speed *
 			                       platform::delta_time(timer));
 
-			// glm::vec3 forward = camera1 * glm::vec4{0, 0, -1, 0};
-			// glm::mat4 forward_mat = glm::translate(glm::mat4{1}, forward);
-			// movement = glm::vec3(forward_mat * glm::vec4(movement, 0));
-			// movement =
-			movement =
-				glm::vec3(glm::inverse(camera1) * glm::vec4(movement, 0));
-			camera1 = glm::translate(camera1, -movement);
+			camera1 = glm::translate(camera1, movement);
 		}
 #pragma endregion
 
@@ -437,7 +461,7 @@ int main(int, char **)
 		// glNamedBufferSubData(mubo.handle, sizeof(glm::mat4),
 		// sizeof(glm::mat4),
 		//                      glm::value_ptr(camera1));
-		renderer::upload_view(mubo, glm::value_ptr(camera1));
+		renderer::upload_view(mubo, glm::value_ptr(glm::inverse(camera1)));
 
 		glClearColor(0.8f, 0.12f, 0.12f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -466,7 +490,7 @@ int main(int, char **)
 		{
 			// glNamedBufferSubData(mubo.handle, sizeof(glm::mat4),
 			//                      sizeof(glm::mat4), glm::value_ptr(camera2));
-			renderer::upload_view(mubo, glm::value_ptr(camera2));
+			renderer::upload_view(mubo, glm::value_ptr(glm::inverse(camera2)));
 
 			glScissor(window.width / 2, 0, window.width / 2, window.height);
 			glEnable(GL_SCISSOR_TEST);
@@ -484,6 +508,8 @@ int main(int, char **)
 
 			glDisable(GL_SCISSOR_TEST);
 		}
+
+		// movement_input = glm::vec3(0);
 #pragma endregion
 	}
 

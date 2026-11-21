@@ -11,8 +11,10 @@ struct input_action
 {
 	// 0 reserved for unbound
 	input::input_owner owner;
+	int state_mask;
+	int current_state;
 	void *user_data;
-	void (*user_action)(void *);
+	void (*user_action)(void *, int new_state);
 };
 
 uint32_t id_count{0};
@@ -32,8 +34,8 @@ void get_owner(input_owner &out_owner)
 	owner_ids.insert(out_owner.id);
 }
 
-bool bind_key(input_owner owner, int key, void *arg_data,
-              void (*action_func)(void *))
+bool bind_key(input_owner owner, int key, int state_mask, void *arg_data,
+              void (*action_func)(void *, int new_state))
 {
 	if (!owner_ids.contains(owner.id))
 	{
@@ -47,13 +49,18 @@ bool bind_key(input_owner owner, int key, void *arg_data,
 		return false;
 	}
 
-	input_action ia{
-		.owner = owner, .user_data = arg_data, .user_action = action_func};
+	input_action ia{.owner = owner,
+	                .state_mask = state_mask,
+	                .current_state = 0,
+	                .user_data = arg_data,
+	                .user_action = action_func};
 	input_map.insert_or_assign(key, ia);
 	return true;
 }
 
-bool execute_action(int key)
+int get_key_state(int key) { return input_map.at(key).current_state; }
+
+bool execute_action(int key, int new_state)
 {
 	if (!input_map.contains(key))
 	{
@@ -61,8 +68,20 @@ bool execute_action(int key)
 		return false;
 	}
 
-	const input_action &ia = input_map.at(key);
-	ia.user_action(ia.user_data);
+	input_action &ia = input_map.at(key);
+
+	ia.current_state = new_state;
+
+	// Have not thought this through I just did it on a whim and "seems to be
+	// working". Inverting because 0 is release in GLFW, so we don't want a
+	// match to be 0.
+	if ((~ia.state_mask & ~new_state) == 0)
+	{
+		LOG("FUUUUUUUUUUUU");
+		return false;
+	}
+
+	ia.user_action(ia.user_data, new_state);
 	return true;
 }
 } // namespace input

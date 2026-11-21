@@ -9,7 +9,8 @@ struct input_owner
 };
 
 void get_owner(input_owner &out_owner);
-bool bind_key(input_owner owner, int key, void *arg_data,
-              void (*action_func)(void *));
-bool execute_action(int key);
+bool bind_key(input_owner owner, int key, int state_mask, void *arg_data,
+              void (*action_func)(void *, int new_state));
+int get_key_state(int key);
+bool execute_action(int key, int new_state);
 } // namespace input
