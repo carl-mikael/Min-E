@@ -2,6 +2,7 @@
 #include "assetManager.h"
 #include "glm/ext/vector_float4.hpp"
 #include "glm/geometric.hpp"
+#include "glm/matrix.hpp"
 #include "renderer/renderer.h"
 #include <cassert>
 #include <cstdint>
@@ -211,10 +212,8 @@ int main(int, char **)
 	glm::mat4 camera2;
 	auto set_cameras = [&]()
 	{
-		camera1 = glm::lookAt(
-			current.start, current.start + glm::vec3{0, 0, -1}, view_up_axis);
-		camera2 = glm::lookAt(
-			current.start, current.start + glm::vec3{0, 0, -1}, view_up_axis);
+		camera1 = glm::lookAt(current.start, current.goal, view_up_axis);
+		camera2 = glm::lookAt(current.start, current.goal, view_up_axis);
 	};
 	set_cameras();
 
@@ -366,7 +365,8 @@ int main(int, char **)
 			// glm::mat4 forward_mat = glm::translate(glm::mat4{1}, forward);
 			// movement = glm::vec3(forward_mat * glm::vec4(movement, 0));
 			// movement =
-			movement = glm::vec3(camera1 * glm::vec4(movement, 0));
+			movement =
+				glm::vec3(glm::inverse(camera1) * glm::vec4(movement, 0));
 			camera1 = glm::translate(camera1, -movement);
 		}
 #pragma endregion
