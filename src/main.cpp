@@ -33,6 +33,8 @@ int main(int, char **)
 	bool is_two_players = false;
 	bool line_mode = false;
 
+	bool is_first_scene{true};
+
 	platform::window_data window{};
 	if (!platform::init(800, 600, window))
 	{
@@ -79,7 +81,8 @@ int main(int, char **)
 		draw_info di;
 		glm::vec3 start;
 		glm::vec3 goal;
-	} test_scene1, test_scene2;
+	};
+	test_scene test_scene1, test_scene2;
 
 	std::vector<renderer::draw_command> draw_commands{};
 	am::scene_data scene{};
@@ -186,11 +189,11 @@ int main(int, char **)
 
 	test_scene2.di.models_handle = renderer::upload_models(models_view2);
 
-	test_scene current;
-	current = test_scene1;
-	renderer::use_models(current.di.models_handle);
-	renderer::use_instance_offsets(handle, current.di.offsets_handle);
-	renderer::use_draw_commands(current.di.commands_handle);
+	test_scene *current;
+	current = &test_scene1;
+	renderer::use_models(current->di.models_handle);
+	renderer::use_instance_offsets(handle, current->di.offsets_handle);
+	renderer::use_draw_commands(current->di.commands_handle);
 
 #pragma region create-shader
 	renderer::shader_program shader{};
@@ -214,8 +217,8 @@ int main(int, char **)
 	glm::mat4 camera2;
 	auto set_cameras = [&]()
 	{
-		camera1 = glm::lookAt(current.start, current.goal, view_up_axis);
-		camera2 = glm::lookAt(current.start, current.goal, view_up_axis);
+		camera1 = glm::lookAt(current->start, current->goal, view_up_axis);
+		camera2 = glm::lookAt(current->start, current->goal, view_up_axis);
 	};
 	set_cameras();
 
@@ -265,20 +268,43 @@ int main(int, char **)
 	double last_f_click{-key_cooldown};
 	double last_c_click{-key_cooldown};
 
-	struct tdata
-	{
-		float ms;
-	} data;
-	data.ms = movement_speed;
-
 	input::input_owner player_1{};
 	input::input_owner player_2{};
 	input::get_owner(player_1);
 	input::get_owner(player_2);
 
+	struct tdata
+	{
+		test_scene **current_pp;
+		test_scene *first;
+		test_scene *second;
+		bool *first_scene;
+		renderer::handle rend_obj_handle;
+	} td;
+
+	td.current_pp = (&current);
+	td.first = &test_scene1;
+	td.second = &test_scene2;
+	td.first_scene = &is_first_scene;
+	td.rend_obj_handle = handle;
+
 	input::bind_key(
-		player_1, GLFW_KEY_1, &data, [](void *data)
-		{ LOG("OONE, ms: " << reinterpret_cast<tdata *>(data)->ms); });
+		player_1, GLFW_KEY_1, &td,
+		[](void *data)
+		{
+			LOG("YUP: ");
+			tdata *td = reinterpret_cast<tdata *>(data);
+
+			*td->first_scene = !(*td->first_scene);
+			test_scene *current_p = (*td->current_pp);
+			current_p = (*td->first_scene) ? td->first : td->second;
+			(*td->current_pp) = current_p;
+
+			renderer::use_models(current_p->di.models_handle);
+			renderer::use_instance_offsets(td->rend_obj_handle,
+		                                   current_p->di.offsets_handle);
+			renderer::use_draw_commands(current_p->di.commands_handle);
+		});
 	// input::bind_key(player_2, GLFW_KEY_2, [](void *) { LOG("TTWWWWWo"); });
 
 	glfwSetKeyCallback(
@@ -291,8 +317,6 @@ int main(int, char **)
 			}
 			input::execute_action(key);
 		});
-
-	bool is_first_scene{true};
 #pragma endregion
 
 #pragma region texture
@@ -324,12 +348,12 @@ int main(int, char **)
 		{
 			if ((glfwGetTime() - last_c_click) > key_cooldown)
 			{
-				current = is_first_scene ? test_scene2 : test_scene1;
+				current = is_first_scene ? &test_scene2 : &test_scene1;
 				is_first_scene = !is_first_scene;
-				renderer::use_models(current.di.models_handle);
+				renderer::use_models(current->di.models_handle);
 				renderer::use_instance_offsets(handle,
-				                               current.di.offsets_handle);
-				renderer::use_draw_commands(current.di.commands_handle);
+				                               current->di.offsets_handle);
+				renderer::use_draw_commands(current->di.commands_handle);
 				set_cameras();
 				last_c_click = glfwGetTime();
 			}
@@ -428,7 +452,7 @@ int main(int, char **)
 		// GLsizei commands_to_execute = models.nr_commands;
 		// constexpr GLsizei command_stride = sizeof(dirty::indirect_command);
 		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0,
-		                            current.di.nr_commands,
+		                            current->di.nr_commands,
 		                            sizeof(renderer::draw_command));
 
 		if (is_two_players)
@@ -451,7 +475,7 @@ int main(int, char **)
 
 			glViewport(window.width / 2, 0, window.width / 2, window.height);
 			glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0,
-			                            current.di.nr_commands,
+			                            current->di.nr_commands,
 			                            sizeof(renderer::draw_command));
 
 			// glMultiDrawElementsIndirect(GL_TRIANGLES, index_typ,
