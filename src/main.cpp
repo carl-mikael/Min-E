@@ -40,6 +40,7 @@ int main(int, char **)
 	const char *files[]{
 		"asset/model/cube.obj",
 		"asset/model/tree.obj",
+		"asset/model/StoneGolem.obj",
 	};
 
 	am::models_data m_data{};
@@ -62,12 +63,19 @@ int main(int, char **)
 		return -1;
 	}
 
-	struct test_scene
+	struct draw_info
 	{
 		renderer::commands_handle commands_handle;
 		renderer::models_handle models_handle;
 		renderer::instance_offsets_handle offsets_handle;
 		int nr_commands;
+	};
+
+	struct test_scene
+	{
+		draw_info di;
+		glm::vec3 start;
+		glm::vec3 goal;
 	} test_scene1, test_scene2;
 
 	std::vector<renderer::draw_command> draw_commands{};
@@ -76,6 +84,10 @@ int main(int, char **)
 	{
 		return -1;
 	}
+
+	std::memcpy(&test_scene1.start, scene.start_pos, sizeof(scene.start_pos));
+	std::memcpy(&test_scene1.goal, scene.goal_pos, sizeof(scene.goal_pos));
+
 	uint32_t tot_instances{0};
 	for (size_t i{0}; i < scene.object_data.ids.size(); ++i)
 	{
@@ -94,7 +106,7 @@ int main(int, char **)
 		draw_commands.push_back(command);
 	}
 
-	test_scene1.nr_commands = static_cast<int>(draw_commands.size());
+	test_scene1.di.nr_commands = static_cast<int>(draw_commands.size());
 
 	std::vector<glm::mat4> models(draw_commands.size(), glm::mat4{1.0f});
 	renderer::float_view models_view{
@@ -106,19 +118,19 @@ int main(int, char **)
 	                          .bytes = sizeof(draw_commands[0]) *
 	                                   draw_commands.size()};
 
-	test_scene1.commands_handle = renderer::upload_draw_commands(cv);
+	test_scene1.di.commands_handle = renderer::upload_draw_commands(cv);
 
 	if (!renderer::upload_instance_offsets(
 			handle,
 			{.data = scene.object_data.positions.data(),
 	         .bytes = scene.object_data.positions.size() *
 	                  sizeof(scene.object_data.positions[0])},
-			slots, test_scene1.offsets_handle))
+			slots, test_scene1.di.offsets_handle))
 	{
 		return -1;
 	}
 
-	test_scene1.models_handle = renderer::upload_models(models_view);
+	test_scene1.di.models_handle = renderer::upload_models(models_view);
 
 	std::vector<renderer::draw_command> draw_commands2{};
 	am::scene_data scene2{};
@@ -126,6 +138,10 @@ int main(int, char **)
 	{
 		return -1;
 	}
+
+	std::memcpy(&test_scene2.start, scene2.start_pos, sizeof(scene2.start_pos));
+	std::memcpy(&test_scene2.goal, scene2.goal_pos, sizeof(scene2.goal_pos));
+
 	uint32_t tot_instances2{0};
 	for (size_t i{0}; i < scene2.object_data.ids.size(); ++i)
 	{
@@ -144,20 +160,20 @@ int main(int, char **)
 		draw_commands2.push_back(command);
 	}
 
-	test_scene2.nr_commands = (int)draw_commands2.size();
+	test_scene2.di.nr_commands = (int)draw_commands2.size();
 
 	renderer::command_view cv2{.data = draw_commands2.data(),
 	                           .bytes = sizeof(draw_commands2[0]) *
 	                                    draw_commands2.size()};
 
-	test_scene2.commands_handle = renderer::upload_draw_commands(cv2);
+	test_scene2.di.commands_handle = renderer::upload_draw_commands(cv2);
 
 	renderer::upload_instance_offsets(
 		handle,
 		{.data = scene2.object_data.positions.data(),
 	     .bytes = scene2.object_data.positions.size() *
 	              sizeof(scene2.object_data.positions[0])},
-		slots, test_scene2.offsets_handle);
+		slots, test_scene2.di.offsets_handle);
 
 	std::vector<glm::mat4> models2(draw_commands2.size(), glm::mat4{1.0f});
 	renderer::float_view models_view2{
@@ -165,13 +181,13 @@ int main(int, char **)
 		.bytes = sizeof(glm::mat4) * models2.size(),
 	};
 
-	test_scene2.models_handle = renderer::upload_models(models_view2);
+	test_scene2.di.models_handle = renderer::upload_models(models_view2);
 
 	test_scene current;
 	current = test_scene1;
-	renderer::use_models(current.models_handle);
-	renderer::use_instance_offsets(handle, current.offsets_handle);
-	renderer::use_draw_commands(current.commands_handle);
+	renderer::use_models(current.di.models_handle);
+	renderer::use_instance_offsets(handle, current.di.offsets_handle);
+	renderer::use_draw_commands(current.di.commands_handle);
 
 #pragma region create-shader
 	renderer::shader_program shader{};
@@ -189,13 +205,18 @@ int main(int, char **)
 #pragma endregion
 
 #pragma region view
-	glm::vec3 start_pos{};
-	std::memcpy(&start_pos, &scene.start_pos, sizeof(scene.start_pos));
-	glm::vec3 goal_pos{};
 	constexpr glm::vec3 view_up_axis{0, 1, 0};
-	std::memcpy(&goal_pos, &scene.goal_pos, sizeof(scene.goal_pos));
-	glm::mat4 camera1 = glm::lookAt(start_pos, goal_pos, view_up_axis);
-	glm::mat4 camera2 = glm::lookAt(start_pos, goal_pos, view_up_axis);
+
+	glm::mat4 camera1;
+	glm::mat4 camera2;
+	auto set_cameras = [&]()
+	{
+		camera1 = glm::lookAt(
+			current.start, current.start + glm::vec3{0, 0, -1}, view_up_axis);
+		camera2 = glm::lookAt(
+			current.start, current.start + glm::vec3{0, 0, -1}, view_up_axis);
+	};
+	set_cameras();
 
 	constexpr float near{0.1f}, far{100.0f};
 	constexpr float fov{glm::radians(45.0f)};
@@ -236,7 +257,7 @@ int main(int, char **)
 	// LOG("Forward: " << forward);
 	// LOG("Left: " << left);
 
-	float movement_speed{30};
+	float movement_speed{20};
 
 	constexpr double key_cooldown{0.2f};
 	double last_space_click{-key_cooldown};
@@ -277,9 +298,11 @@ int main(int, char **)
 			{
 				current = is_first_scene ? test_scene2 : test_scene1;
 				is_first_scene = !is_first_scene;
-				renderer::use_models(current.models_handle);
-				renderer::use_instance_offsets(handle, current.offsets_handle);
-				renderer::use_draw_commands(current.commands_handle);
+				renderer::use_models(current.di.models_handle);
+				renderer::use_instance_offsets(handle,
+				                               current.di.offsets_handle);
+				renderer::use_draw_commands(current.di.commands_handle);
+				set_cameras();
 				last_c_click = glfwGetTime();
 			}
 		}
@@ -311,22 +334,22 @@ int main(int, char **)
 
 		if (glfwGetKey(window.platform_window, GLFW_KEY_W))
 		{
-			movement_input.z += 1;
+			movement_input.z -= 1;
 		}
 
 		if (glfwGetKey(window.platform_window, GLFW_KEY_S))
 		{
-			movement_input.z -= 1;
+			movement_input.z += 1;
 		}
 
 		if (glfwGetKey(window.platform_window, GLFW_KEY_A))
 		{
-			movement_input.x += 1;
+			movement_input.x -= 1;
 		}
 
 		if (glfwGetKey(window.platform_window, GLFW_KEY_D))
 		{
-			movement_input.x -= 1;
+			movement_input.x += 1;
 		}
 #pragma endregion
 
@@ -339,8 +362,12 @@ int main(int, char **)
 				static_cast<float>(movement_speed *
 			                       platform::delta_time(timer));
 
-			movement = glm::vec3(-camera1 * glm::vec4(movement, 0));
-			camera1 = glm::translate(camera1, movement);
+			// glm::vec3 forward = camera1 * glm::vec4{0, 0, -1, 0};
+			// glm::mat4 forward_mat = glm::translate(glm::mat4{1}, forward);
+			// movement = glm::vec3(forward_mat * glm::vec4(movement, 0));
+			// movement =
+			movement = glm::vec3(camera1 * glm::vec4(movement, 0));
+			camera1 = glm::translate(camera1, -movement);
 		}
 #pragma endregion
 
@@ -354,8 +381,10 @@ int main(int, char **)
 		{
 			glDisable(GL_SCISSOR_TEST);
 		}
-		glNamedBufferSubData(mubo.handle, sizeof(glm::mat4), sizeof(glm::mat4),
-		                     glm::value_ptr(camera1));
+		// glNamedBufferSubData(mubo.handle, sizeof(glm::mat4),
+		// sizeof(glm::mat4),
+		//                      glm::value_ptr(camera1));
+		renderer::upload_view(mubo, glm::value_ptr(camera1));
 
 		glClearColor(0.8f, 0.12f, 0.12f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -370,7 +399,7 @@ int main(int, char **)
 		// GLsizei commands_to_execute = models.nr_commands;
 		// constexpr GLsizei command_stride = sizeof(dirty::indirect_command);
 		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0,
-		                            current.nr_commands,
+		                            current.di.nr_commands,
 		                            sizeof(renderer::draw_command));
 
 		if (is_two_players)
@@ -382,15 +411,20 @@ int main(int, char **)
 #pragma region second player
 		if (is_two_players)
 		{
-			glNamedBufferSubData(mubo.handle, sizeof(glm::mat4),
-			                     sizeof(glm::mat4), glm::value_ptr(camera2));
+			// glNamedBufferSubData(mubo.handle, sizeof(glm::mat4),
+			//                      sizeof(glm::mat4), glm::value_ptr(camera2));
+			renderer::upload_view(mubo, glm::value_ptr(camera2));
 
 			glScissor(window.width / 2, 0, window.width / 2, window.height);
 			glEnable(GL_SCISSOR_TEST);
 			glClearColor(0.12f, 0.8f, 0.12f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			// glViewport(window.width / 2, 0, window.width / 2, window.height);
+			glViewport(window.width / 2, 0, window.width / 2, window.height);
+			glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0,
+			                            current.di.nr_commands,
+			                            sizeof(renderer::draw_command));
+
 			// glMultiDrawElementsIndirect(GL_TRIANGLES, index_typ,
 			//                             command_buffer_offset,
 			//                             commands_to_execute, command_stride);
