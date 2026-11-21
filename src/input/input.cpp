@@ -72,14 +72,13 @@ bool execute_action(int key, int new_state)
 
 	ia.current_state = new_state;
 
-	// Have not thought this through I just did it on a whim and "seems to be
-	// working". Inverting because 0 is release in GLFW, so we don't want a
-	// match to be 0.
-	if ((~ia.state_mask & ~new_state) == 0)
-	{
-		LOG("FUUUUUUUUUUUU");
-		return false;
-	}
+	// It. did. not. work
+	// GLFW using 0 for key release state is weird behavior
+	// if ((ia.state_mask & new_state) == 0)
+	// {
+	// 	LOG("FUUUUUUUUUUUU");
+	// 	return false;
+	// }
 
 	ia.user_action(ia.user_data, new_state);
 	return true;

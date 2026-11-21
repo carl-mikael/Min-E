@@ -290,8 +290,13 @@ int main(int, char **)
 
 	input::bind_key(
 		player_1, GLFW_KEY_SPACE, GLFW_PRESS, &spcc,
-		[](void *data, int)
+		[](void *data, int new_state)
 		{
+			if (new_state != GLFW_PRESS)
+			{
+				return;
+			}
+
 			LOG("Space! - Changing player count");
 			auto spcc = (switch_player_count_context *)data;
 			*spcc->is_two_players = !*spcc->is_two_players;
@@ -305,8 +310,12 @@ int main(int, char **)
 		});
 
 	input::bind_key(player_1, GLFW_KEY_F, GLFW_PRESS, &line_mode,
-	                [](void *data, int)
+	                [](void *data, int new_state)
 	                {
+						if (new_state != GLFW_PRESS)
+						{
+							return;
+						}
 						LOG("f!");
 						bool *line_mode = (bool *)data;
 						*line_mode = !*line_mode;
@@ -316,8 +325,13 @@ int main(int, char **)
 
 	input::bind_key(
 		player_1, GLFW_KEY_C, GLFW_PRESS, &td,
-		[](void *data, int)
+		[](void *data, int new_state)
 		{
+			if (new_state != GLFW_PRESS)
+			{
+				return;
+			}
+
 			LOG("YUP: ");
 			tdata *td = reinterpret_cast<tdata *>(data);
 
@@ -347,7 +361,6 @@ int main(int, char **)
 							if ((input::get_key_state(GLFW_KEY_S) &
 			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
-								LOG("S DOWN");
 								v3->z = 0;
 							}
 							else
@@ -487,18 +500,6 @@ int main(int, char **)
 	glBindVertexArray(handle.id);
 	while (platform::update(window, timer))
 	{
-#pragma region get-input
-		// if (glfwGetKey(window.platform_window, GLFW_KEY_A))
-		// {
-		// 	movement_input.x -= 1;
-		// }
-
-		// if (glfwGetKey(window.platform_window, GLFW_KEY_D))
-		// {
-		// 	movement_input.x += 1;
-		// }
-#pragma endregion
-
 #pragma region handle-input
 		if (movement_input != glm::vec3(0))
 		{
