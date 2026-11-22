@@ -546,70 +546,6 @@ int main(int, char **)
 							}
 						}
 					});
-
-	input::bind_key(player_2, GLFW_KEY_RIGHT_SHIFT, GLFW_PRESS | GLFW_RELEASE,
-	                &yaw_input2,
-	                [](void *data, int new_state)
-	                {
-						auto &yaw_input = *(int *)data;
-						if (new_state == GLFW_PRESS)
-						{
-							if ((input::get_key_state(GLFW_KEY_END) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
-							{
-								yaw_input = 0;
-							}
-							else
-							{
-								yaw_input = 1;
-							}
-						}
-
-						if (new_state == GLFW_RELEASE)
-						{
-							if ((input::get_key_state(GLFW_KEY_END) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
-							{
-								yaw_input = -1;
-							}
-							else
-							{
-								yaw_input = 0;
-							}
-						}
-					});
-
-	input::bind_key(player_2, GLFW_KEY_END, GLFW_PRESS | GLFW_RELEASE,
-	                &yaw_input2,
-	                [](void *data, int new_state)
-	                {
-						auto &yaw_input = *(int *)data;
-						if (new_state == GLFW_PRESS)
-						{
-							if ((input::get_key_state(GLFW_KEY_RIGHT_SHIFT) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
-							{
-								yaw_input = 0;
-							}
-							else
-							{
-								yaw_input = -1;
-							}
-						}
-
-						if (new_state == GLFW_RELEASE)
-						{
-							if ((input::get_key_state(GLFW_KEY_RIGHT_SHIFT) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
-							{
-								yaw_input = 1;
-							}
-							else
-							{
-								yaw_input = 0;
-							}
-						}
-					});
 #pragma endregion
 
 #pragma region player_2_input
@@ -737,6 +673,70 @@ int main(int, char **)
 							else
 							{
 								v3->z = 0;
+							}
+						}
+					});
+
+	input::bind_key(player_2, GLFW_KEY_RIGHT_SHIFT, GLFW_PRESS | GLFW_RELEASE,
+	                &yaw_input2,
+	                [](void *data, int new_state)
+	                {
+						auto &yaw_input = *(int *)data;
+						if (new_state == GLFW_PRESS)
+						{
+							if ((input::get_key_state(GLFW_KEY_END) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								yaw_input = 0;
+							}
+							else
+							{
+								yaw_input = 1;
+							}
+						}
+
+						if (new_state == GLFW_RELEASE)
+						{
+							if ((input::get_key_state(GLFW_KEY_END) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								yaw_input = -1;
+							}
+							else
+							{
+								yaw_input = 0;
+							}
+						}
+					});
+
+	input::bind_key(player_2, GLFW_KEY_END, GLFW_PRESS | GLFW_RELEASE,
+	                &yaw_input2,
+	                [](void *data, int new_state)
+	                {
+						auto &yaw_input = *(int *)data;
+						if (new_state == GLFW_PRESS)
+						{
+							if ((input::get_key_state(GLFW_KEY_RIGHT_SHIFT) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								yaw_input = 0;
+							}
+							else
+							{
+								yaw_input = -1;
+							}
+						}
+
+						if (new_state == GLFW_RELEASE)
+						{
+							if ((input::get_key_state(GLFW_KEY_RIGHT_SHIFT) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								yaw_input = 1;
+							}
+							else
+							{
+								yaw_input = 0;
 							}
 						}
 					});
