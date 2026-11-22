@@ -544,6 +544,70 @@ int main(int, char **)
 						}
 					});
 
+	input::bind_key(player_2, GLFW_KEY_UP, GLFW_PRESS | GLFW_RELEASE,
+	                &movement_input2,
+	                [](void *data, int new_state)
+	                {
+						auto v3 = (glm::vec3 *)data;
+						if (new_state == GLFW_PRESS)
+						{
+							if ((input::get_key_state(GLFW_KEY_DOWN) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->z = 0;
+							}
+							else
+							{
+								v3->z = -1;
+							}
+						}
+
+						if (new_state == GLFW_RELEASE)
+						{
+							if ((input::get_key_state(GLFW_KEY_DOWN) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->z = 1;
+							}
+							else
+							{
+								v3->z = 0;
+							}
+						}
+					});
+
+	input::bind_key(player_2, GLFW_KEY_DOWN, GLFW_PRESS | GLFW_RELEASE,
+	                &movement_input2,
+	                [](void *data, int new_state)
+	                {
+						auto v3 = (glm::vec3 *)data;
+						if (new_state == GLFW_PRESS)
+						{
+							if ((input::get_key_state(GLFW_KEY_UP) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->z = 0;
+							}
+							else
+							{
+								v3->z = 1;
+							}
+						}
+
+						if (new_state == GLFW_RELEASE)
+						{
+							if ((input::get_key_state(GLFW_KEY_UP) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->z = -1;
+							}
+							else
+							{
+								v3->z = 0;
+							}
+						}
+					});
+
 	glfwSetKeyCallback(window.platform_window,
 	                   [](GLFWwindow *window, int key, int scancode, int action,
 	                      int mods) { input::execute_action(key, action); });
