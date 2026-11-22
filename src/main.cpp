@@ -138,7 +138,7 @@ int main(int, char **)
 		return -1;
 	}
 
-	test_scene1.di.models_handle = renderer::upload_models(models_view);
+	renderer::upload_models(models_view, test_scene1.di.models_handle);
 
 	std::vector<renderer::draw_command> draw_commands2{};
 	am::scene_data scene2{};
@@ -189,7 +189,7 @@ int main(int, char **)
 		.bytes = sizeof(glm::mat4) * models2.size(),
 	};
 
-	test_scene2.di.models_handle = renderer::upload_models(models_view2);
+	renderer::upload_models(models_view2, test_scene2.di.models_handle);
 
 	test_scene *current;
 	current = &test_scene1;
@@ -667,9 +667,10 @@ int main(int, char **)
 		{
 			glDisable(GL_SCISSOR_TEST);
 		}
-		// glNamedBufferSubData(mubo.handle, sizeof(glm::mat4),
-		// sizeof(glm::mat4),
-		//                      glm::value_ptr(camera1));
+
+		renderer::update_models(
+			current->di.models_handle, 0,
+			{.data = glm::value_ptr(camera1), .bytes = sizeof(glm::mat4)});
 		renderer::upload_view(mubo, glm::value_ptr(glm::inverse(camera1)));
 
 		glClearColor(0.8f, 0.12f, 0.12f, 1.0f);
@@ -678,12 +679,6 @@ int main(int, char **)
 		glViewport(0, 0, window.width / (is_two_players ? 2 : 1),
 		           window.height);
 
-		// constexpr GLenum index_typ =
-		// 	GL_UNSIGNED_INT; // @TODO: Replace with GL_UNSIGNED_SHORT
-		// constexpr void *command_buffer_offset =
-		// 	(void *)0; // @TODO: Change this based on which mesh to draw
-		// GLsizei commands_to_execute = models.nr_commands;
-		// constexpr GLsizei command_stride = sizeof(dirty::indirect_command);
 		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0,
 		                            current->di.nr_commands,
 		                            sizeof(renderer::draw_command));
@@ -697,8 +692,6 @@ int main(int, char **)
 #pragma region second player
 		if (is_two_players)
 		{
-			// glNamedBufferSubData(mubo.handle, sizeof(glm::mat4),
-			//                      sizeof(glm::mat4), glm::value_ptr(camera2));
 			renderer::upload_view(mubo, glm::value_ptr(glm::inverse(camera2)));
 
 			glScissor(window.width / 2, 0, window.width / 2, window.height);
@@ -710,10 +703,6 @@ int main(int, char **)
 			glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0,
 			                            current->di.nr_commands,
 			                            sizeof(renderer::draw_command));
-
-			// glMultiDrawElementsIndirect(GL_TRIANGLES, index_typ,
-			//                             command_buffer_offset,
-			//                             commands_to_execute, command_stride);
 
 			glDisable(GL_SCISSOR_TEST);
 		}
