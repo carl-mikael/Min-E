@@ -15,8 +15,16 @@
 #include <iostream> // IWYU pragma: export
 #define LOG(msg)                                                               \
 	std::cout << __FILE__ << "::" << __func__ << ": " << msg << std::endl
+#define GOODERT(condition, msg) /* As in not assert, you feel me? */           \
+	if (!condition)                                                            \
+	{                                                                          \
+		std::cout << __FILE__ << "::" << __LINE__ << " - " << msg              \
+				  << std::endl;                                                \
+		__debugbreak();                                                        \
+	}
 #else
 #define LOG(msg)
+#define GOODERT(condition, msg)
 #endif
 
 #ifdef DEBUG

@@ -1,7 +1,9 @@
 #include "input.h"
 
 #include "../macros.h"
+#include <cassert>
 #include <cstdint>
+#include <exception>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -58,7 +60,11 @@ bool bind_key(input_owner owner, int key, int state_mask, void *arg_data,
 	return true;
 }
 
-int get_key_state(int key) { return input_map.at(key).current_state; }
+int get_key_state(int key)
+{
+	GOODERT(input_map.contains(key), "This key havn't been bound: " << key);
+	return input_map.at(key).current_state;
+}
 
 bool execute_action(int key, int new_state)
 {
