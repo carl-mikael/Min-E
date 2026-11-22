@@ -240,10 +240,9 @@ int main(int, char **)
 
 	renderer::matrix_ubo mubo = renderer::create_matrix_ubo();
 	renderer::upload_projection(mubo, glm::value_ptr(perspective));
-	// renderer::upload_view(mubo, glm::value_ptr(glm::inverse(camera1)));
 #pragma endregion
 
-#pragma region input-info
+#pragma region input_ctx
 	constexpr float movement_speed{20};
 
 	input::input_owner player_1{};
@@ -269,15 +268,6 @@ int main(int, char **)
 	td.rend_obj_handle = handle;
 	td.cam1 = &camera1;
 	td.cam2 = &camera2;
-
-	input::bind_key(player_1, GLFW_KEY_ESCAPE, GLFW_PRESS, &window,
-	                [](void *data, int)
-	                {
-						glfwSetWindowShouldClose(
-							((platform::window_data *)data)->platform_window,
-							true);
-					});
-
 	struct switch_player_count_context
 	{
 		bool *is_two_players;
@@ -288,6 +278,16 @@ int main(int, char **)
 	spcc.is_two_players = &is_two_players;
 	spcc.mubo = &mubo;
 	spcc.window = &window;
+#pragma endregion
+
+#pragma region admin_input
+	input::bind_key(player_1, GLFW_KEY_ESCAPE, GLFW_PRESS, &window,
+	                [](void *data, int)
+	                {
+						glfwSetWindowShouldClose(
+							((platform::window_data *)data)->platform_window,
+							true);
+					});
 
 	input::bind_key(
 		player_1, GLFW_KEY_SPACE, GLFW_PRESS, &spcc,
@@ -351,7 +351,9 @@ int main(int, char **)
 		                                   current_p->di.offsets_handle);
 			renderer::use_draw_commands(current_p->di.commands_handle);
 		});
+#pragma endregion
 
+#pragma region player_1_input
 	input::bind_key(player_1, GLFW_KEY_W, GLFW_PRESS | GLFW_RELEASE,
 	                &movement_input,
 	                [](void *data, int new_state)
@@ -479,7 +481,9 @@ int main(int, char **)
 							}
 						}
 					});
+#pragma endregion
 
+#pragma region player_2_input
 	input::bind_key(player_2, GLFW_KEY_RIGHT, GLFW_PRESS | GLFW_RELEASE,
 	                &movement_input2,
 	                [](void *data, int new_state)
@@ -607,11 +611,11 @@ int main(int, char **)
 							}
 						}
 					});
+#pragma endregion
 
 	glfwSetKeyCallback(window.platform_window,
 	                   [](GLFWwindow *window, int key, int scancode, int action,
 	                      int mods) { input::execute_action(key, action); });
-#pragma endregion
 
 #pragma region texture
 	const char *texture_file = "asset/plank.jpg";
