@@ -277,8 +277,8 @@ void renderer::use_draw_commands(const commands_handle &handle) noexcept
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, handle.handle);
 }
 
-renderer::models_handle
-renderer::upload_models(const float_view &models) noexcept
+bool renderer::upload_models(const float_view &models,
+                             models_handle &out_handle) noexcept
 {
 	GLuint models_handle;
 	glCreateBuffers(1, &models_handle);
@@ -287,9 +287,36 @@ renderer::upload_models(const float_view &models) noexcept
 	glNamedBufferStorage(models_handle, UBO_MAX_SIZE, nullptr,
 	                     GL_DYNAMIC_STORAGE_BIT);
 
+	if (models.bytes > UBO_MAX_SIZE)
+	{
+		LOG("Can't fit that");
+		return false;
+	}
+
 	glNamedBufferSubData(models_handle, 0, models.bytes, models.data);
 
-	return {.handle = models_handle};
+	out_handle.handle = models_handle;
+	out_handle.capacity = UBO_MAX_SIZE;
+	out_handle.size = models.bytes;
+
+	return true;
+}
+
+bool renderer::update_models(const models_handle &models_handle,
+                             const size_t byte_offset,
+                             const float_view &new_data) noexcept
+{
+	const size_t end = byte_offset + new_data.bytes;
+	if (end > models_handle.capacity)
+	{
+		LOG("This would write over capactity");
+		return false;
+	}
+
+	glNamedBufferSubData(models_handle.handle, byte_offset, new_data.bytes,
+	                     new_data.data);
+
+	return true;
 }
 
 void renderer::use_models(const models_handle &models_handle) noexcept

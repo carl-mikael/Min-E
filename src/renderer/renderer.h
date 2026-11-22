@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
 
@@ -92,11 +93,17 @@ void use_draw_commands(const commands_handle &handle) noexcept;
 struct models_handle
 {
 	uint32_t handle;
+	size_t capacity;
+	size_t size;
 };
-[[nodiscard]]
-models_handle upload_models(const float_view &models) noexcept;
+
+bool upload_models(const float_view &models,
+                   models_handle &out_models_handle) noexcept;
 
 void use_models(const models_handle &models_handle) noexcept;
+
+bool update_models(const models_handle &models_handle, const size_t byte_offset,
+                   const float_view &new_data) noexcept;
 
 struct instance_offsets_handle
 {
