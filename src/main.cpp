@@ -34,6 +34,7 @@ int main(int, char **)
 	bool line_mode = false;
 	bool is_first_scene{true};
 	glm::vec3 movement_input{0};
+	glm::vec3 movement_input2{0};
 	platform::tick_timer timer{};
 
 	platform::window_data window{};
@@ -479,6 +480,70 @@ int main(int, char **)
 						}
 					});
 
+	input::bind_key(player_2, GLFW_KEY_RIGHT, GLFW_PRESS | GLFW_RELEASE,
+	                &movement_input2,
+	                [](void *data, int new_state)
+	                {
+						auto v3 = (glm::vec3 *)data;
+						if (new_state == GLFW_PRESS)
+						{
+							if ((input::get_key_state(GLFW_KEY_LEFT) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->x = 0;
+							}
+							else
+							{
+								v3->x = 1;
+							}
+						}
+
+						if (new_state == GLFW_RELEASE)
+						{
+							if ((input::get_key_state(GLFW_KEY_LEFT) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->x = -1;
+							}
+							else
+							{
+								v3->x = 0;
+							}
+						}
+					});
+
+	input::bind_key(player_2, GLFW_KEY_LEFT, GLFW_PRESS | GLFW_RELEASE,
+	                &movement_input2,
+	                [](void *data, int new_state)
+	                {
+						auto v3 = (glm::vec3 *)data;
+						if (new_state == GLFW_PRESS)
+						{
+							if ((input::get_key_state(GLFW_KEY_RIGHT) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->x = 0;
+							}
+							else
+							{
+								v3->x = -1;
+							}
+						}
+
+						if (new_state == GLFW_RELEASE)
+						{
+							if ((input::get_key_state(GLFW_KEY_RIGHT) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								v3->x = 1;
+							}
+							else
+							{
+								v3->x = 0;
+							}
+						}
+					});
+
 	glfwSetKeyCallback(window.platform_window,
 	                   [](GLFWwindow *window, int key, int scancode, int action,
 	                      int mods) { input::execute_action(key, action); });
@@ -510,6 +575,17 @@ int main(int, char **)
 			                       platform::delta_time(timer));
 
 			camera1 = glm::translate(camera1, movement);
+		}
+
+		if (movement_input2 != glm::vec3(0))
+		{
+			movement_input2 = glm::normalize(movement_input2);
+			glm::vec3 movement2 =
+				movement_input2 *
+				static_cast<float>(movement_speed *
+			                       platform::delta_time(timer));
+
+			camera2 = glm::translate(camera2, movement2);
 		}
 #pragma endregion
 
@@ -573,8 +649,6 @@ int main(int, char **)
 
 			glDisable(GL_SCISSOR_TEST);
 		}
-
-		// movement_input = glm::vec3(0);
 #pragma endregion
 	}
 
