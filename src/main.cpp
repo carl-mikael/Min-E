@@ -36,6 +36,9 @@ int main(int, char **)
 	glm::vec3 movement_input{0};
 	int yaw_input{0};
 	int yaw_input2{0};
+	glm::vec<2, double> last_cursor_pos{0};
+	glm::vec<2, double> current_cursor_pos{0};
+	glm::vec<2, double> mouse_delta{0};
 	glm::vec3 movement_input2{0};
 	platform::tick_timer timer{};
 
@@ -746,6 +749,9 @@ int main(int, char **)
 	                   [](GLFWwindow *window, int key, int scancode, int action,
 	                      int mods) { input::execute_action(key, action); });
 
+	glfwGetCursorPos(window.platform_window, &last_cursor_pos.x,
+	                 &last_cursor_pos.y);
+
 #pragma region texture
 	const char *texture_file = "asset/plank.jpg";
 	renderer::texture_data tex{};
@@ -762,13 +768,23 @@ int main(int, char **)
 	glBindVertexArray(handle.id);
 	while (platform::update(window, timer))
 	{
-#pragma region handle-input
-		if (yaw_input != 0)
-		{
-			const float rotation =
-				(float)yaw_input * yaw_speed * platform::delta_time(timer);
+		glfwGetCursorPos(window.platform_window, &current_cursor_pos.x,
+		                 &current_cursor_pos.y);
 
-			camera1 = glm::rotate(camera1, rotation, glm::vec3(0, 1, 0));
+		mouse_delta = current_cursor_pos - last_cursor_pos;
+
+#pragma region handle-input
+		if (mouse_delta != glm::vec<2, double>(0))
+		{
+			const glm::vec<2, double> rotation =
+				mouse_delta * (double)yaw_speed * platform::delta_time(timer) *
+				-1.;
+
+			camera1 *= glm::rotate(glm::mat4{1}, (float)rotation.y,
+			                       glm::vec3{1, 0, 0});
+
+			glm::vec3 cam1up = glm::inverse(camera1) * glm::vec4(0, 1, 0, 0);
+			camera1 *= glm::rotate(glm::mat4{1}, (float)rotation.x, cam1up);
 		}
 
 		if (yaw_input2 != 0)
@@ -857,6 +873,8 @@ int main(int, char **)
 			glDisable(GL_SCISSOR_TEST);
 		}
 #pragma endregion
+
+		last_cursor_pos = current_cursor_pos;
 	}
 
 	glfwTerminate();

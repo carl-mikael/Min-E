@@ -3,7 +3,6 @@
 #include "../macros.h"
 #include <cassert>
 #include <cstdint>
-#include <exception>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -16,7 +15,7 @@ struct input_action
 	int state_mask;
 	int current_state;
 	void *user_data;
-	void (*user_action)(void *, int new_state);
+	void (*user_action)(void *user_data, int new_state);
 };
 
 uint32_t id_count{0};
