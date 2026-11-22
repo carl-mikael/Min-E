@@ -668,10 +668,11 @@ int main(int, char **)
 			glDisable(GL_SCISSOR_TEST);
 		}
 
+		renderer::upload_view(mubo, glm::value_ptr(glm::inverse(camera1)));
+
 		renderer::update_models(
 			current->di.models_handle, 0,
-			{.data = glm::value_ptr(camera1), .bytes = sizeof(glm::mat4)});
-		renderer::upload_view(mubo, glm::value_ptr(glm::inverse(camera1)));
+			{.data = glm::value_ptr(camera2), .bytes = sizeof(glm::mat4)});
 
 		glClearColor(0.8f, 0.12f, 0.12f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -693,6 +694,10 @@ int main(int, char **)
 		if (is_two_players)
 		{
 			renderer::upload_view(mubo, glm::value_ptr(glm::inverse(camera2)));
+
+			renderer::update_models(
+				current->di.models_handle, 0,
+				{.data = glm::value_ptr(camera1), .bytes = sizeof(glm::mat4)});
 
 			glScissor(window.width / 2, 0, window.width / 2, window.height);
 			glEnable(GL_SCISSOR_TEST);
