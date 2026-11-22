@@ -249,7 +249,7 @@ int main(int, char **)
 
 #pragma region input_ctx
 	constexpr float movement_speed{20};
-	constexpr float yaw_speed{5};
+	constexpr float yaw_speed{1};
 
 	input::input_owner player_1{};
 	input::input_owner player_2{};
@@ -749,8 +749,10 @@ int main(int, char **)
 	                   [](GLFWwindow *window, int key, int scancode, int action,
 	                      int mods) { input::execute_action(key, action); });
 
-	glfwGetCursorPos(window.platform_window, &last_cursor_pos.x,
-	                 &last_cursor_pos.y);
+	glfwSetCursorPos(window.platform_window, (double)window.width / 2,
+	                 (double)window.height / 2);
+	glfwGetCursorPos(window.platform_window, &current_cursor_pos.x,
+	                 &current_cursor_pos.y);
 
 #pragma region texture
 	const char *texture_file = "asset/plank.jpg";
@@ -768,6 +770,7 @@ int main(int, char **)
 	glBindVertexArray(handle.id);
 	while (platform::update(window, timer))
 	{
+		last_cursor_pos = current_cursor_pos;
 		glfwGetCursorPos(window.platform_window, &current_cursor_pos.x,
 		                 &current_cursor_pos.y);
 
@@ -873,8 +876,6 @@ int main(int, char **)
 			glDisable(GL_SCISSOR_TEST);
 		}
 #pragma endregion
-
-		last_cursor_pos = current_cursor_pos;
 	}
 
 	glfwTerminate();

@@ -72,6 +72,9 @@ bool platform::init(int window_width, int window_height,
 		LOG("RawMouseMotion isn't supported");
 	}
 
+	glfwSetInputMode(out_window.platform_window, GLFW_CURSOR,
+	                 GLFW_CURSOR_DISABLED);
+
 	return true;
 }
 
