@@ -1,3 +1,10 @@
+- 2 player split screen with x/z movement and yaw control!
+![[Pasted image 20261122142935.png]]
+Need to tidy it up though, the line count is a bit crazy, the actual input binding region is 99% copy-pasta to handle invert key, like w/s a/d. If both are held, the input is zero. If one is held and the other is let go the input is 1 in the direction that's being held. And I also need to fix the flags, they don't work as of now. (GLFW uses 0 for GLFW_RELEASE...)
+![[Pasted image 20261122143414.png]]
+
+- Maybe "problem": structs and their contents are visible for the user, and I don't think the user will/should use them, except to pass as context for the functions.
+
 - Problem: my current renderer API doesn't enforce or not even showing how values should be formatted. Users would be completely blind to how to use it. Enough to just comment/document?
 - This is pretty hype - from text file (the first cube is hidden behind the tree):![[Pasted image 20261119224528.png]]
 ![[Pasted image 20261119224608.png]]

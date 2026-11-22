@@ -14,32 +14,37 @@ kanban-plugin: board
 - [ ] Support vat (vertex animation texture)
 - [ ] vertex pulling
 - [ ] clang tidy
-- [ ] add compilation flags to get warnings
-- [ ] Update command buffer dynamically.
-	Use 2 buffers to ping-pong between. So all the work stays on the GPU.
-	Update draw count based on it.
 - [ ] 3 person camera with mouse control. Extra
-- [ ] Replace std::cerr with an error macro
+- [ ] Window resizing
 
 
 ## Next
 
-- [ ] Input System
-	- [ ] Support multiple players
-- [ ] Flying camera
-	- [ ] Second player
-- [ ] Remove loose variables from main
+- [ ] Add documentation / comments
 
 
 ## Now
 
-- [ ] Scenes in runtime
-	- [ ] Switch scene
-	- [ ] Teleport the players back to start
 
 
 ## Done
 
+- [ ] Add mouse rotation control
+	- [x] Hide cursor
+- [ ] Camera control
+	- [x] yaw
+- [ ] The players should be able to see each other
+- [ ] Flying camera
+	- [x] Second player
+- [ ] Input System
+	- [x] Support multiple players
+- [ ] camera1/2 are not model matrices for cameras, but their inverse, bad names.
+- [ ] Understand the camera math
+- [ ] scene isn't displayed correctly
+	If instance isn't first in scene file it's not rendered?
+- [ ] Scenes in runtime
+	- [x] Switch scene
+	- [x] Teleport the players back to start
 - [ ] Use scene
 	- [x] render objects
 	- [x] spawn camera at start pos
@@ -53,6 +58,7 @@ kanban-plugin: board
 - [ ] Split screen
 	- [x] Toggle on/off during runtime
 - [ ] Delta time
+- [ ] add compilation flags to get warnings
 
 
 ***
@@ -108,6 +114,9 @@ kanban-plugin: board
 - [ ] draw_rectangle
 - [ ] Add teachers to git repo
 - [ ] debug function that only executes in debug mode, and prints the function it's in
+- [ ] Update command buffer dynamically.
+	Use 2 buffers to ping-pong between. So all the work stays on the GPU.
+	Update draw count based on it.
 
 %% kanban:settings
 ```
