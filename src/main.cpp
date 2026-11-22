@@ -34,6 +34,7 @@ int main(int, char **)
 	bool line_mode = false;
 	bool is_first_scene{true};
 	glm::vec3 movement_input{0};
+	int yaw_input{0};
 	glm::vec3 movement_input2{0};
 	platform::tick_timer timer{};
 
@@ -244,6 +245,7 @@ int main(int, char **)
 
 #pragma region input_ctx
 	constexpr float movement_speed{20};
+	constexpr float yaw_speed{5};
 
 	input::input_owner player_1{};
 	input::input_owner player_2{};
@@ -481,6 +483,68 @@ int main(int, char **)
 							}
 						}
 					});
+
+	input::bind_key(player_1, GLFW_KEY_Q, GLFW_PRESS | GLFW_RELEASE, &yaw_input,
+	                [](void *data, int new_state)
+	                {
+						auto &yaw_input = *(int *)data;
+						if (new_state == GLFW_PRESS)
+						{
+							if ((input::get_key_state(GLFW_KEY_E) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								yaw_input = 0;
+							}
+							else
+							{
+								yaw_input = 1;
+							}
+						}
+
+						if (new_state == GLFW_RELEASE)
+						{
+							if ((input::get_key_state(GLFW_KEY_E) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								yaw_input = -1;
+							}
+							else
+							{
+								yaw_input = 0;
+							}
+						}
+					});
+
+	input::bind_key(player_1, GLFW_KEY_E, GLFW_PRESS | GLFW_RELEASE, &yaw_input,
+	                [](void *data, int new_state)
+	                {
+						auto &yaw_input = *(int *)data;
+						if (new_state == GLFW_PRESS)
+						{
+							if ((input::get_key_state(GLFW_KEY_Q) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								yaw_input = 0;
+							}
+							else
+							{
+								yaw_input = -1;
+							}
+						}
+
+						if (new_state == GLFW_RELEASE)
+						{
+							if ((input::get_key_state(GLFW_KEY_Q) &
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							{
+								yaw_input = 1;
+							}
+							else
+							{
+								yaw_input = 0;
+							}
+						}
+					});
 #pragma endregion
 
 #pragma region player_2_input
@@ -634,6 +698,14 @@ int main(int, char **)
 	while (platform::update(window, timer))
 	{
 #pragma region handle-input
+		if (yaw_input != 0)
+		{
+			const float rotation =
+				(float)yaw_input * yaw_speed * platform::delta_time(timer);
+
+			camera1 = glm::rotate(camera1, rotation, glm::vec3(0, 1, 0));
+		}
+
 		if (movement_input != glm::vec3(0))
 		{
 			movement_input = glm::normalize(movement_input);
