@@ -15,15 +15,19 @@
 #include <iostream> // IWYU pragma: export
 #define LOG(msg)                                                               \
 	std::cout << __FILE__ << "::" << __func__ << ": " << msg << std::endl
+#else
+#define LOG(msg)
+#endif
+
+#ifdef DEBUG
 #define GOODERT(condition, msg) /* As in not assert, you feel me? */           \
 	if (!condition)                                                            \
 	{                                                                          \
 		std::cout << __FILE__ << "::" << __LINE__ << " - " << msg              \
-				  << std::endl;                                                \
+		          << std::endl;                                                \
 		__debugbreak();                                                        \
 	}
 #else
-#define LOG(msg)
 #define GOODERT(condition, msg)
 #endif
 
