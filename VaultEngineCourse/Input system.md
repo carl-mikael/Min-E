@@ -1,0 +1,4 @@
+- [ ]  **state_mask**: The state mask isn't used in execute_action. GLFW_RELEASE value is 0.
+- [ ] **Type safety:** Could make bind_key a template function, using T for arg_data, and the function argument, instead of void*. And then just store it as void* in the backend. To provide type safety for users, and they won't have to reinterpret cast to get the type they want.
+- [ ] **Handle "inverse key":** Right now, me as the user check on W press/release, if S is down or not, and the same on S against W, but also on other pairs. I.e. if both W and S are down, the input movement input in the forward direction should be 0. If both W and S are down, and the user lets go of W, the movement input should be -1.
+- [ ] **Owner:**  It doesn't do anything, is it needed?

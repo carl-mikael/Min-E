@@ -14,17 +14,26 @@ kanban-plugin: board
 - [ ] Support vat (vertex animation texture)
 - [ ] vertex pulling
 - [ ] clang tidy
-- [ ] 3 person camera with mouse control. Extra
 - [ ] Window resizing
+- [ ] 3 person camera with mouse control. Extra
+- [ ] [[input system]]
 
 
 ## Next
 
-- [ ] Add documentation / comments
+- [ ] ECS
+- [ ] At least these Components:
+	- [ ] Name/Tag
+	- [ ] Transform/Position
+	- [ ] Mesh
+	- [ ] Texture
+	- [ ] Player
+- [ ] File format should handle ECS
 
 
 ## Now
 
+- [ ] Mem arena
 
 
 ## Done
