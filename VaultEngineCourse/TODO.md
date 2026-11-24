@@ -29,6 +29,12 @@ kanban-plugin: board
 
 ## Done
 
+
+
+***
+
+## Archive
+
 - [ ] Add mouse rotation control
 	- [x] Hide cursor
 - [ ] Camera control
@@ -59,12 +65,6 @@ kanban-plugin: board
 	- [x] Toggle on/off during runtime
 - [ ] Delta time
 - [ ] add compilation flags to get warnings
-
-
-***
-
-## Archive
-
 - [ ] Do basic validation. Don't let I/O crash app
 - [ ] Allow toggling between obj loaders
 - [ ] The obj loader shouldn't have to load the same file twice
