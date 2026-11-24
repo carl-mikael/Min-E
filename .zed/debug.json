@@ -11,4 +11,12 @@
     "cwd": "build\\windows\\x64\\debug\\",
     "build": "Min-E Build",
   },
+  {
+    "label": "Start Testing debugger",
+    "adapter": "CodeLLDB",
+    "request": "launch",
+    "program": "build\\windows\\x64\\debug\\Testing.exe",
+    "cwd": "build\\windows\\x64\\debug\\",
+    "build": "Testing Build",
+  },
 ]

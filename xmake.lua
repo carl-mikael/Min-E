@@ -44,7 +44,7 @@ local glad_extensions = {
 -- OpenGL Loader
 local gl_api = "gl=" .. GL_MAJOR_VERSION .. "." .. GL_MINOR_VERSION
 
-add_requires("glfw", "glm", "assimp", "stb")
+add_requires("glfw", "glm", "assimp", "stb", "onecore", "Advapi32")
 
 add_requires("glad v0.1.36", { configs = {
     spec = "gl",
@@ -60,13 +60,36 @@ target("Min-E")
     set_kind("binary")
     add_files("src/**.cpp")
 
-    add_packages("glfw", "glad", "glm", "assimp", "stb")
+    add_packages("glfw", "glad", "glm", "assimp", "stb", "onecore", "Advapi32")
     add_options("log", "custom-loader")
     add_defines("GLFW_INCLUDE_NONE")
 
     if is_mode("debug") then
         add_defines("DEBUG")
 	end
+
+    after_build( function (target)
+        os.cp("$(projectdir)/src/shader", target:targetdir())
+        os.cp("$(projectdir)/asset/", target:targetdir())
+        os.cp("$(projectdir)/src/" .. GLSL_SEMANTICS, target:targetdir())
+    end)
+
+target("Testing")
+    set_languages("c++20")
+    set_kind("binary")
+
+    add_files("src/util/arena.cpp")
+    add_files("testing/**.cpp")
+
+    remove_files("src/main.cpp")
+
+    add_packages("glfw", "glad", "glm", "assimp", "stb", "onecore", "Advapi32")
+    add_options("log", "custom-loader")
+    add_defines("GLFW_INCLUDE_NONE")
+
+    if is_mode("debug") then
+        add_defines("DEBUG")
+    end
 
     after_build( function (target)
         os.cp("$(projectdir)/src/shader", target:targetdir())

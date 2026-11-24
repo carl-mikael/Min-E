@@ -20,11 +20,12 @@
 #endif
 
 #ifdef DEBUG
+#include <intrin.h>
 #define GOODERT(condition, msg) /* As in not assert, you feel me? */           \
 	if (!condition)                                                            \
 	{                                                                          \
 		std::cout << __FILE__ << "::" << __LINE__ << " - " << msg              \
-		          << std::endl;                                                \
+				  << std::endl;                                                \
 		__debugbreak();                                                        \
 	}
 #else

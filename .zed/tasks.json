@@ -20,6 +20,11 @@
     "command": "xmake",
     "args": ["build", "Min-E"],
   },
+  {
+    "label": "Testing Build",
+    "command": "xmake",
+    "args": ["build", "Testing"],
+  },
   // {
   //   "label": "Example task",
   //   "command": "for i in {1..5}; do echo \"Hello $i/5\"; sleep 1; done",
