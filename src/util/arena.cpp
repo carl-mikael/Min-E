@@ -135,3 +135,21 @@ bool mem::destroy_arena(arena &in_arena) noexcept
 
 	return true;
 }
+
+bool mem::allocate_same_alignment(const size_t bytes, arena &in_arena,
+                                  void **out_mem) noexcept
+{
+	size_t new_arena_base = in_arena.base + bytes;
+	if (new_arena_base > in_arena.capacity)
+	{
+		LOG("Can't allocate over capacity");
+		return false;
+	}
+
+	// void *allocation_base = in_arena.buffer + in_arena.base;
+	*out_mem = in_arena.buffer + in_arena.base;
+
+	in_arena.base = new_arena_base;
+
+	return true;
+}
