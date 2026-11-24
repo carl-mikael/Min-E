@@ -15,7 +15,7 @@
 
 #define M44Size 64
 
-namespace // Helpers
+namespace
 {
 bool could_compile(unsigned int shader, const char *shader_path) noexcept
 {
@@ -34,71 +34,28 @@ bool could_compile(unsigned int shader, const char *shader_path) noexcept
 	return true;
 }
 
-bool set_unused_slot(renderer::slots &slots, uint32_t &out_slot) noexcept
+bool set_unused_slot(renderer::slots &slots, renderer::slots &out_slot) noexcept
 {
 	uint32_t slots_left = std::countl_zero(slots.used);
 	if (slots_left == 0)
 	{
 		LOG("No free slot, setting out_slot to 0");
-		out_slot = 0;
+		out_slot.used = 0;
 		return false;
 	}
 
 	LOG("slots_left: " << slots_left);
-	out_slot = 16 - slots_left;
-	uint32_t mask = uint32_t{1} << out_slot;
-	LOG("Taking slot: " << out_slot << " (mask: " << mask << ")");
+	out_slot.used = 16 - slots_left;
+	uint32_t mask = uint32_t{1} << out_slot.used;
+	LOG("Taking slot: " << out_slot.used << " (mask: " << mask << ")");
 
 	slots.used |= mask;
 	return true;
 }
 
-} // namespace
-
-bool renderer::create_program(const std::string_view &glsl_semantics,
-                              const char *vertex_shader_path,
-                              const char *fragment_shader_path,
-                              shader_program &out_program) noexcept
-{
-	GLuint vertex_shader, fragment_shader;
-
-	if (!renderer::create_shader(&vertex_shader, vertex_shader_path,
-	                             GL_VERTEX_SHADER, glsl_semantics) ||
-	    !renderer::create_shader(&fragment_shader, fragment_shader_path,
-	                             GL_FRAGMENT_SHADER, glsl_semantics))
-	{
-		return false;
-	}
-
-	GLuint program = glCreateProgram();
-	glAttachShader(program, vertex_shader);
-	glAttachShader(program, fragment_shader);
-
-	glLinkProgram(program);
-
-	int success;
-	char info_log[LOG_SIZE];
-	glGetProgramiv(program, GL_LINK_STATUS, &success);
-	if (!success)
-	{
-		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
-		LOG("Failed to compile shader program: " << info_log);
-		return false;
-	}
-
-	glDetachShader(program, vertex_shader);
-	glDetachShader(program, fragment_shader);
-
-	glDeleteShader(vertex_shader);
-	glDeleteShader(fragment_shader);
-
-	out_program.program = program;
-	return true;
-}
-
-bool renderer::create_shader(unsigned int *out_shader, const char *shader_path,
-                             const unsigned long type,
-                             const std::string_view &glsl_semantics) noexcept
+bool create_shader(unsigned int *out_shader, const char *shader_path,
+                   const unsigned long type,
+                   const std::string_view &glsl_semantics) noexcept
 {
 	if (!out_shader)
 	{
@@ -129,22 +86,64 @@ bool renderer::create_shader(unsigned int *out_shader, const char *shader_path,
 
 	return true;
 }
+} // namespace
 
-void renderer::upload_projection(matrix_ubo mubo, const float *m44) noexcept
+bool renderer::create_program(const std::string_view &glsl_semantics,
+                              const char *vertex_shader_path,
+                              const char *fragment_shader_path,
+                              shader_program &out_program) noexcept
+{
+	GLuint vertex_shader, fragment_shader;
+
+	if (!create_shader(&vertex_shader, vertex_shader_path, GL_VERTEX_SHADER,
+	                   glsl_semantics) ||
+	    !create_shader(&fragment_shader, fragment_shader_path,
+	                   GL_FRAGMENT_SHADER, glsl_semantics))
+	{
+		return false;
+	}
+
+	GLuint program = glCreateProgram();
+	glAttachShader(program, vertex_shader);
+	glAttachShader(program, fragment_shader);
+
+	glLinkProgram(program);
+
+	int success;
+	char info_log[LOG_SIZE];
+	glGetProgramiv(program, GL_LINK_STATUS, &success);
+	if (!success)
+	{
+		glGetProgramInfoLog(program, sizeof(info_log), nullptr, info_log);
+		LOG("Failed to compile shader program: " << info_log);
+		return false;
+	}
+
+	glDetachShader(program, vertex_shader);
+	glDetachShader(program, fragment_shader);
+
+	glDeleteShader(vertex_shader);
+	glDeleteShader(fragment_shader);
+
+	out_program.program = program;
+	return true;
+}
+
+void renderer::upload_projection(camera_ubo mubo, const float *m44) noexcept
 {
 	glNamedBufferSubData(mubo.handle, 0, M44Size, m44);
 }
 
-void renderer::upload_view(matrix_ubo mubo, const float *m44) noexcept
+void renderer::upload_view(camera_ubo mubo, const float *m44) noexcept
 {
 	glNamedBufferSubData(mubo.handle, M44Size, M44Size, m44);
 }
 
-renderer::matrix_ubo renderer::create_matrix_ubo() noexcept
+renderer::camera_ubo renderer::create_matrix_ubo() noexcept
 {
 	GLuint ubo;
 	glCreateBuffers(1, &ubo);
-	matrix_ubo mubo{.handle = ubo};
+	camera_ubo mubo{.handle = ubo};
 	glNamedBufferStorage(ubo, 2 * M44Size, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MATRICES, ubo);
@@ -206,7 +205,7 @@ void renderer::bind_texture(const texture_data &texture_info) noexcept
 }
 
 bool renderer::upload_objects(const float_view &vertices,
-                              const indices_view &indices, slots &slots,
+                              const indices_view &indices, slots &used_slots,
                               handle &out_handle) noexcept
 {
 	GLuint vao;
@@ -218,13 +217,13 @@ bool renderer::upload_objects(const float_view &vertices,
 	GLuint &ebo = buffer_handles[1];
 	glCreateBuffers(nr_handles, buffer_handles);
 
-	uint32_t slot;
-	if (!set_unused_slot(slots, slot))
+	slots slot;
+	if (!set_unused_slot(used_slots, slot))
 	{
 		LOG("No free slot, returning false");
 		return false;
 	}
-	LOG("USING SLOT: " << slot);
+	LOG("USING SLOT: " << slot.used);
 
 	// 0 = can't interact with it again from client side.
 	constexpr GLbitfield no_client_side_access = GL_DYNAMIC_STORAGE_BIT;
@@ -235,21 +234,21 @@ bool renderer::upload_objects(const float_view &vertices,
 
 	constexpr GLintptr position_offset = 0;
 	constexpr GLsizei stride = 8 * sizeof(float);
-	glVertexArrayVertexBuffer(vao, slot, vbo, position_offset, stride);
+	glVertexArrayVertexBuffer(vao, slot.used, vbo, position_offset, stride);
 
 	glEnableVertexArrayAttrib(vao, ATTR_POS);
 	glVertexArrayAttribFormat(vao, ATTR_POS, 3, GL_FLOAT, GL_FALSE, 0);
-	glVertexArrayAttribBinding(vao, ATTR_POS, slot);
+	glVertexArrayAttribBinding(vao, ATTR_POS, slot.used);
 
 	glEnableVertexArrayAttrib(vao, ATTR_NORMAL);
 	glVertexArrayAttribFormat(vao, ATTR_NORMAL, 3, GL_FLOAT, GL_FALSE,
 	                          3 * sizeof(float));
-	glVertexArrayAttribBinding(vao, ATTR_NORMAL, slot);
+	glVertexArrayAttribBinding(vao, ATTR_NORMAL, slot.used);
 
 	glEnableVertexArrayAttrib(vao, ATTR_UV);
 	glVertexArrayAttribFormat(vao, ATTR_UV, 2, GL_FLOAT, GL_FALSE,
 	                          6 * sizeof(float));
-	glVertexArrayAttribBinding(vao, ATTR_UV, slot);
+	glVertexArrayAttribBinding(vao, ATTR_UV, slot.used);
 
 	// indices
 	glNamedBufferStorage(ebo, indices.bytes, indices.data,
@@ -257,7 +256,7 @@ bool renderer::upload_objects(const float_view &vertices,
 	glVertexArrayElementBuffer(vao, ebo);
 
 	out_handle.id = vao;
-	out_handle.slot = slot;
+	out_handle.used = slot;
 	return true;
 }
 
@@ -277,8 +276,8 @@ void renderer::use_draw_commands(const commands_handle &handle) noexcept
 	glBindBuffer(GL_DRAW_INDIRECT_BUFFER, handle.handle);
 }
 
-bool renderer::upload_models(const float_view &models,
-                             models_handle &out_handle) noexcept
+bool renderer::upload_matrices(const float_view &models,
+                               matrices_handle &out_handle) noexcept
 {
 	GLuint models_handle;
 	glCreateBuffers(1, &models_handle);
@@ -302,9 +301,9 @@ bool renderer::upload_models(const float_view &models,
 	return true;
 }
 
-bool renderer::update_models(const models_handle &models_handle,
-                             const size_t byte_offset,
-                             const float_view &new_data) noexcept
+bool renderer::update_matrices(const matrices_handle &models_handle,
+                               const size_t byte_offset,
+                               const float_view &new_data) noexcept
 {
 	const size_t end = byte_offset + new_data.bytes;
 	if (end > models_handle.capacity)
@@ -319,45 +318,47 @@ bool renderer::update_models(const models_handle &models_handle,
 	return true;
 }
 
-void renderer::use_models(const models_handle &models_handle) noexcept
+void renderer::use_matrices(const matrices_handle &models_handle) noexcept
 {
 	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MODELS, models_handle.handle);
 }
 
-bool renderer::upload_instance_offsets(
-	const handle &handle, const float_view &offsets, slots &slots,
-	instance_offsets_handle &out_handle) noexcept
+bool renderer::add_instance_offset_attr(
+	const handle &handle, slots &slots_used,
+	slots &out_instance_offsets_slot) noexcept
 {
-	GLuint instance_offsets;
-
-	uint32_t slot;
-	if (!set_unused_slot(slots, slot))
+	slots slot;
+	if (!set_unused_slot(slots_used, slot))
 	{
 		LOG("No free slot returning");
 		return false;
 	}
 
-	glCreateBuffers(1, &instance_offsets);
-	glNamedBufferStorage(instance_offsets, offsets.bytes, offsets.data, 0);
-
-	glVertexArrayVertexBuffer(handle.id, slot, instance_offsets, 0,
-	                          3 * sizeof(float));
-
 	glVertexArrayAttribFormat(handle.id, ATTR_INST_OFFSET, 3, GL_FLOAT, false,
 	                          0);
+	glVertexArrayBindingDivisor(handle.id, slot.used, 1);
+	glEnableVertexArrayAttrib(handle.id, ATTR_INST_OFFSET);
+	glVertexArrayAttribBinding(handle.id, ATTR_INST_OFFSET, slot.used);
 
-	glVertexArrayBindingDivisor(handle.id, slot, 1);
+	out_instance_offsets_slot = slot;
+	return true;
+}
 
+bool renderer::upload_instance_offsets(
+	const float_view &offsets, instance_offsets_handle &out_handle) noexcept
+{
+	GLuint instance_offsets;
+	glCreateBuffers(1, &instance_offsets);
+	glNamedBufferStorage(instance_offsets, offsets.bytes, offsets.data, 0);
 	out_handle.handle = instance_offsets;
-	out_handle.slot = slot;
 	return true;
 }
 
 void renderer::use_instance_offsets(
-	const handle &handle,
+	const handle &handle, const slots &instance_offset_slot,
 	const instance_offsets_handle &instance_offsets_handle) noexcept
 {
-	glVertexArrayAttribBinding(handle.id, ATTR_INST_OFFSET,
-	                           instance_offsets_handle.slot);
-	glEnableVertexArrayAttrib(handle.id, ATTR_INST_OFFSET);
+	glVertexArrayVertexBuffer(handle.id, instance_offset_slot.used,
+	                          instance_offsets_handle.handle, 0,
+	                          3 * sizeof(float));
 }

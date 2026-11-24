@@ -75,21 +75,25 @@ int main(int, char **)
 		return -1;
 	}
 
-	struct draw_info
-	{
-		renderer::commands_handle commands_handle;
-		renderer::models_handle models_handle;
-		renderer::instance_offsets_handle offsets_handle;
-		int nr_commands;
-	};
+	renderer::slots instance_offsets_slot{};
+	renderer::add_instance_offset_attr(handle, slots, instance_offsets_slot);
 
-	struct test_scene
+	struct game_scene
 	{
-		draw_info di;
+		struct draw_info
+		{
+			renderer::commands_handle commands_handle;
+			renderer::matrices_handle matrices_handle;
+			renderer::instance_offsets_handle offsets_handle;
+			renderer::slots instance_offsets_slot;
+			int nr_commands;
+		} draw_info;
 		glm::vec3 start;
 		glm::vec3 goal;
-	};
-	test_scene test_scene1, test_scene2;
+	} game_scene1, game_scene2;
+
+	game_scene1.draw_info.instance_offsets_slot = instance_offsets_slot;
+	game_scene2.draw_info.instance_offsets_slot = instance_offsets_slot;
 
 	std::vector<renderer::draw_command> draw_commands{};
 	am::scene_data scene{};
@@ -98,14 +102,14 @@ int main(int, char **)
 		return -1;
 	}
 
-	std::memcpy(&test_scene1.start, scene.start_pos, sizeof(scene.start_pos));
-	std::memcpy(&test_scene1.goal, scene.goal_pos, sizeof(scene.goal_pos));
+	std::memcpy(&game_scene1.start, scene.start_pos, sizeof(scene.start_pos));
+	std::memcpy(&game_scene1.goal, scene.goal_pos, sizeof(scene.goal_pos));
 
 	uint32_t tot_instances{0};
-	for (size_t i{0}; i < scene.object_data.ids.size(); ++i)
+	for (size_t i{0}; i < scene.objects_data.ids.size(); ++i)
 	{
 		renderer::draw_command command{};
-		uint32_t model_idx = scene.object_data.ids[i];
+		uint32_t model_idx = scene.objects_data.ids[i];
 		assert(model_idx < m_handles.handles.size());
 		const auto &m_handle = m_handles.handles[model_idx];
 		command.index_count = m_handle.index_count;
@@ -114,36 +118,37 @@ int main(int, char **)
 		command.base_instance = tot_instances;
 		// Using i instead of model_idx allows for creating seperate
 		// instances of the same mesh data
-		command.instance_count = scene.object_data.instances[i];
+		command.instance_count = scene.objects_data.instance_counts[i];
 		tot_instances += command.instance_count;
 		draw_commands.push_back(command);
 	}
 
-	test_scene1.di.nr_commands = static_cast<int>(draw_commands.size());
+	game_scene1.draw_info.nr_commands = static_cast<int>(draw_commands.size());
 
-	std::vector<glm::mat4> models(draw_commands.size(), glm::mat4{1.0f});
-	renderer::float_view models_view{
-		.data = glm::value_ptr(models.front()),
-		.bytes = sizeof(glm::mat4) * models.size(),
+	std::vector<glm::mat4> model_matrices(draw_commands.size(),
+	                                      glm::mat4{1.0f});
+	renderer::float_view models_matrices_view{
+		.data = glm::value_ptr(model_matrices.front()),
+		.bytes = sizeof(glm::mat4) * model_matrices.size(),
 	};
 
 	renderer::command_view cv{.data = draw_commands.data(),
 	                          .bytes = sizeof(draw_commands[0]) *
 	                                   draw_commands.size()};
 
-	test_scene1.di.commands_handle = renderer::upload_draw_commands(cv);
+	game_scene1.draw_info.commands_handle = renderer::upload_draw_commands(cv);
 
 	if (!renderer::upload_instance_offsets(
-			handle,
-			{.data = scene.object_data.positions.data(),
-			 .bytes = scene.object_data.positions.size() *
-			          sizeof(scene.object_data.positions[0])},
-			slots, test_scene1.di.offsets_handle))
+			{.data = scene.objects_data.positions.data(),
+	         .bytes = scene.objects_data.positions.size() *
+	                  sizeof(scene.objects_data.positions[0])},
+			game_scene1.draw_info.offsets_handle))
 	{
 		return -1;
 	}
 
-	renderer::upload_models(models_view, test_scene1.di.models_handle);
+	renderer::upload_matrices(models_matrices_view,
+	                          game_scene1.draw_info.matrices_handle);
 
 	std::vector<renderer::draw_command> draw_commands2{};
 	am::scene_data scene2{};
@@ -152,14 +157,14 @@ int main(int, char **)
 		return -1;
 	}
 
-	std::memcpy(&test_scene2.start, scene2.start_pos, sizeof(scene2.start_pos));
-	std::memcpy(&test_scene2.goal, scene2.goal_pos, sizeof(scene2.goal_pos));
+	std::memcpy(&game_scene2.start, scene2.start_pos, sizeof(scene2.start_pos));
+	std::memcpy(&game_scene2.goal, scene2.goal_pos, sizeof(scene2.goal_pos));
 
 	uint32_t tot_instances2{0};
-	for (size_t i{0}; i < scene2.object_data.ids.size(); ++i)
+	for (size_t i{0}; i < scene2.objects_data.ids.size(); ++i)
 	{
 		renderer::draw_command command{};
-		uint32_t model_idx = scene2.object_data.ids[i];
+		uint32_t model_idx = scene2.objects_data.ids[i];
 		assert(model_idx < m_handles.handles.size());
 		const auto &m_handle = m_handles.handles[model_idx];
 		command.index_count = m_handle.index_count;
@@ -168,39 +173,42 @@ int main(int, char **)
 		command.base_instance = tot_instances2;
 		// Using i instead of model_idx allows for creating seperate
 		// instances of the same mesh data
-		command.instance_count = scene2.object_data.instances[i];
+		command.instance_count = scene2.objects_data.instance_counts[i];
 		tot_instances2 += command.instance_count;
 		draw_commands2.push_back(command);
 	}
 
-	test_scene2.di.nr_commands = (int)draw_commands2.size();
+	game_scene2.draw_info.nr_commands = (int)draw_commands2.size();
 
 	renderer::command_view cv2{.data = draw_commands2.data(),
 	                           .bytes = sizeof(draw_commands2[0]) *
 	                                    draw_commands2.size()};
 
-	test_scene2.di.commands_handle = renderer::upload_draw_commands(cv2);
+	game_scene2.draw_info.commands_handle = renderer::upload_draw_commands(cv2);
 
 	renderer::upload_instance_offsets(
-		handle,
-		{.data = scene2.object_data.positions.data(),
-		 .bytes = scene2.object_data.positions.size() *
-		          sizeof(scene2.object_data.positions[0])},
-		slots, test_scene2.di.offsets_handle);
+		{.data = scene2.objects_data.positions.data(),
+	     .bytes = scene2.objects_data.positions.size() *
+	              sizeof(scene2.objects_data.positions[0])},
+		game_scene2.draw_info.offsets_handle);
 
-	std::vector<glm::mat4> models2(draw_commands2.size(), glm::mat4{1.0f});
-	renderer::float_view models_view2{
-		.data = glm::value_ptr(models2.front()),
-		.bytes = sizeof(glm::mat4) * models2.size(),
+	std::vector<glm::mat4> model_matrices2(draw_commands2.size(),
+	                                       glm::mat4{1.0f});
+	renderer::float_view models_matrices_view2{
+		.data = glm::value_ptr(model_matrices2.front()),
+		.bytes = sizeof(glm::mat4) * model_matrices2.size(),
 	};
 
-	renderer::upload_models(models_view2, test_scene2.di.models_handle);
+	renderer::upload_matrices(models_matrices_view2,
+	                          game_scene2.draw_info.matrices_handle);
 
-	test_scene *current;
-	current = &test_scene1;
-	renderer::use_models(current->di.models_handle);
-	renderer::use_instance_offsets(handle, current->di.offsets_handle);
-	renderer::use_draw_commands(current->di.commands_handle);
+	game_scene *current;
+	current = &game_scene1;
+	// Also changed on keybind event
+	renderer::use_matrices(current->draw_info.matrices_handle);
+	renderer::use_instance_offsets(handle, instance_offsets_slot,
+	                               current->draw_info.offsets_handle);
+	renderer::use_draw_commands(current->draw_info.commands_handle);
 
 #pragma region create-shader
 	renderer::shader_program shader{};
@@ -243,7 +251,7 @@ int main(int, char **)
 #pragma region uniform-matrices-buffer
 	glm::mat4 perspective = get_perspective_matrix();
 
-	renderer::matrix_ubo mubo = renderer::create_matrix_ubo();
+	renderer::camera_ubo mubo = renderer::create_matrix_ubo();
 	renderer::upload_projection(mubo, glm::value_ptr(perspective));
 #pragma endregion
 
@@ -258,9 +266,9 @@ int main(int, char **)
 
 	struct tdata
 	{
-		test_scene **current_pp;
-		test_scene *first;
-		test_scene *second;
+		game_scene **current_pp;
+		game_scene *first;
+		game_scene *second;
 		bool *bfirst_scene;
 		renderer::handle rend_obj_handle;
 		glm::mat4 *cam1;
@@ -268,8 +276,8 @@ int main(int, char **)
 	} td;
 
 	td.current_pp = (&current);
-	td.first = &test_scene1;
-	td.second = &test_scene2;
+	td.first = &game_scene1;
+	td.second = &game_scene2;
 	td.bfirst_scene = &is_first_scene;
 	td.rend_obj_handle = handle;
 	td.cam1 = &camera1;
@@ -277,7 +285,7 @@ int main(int, char **)
 	struct switch_player_count_context
 	{
 		bool *is_two_players;
-		renderer::matrix_ubo *mubo;
+		renderer::camera_ubo *mubo;
 		platform::window_data *window;
 	} spcc;
 
@@ -313,7 +321,7 @@ int main(int, char **)
 				near, far);
 
 			glNamedBufferSubData(spcc->mubo->handle, 0, sizeof(glm::mat4),
-			                     glm::value_ptr(perspective));
+		                         glm::value_ptr(perspective));
 		});
 
 	input::bind_key(player_1, GLFW_KEY_F, GLFW_PRESS, &line_mode,
@@ -327,7 +335,7 @@ int main(int, char **)
 						bool *line_mode = (bool *)data;
 						*line_mode = !*line_mode;
 						glPolygonMode(GL_FRONT_AND_BACK,
-						              *line_mode ? GL_LINE : GL_FILL);
+		                              *line_mode ? GL_LINE : GL_FILL);
 					});
 
 	input::bind_key(
@@ -343,7 +351,7 @@ int main(int, char **)
 			tdata *td = reinterpret_cast<tdata *>(data);
 
 			*td->bfirst_scene = !(*td->bfirst_scene);
-			test_scene *current_p = (*td->current_pp);
+			game_scene *current_p = (*td->current_pp);
 			current_p = (*td->bfirst_scene) ? td->first : td->second;
 			(*td->current_pp) = current_p;
 
@@ -352,10 +360,11 @@ int main(int, char **)
 			*td->cam2 = glm::inverse(
 				glm::lookAt(current_p->start, current_p->goal, view_up_axis));
 
-			renderer::use_models(current_p->di.models_handle);
-			renderer::use_instance_offsets(td->rend_obj_handle,
-			                               current_p->di.offsets_handle);
-			renderer::use_draw_commands(current_p->di.commands_handle);
+			renderer::use_matrices(current_p->draw_info.matrices_handle);
+			renderer::use_instance_offsets(
+				td->rend_obj_handle, current_p->draw_info.instance_offsets_slot,
+				current_p->draw_info.offsets_handle);
+			renderer::use_draw_commands(current_p->draw_info.commands_handle);
 		});
 #pragma endregion
 
@@ -368,7 +377,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_S) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = 0;
 							}
@@ -381,7 +390,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_S) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = 1;
 							}
@@ -400,7 +409,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_W) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = 0;
 							}
@@ -413,7 +422,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_W) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = -1;
 							}
@@ -432,7 +441,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_D) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = 0;
 							}
@@ -445,7 +454,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_D) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = 1;
 							}
@@ -464,7 +473,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_A) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = 0;
 							}
@@ -477,7 +486,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_A) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = -1;
 							}
@@ -495,7 +504,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_E) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = 0;
 							}
@@ -508,7 +517,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_E) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = -1;
 							}
@@ -526,7 +535,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_Q) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = 0;
 							}
@@ -539,7 +548,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_Q) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = 1;
 							}
@@ -560,7 +569,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_LEFT) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = 0;
 							}
@@ -573,7 +582,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_LEFT) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = -1;
 							}
@@ -592,7 +601,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_RIGHT) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = 0;
 							}
@@ -605,7 +614,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_RIGHT) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = 1;
 							}
@@ -624,7 +633,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_DOWN) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = 0;
 							}
@@ -637,7 +646,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_DOWN) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = 1;
 							}
@@ -656,7 +665,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_UP) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = 0;
 							}
@@ -669,7 +678,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_UP) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = -1;
 							}
@@ -688,7 +697,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_END) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = 0;
 							}
@@ -701,7 +710,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_END) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = -1;
 							}
@@ -720,7 +729,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_RIGHT_SHIFT) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = 0;
 							}
@@ -733,7 +742,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_RIGHT_SHIFT) &
-							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = 1;
 							}
@@ -804,7 +813,7 @@ int main(int, char **)
 			glm::vec3 movement =
 				movement_input *
 				static_cast<float>(movement_speed *
-				                   platform::delta_time(timer));
+			                       platform::delta_time(timer));
 
 			camera1 = glm::translate(camera1, movement);
 		}
@@ -815,7 +824,7 @@ int main(int, char **)
 			glm::vec3 movement2 =
 				movement_input2 *
 				static_cast<float>(movement_speed *
-				                   platform::delta_time(timer));
+			                       platform::delta_time(timer));
 
 			camera2 = glm::translate(camera2, movement2);
 		}
@@ -834,8 +843,8 @@ int main(int, char **)
 
 		renderer::upload_view(mubo, glm::value_ptr(glm::inverse(camera1)));
 
-		renderer::update_models(
-			current->di.models_handle, 0,
+		renderer::update_matrices(
+			current->draw_info.matrices_handle, 0,
 			{.data = glm::value_ptr(camera2), .bytes = sizeof(glm::mat4)});
 
 		glClearColor(0.8f, 0.12f, 0.12f, 1.0f);
@@ -845,7 +854,7 @@ int main(int, char **)
 		           window.height);
 
 		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0,
-		                            current->di.nr_commands,
+		                            current->draw_info.nr_commands,
 		                            sizeof(renderer::draw_command));
 
 		if (is_two_players)
@@ -859,8 +868,8 @@ int main(int, char **)
 		{
 			renderer::upload_view(mubo, glm::value_ptr(glm::inverse(camera2)));
 
-			renderer::update_models(
-				current->di.models_handle, 0,
+			renderer::update_matrices(
+				current->draw_info.matrices_handle, 0,
 				{.data = glm::value_ptr(camera1), .bytes = sizeof(glm::mat4)});
 
 			glScissor(window.width / 2, 0, window.width / 2, window.height);
@@ -870,7 +879,7 @@ int main(int, char **)
 
 			glViewport(window.width / 2, 0, window.width / 2, window.height);
 			glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0,
-			                            current->di.nr_commands,
+			                            current->draw_info.nr_commands,
 			                            sizeof(renderer::draw_command));
 
 			glDisable(GL_SCISSOR_TEST);

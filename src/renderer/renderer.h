@@ -15,34 +15,15 @@ struct shader_program
 	uint32_t program;
 };
 
-bool create_program(const std::string_view &glsl_semantics,
-                    const char *vertex_shader_path,
-                    const char *fragment_shader_path,
-                    shader_program &out_program) noexcept;
-
-bool create_shader(unsigned int *out_shader, const char *shader_path,
-                   const unsigned long type,
-                   const std::string_view &glsl_semantics) noexcept;
-
-struct matrix_ubo
+struct camera_ubo
 {
 	uint32_t handle;
 };
-
-void upload_projection(matrix_ubo mubo, const float *m44) noexcept;
-void upload_view(matrix_ubo mubo, const float *m44) noexcept;
-[[nodiscard]]
-matrix_ubo create_matrix_ubo() noexcept;
 
 struct texture_data
 {
 	uint32_t handle;
 };
-
-bool create_texture(const char *texture_path,
-                    texture_data &out_texture_info) noexcept;
-
-void bind_texture(const texture_data &texture_info) noexcept;
 
 struct float_view
 {
@@ -59,11 +40,8 @@ struct indices_view
 struct handle
 {
 	uint32_t id;
-	uint32_t slot;
+	slots used;
 };
-
-bool upload_objects(const float_view &vertices, const indices_view &indices,
-                    slots &slots, handle &out_handle) noexcept;
 
 struct draw_command
 {
@@ -85,38 +63,65 @@ struct commands_handle
 	uint32_t handle;
 };
 
-[[nodiscard]]
-commands_handle upload_draw_commands(const command_view &commands) noexcept;
-
-void use_draw_commands(const commands_handle &handle) noexcept;
-
-struct models_handle
+struct matrices_handle
 {
 	uint32_t handle;
 	size_t capacity;
 	size_t size;
 };
 
-bool upload_models(const float_view &models,
-                   models_handle &out_models_handle) noexcept;
-
-void use_models(const models_handle &models_handle) noexcept;
-
-bool update_models(const models_handle &models_handle, const size_t byte_offset,
-                   const float_view &new_data) noexcept;
-
 struct instance_offsets_handle
 {
 	uint32_t handle;
-	uint32_t slot;
 };
 
-bool upload_instance_offsets(const handle &handle, const float_view &offsets,
-                             slots &slots,
+bool create_program(const std::string_view &glsl_semantics,
+                    const char *vertex_shader_path,
+                    const char *fragment_shader_path,
+                    shader_program &out_program) noexcept;
+
+// m44 should be 64 bytes
+void upload_projection(camera_ubo mubo, const float *m44) noexcept;
+
+// m44 should be 64 bytes
+void upload_view(camera_ubo mubo, const float *m44) noexcept;
+
+[[nodiscard]]
+camera_ubo create_matrix_ubo() noexcept;
+
+bool create_texture(const char *texture_path,
+                    texture_data &out_texture_info) noexcept;
+
+void bind_texture(const texture_data &texture_info) noexcept;
+
+bool upload_objects(const float_view &vertices, const indices_view &indices,
+                    slots &slots, handle &out_handle) noexcept;
+
+[[nodiscard]]
+commands_handle upload_draw_commands(const command_view &commands) noexcept;
+
+void use_draw_commands(const commands_handle &handle) noexcept;
+
+bool upload_matrices(const float_view &models,
+                     matrices_handle &out_models_handle) noexcept;
+
+void use_matrices(const matrices_handle &models_handle) noexcept;
+
+bool add_instance_offset_attr(const handle &handle, slots &slots_used,
+                              slots &out_instance_offsets_slot) noexcept;
+
+bool upload_instance_offsets(const float_view &offsets,
                              instance_offsets_handle &out_handle) noexcept;
 
 void use_instance_offsets(
-	const handle &handle,
+	const handle &handle, const slots &instance_offset_slot,
 	const instance_offsets_handle &instance_offsets_handle) noexcept;
+
+bool update_matrices(const matrices_handle &models_handle,
+                     const size_t byte_offset,
+                     const float_view &new_data) noexcept;
+
+bool upload_instance_offsets(const float_view &offsets,
+                             instance_offsets_handle &out_handle) noexcept;
 
 } // namespace renderer

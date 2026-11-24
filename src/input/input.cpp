@@ -28,7 +28,7 @@ std::unordered_map<uint32_t, input_action> input_map{};
 
 namespace input
 {
-void get_owner(input_owner &out_owner)
+void get_owner(input_owner &out_owner) noexcept
 {
 	// Keeps 0 free, so it can be used to check if an input isn't owned
 	out_owner.id = ++id_count;
@@ -36,7 +36,7 @@ void get_owner(input_owner &out_owner)
 }
 
 bool bind_key(input_owner owner, int key, int state_mask, void *arg_data,
-              void (*action_func)(void *, int new_state))
+              void (*action_func)(void *, int new_state)) noexcept
 {
 	if (!owner_ids.contains(owner.id))
 	{
@@ -59,13 +59,13 @@ bool bind_key(input_owner owner, int key, int state_mask, void *arg_data,
 	return true;
 }
 
-int get_key_state(int key)
+int get_key_state(int key) noexcept
 {
 	GOODERT(input_map.contains(key), "This key havn't been bound: " << key);
 	return input_map.at(key).current_state;
 }
 
-bool execute_action(int key, int new_state)
+bool execute_action(int key, int new_state) noexcept
 {
 	if (!input_map.contains(key))
 	{

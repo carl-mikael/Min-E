@@ -155,14 +155,14 @@ bool am::load_scene(const char *file, scene_data &out_scene) noexcept
 			// seperate instance groups
 			uint32_t id{};
 			util::set_values(delim_idx, line, &id, " ", 1);
-			out_scene.object_data.ids.push_back(id);
+			out_scene.objects_data.ids.push_back(id);
 			LOG("Object id: " << id);
-			std::vector<float> &vertices = out_scene.object_data.positions;
-			uint32_t instances{0};
+			std::vector<float> &vertices = out_scene.objects_data.positions;
+			uint32_t instance_count{0};
 
 			while (true)
 			{
-				++instances;
+				++instance_count;
 				float pos[3];
 
 				bool consumed_line =
@@ -178,7 +178,7 @@ bool am::load_scene(const char *file, scene_data &out_scene) noexcept
 				}
 			}
 
-			out_scene.object_data.instances.push_back(instances);
+			out_scene.objects_data.instance_counts.push_back(instance_count);
 		}
 		break;
 
