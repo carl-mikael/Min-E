@@ -15,13 +15,11 @@ kanban-plugin: board
 - [ ] vertex pulling
 - [ ] clang tidy
 - [ ] Window resizing
-- [ ] 3 person camera with mouse control. Extra
 - [ ] [[input system]]
 
 
 ## Next
 
-- [ ] ECS
 - [ ] At least these Components:
 	- [ ] Name/Tag
 	- [ ] Transform/Position
@@ -33,11 +31,12 @@ kanban-plugin: board
 
 ## Now
 
-- [ ] Mem arena
+- [ ] ECS
 
 
 ## Done
 
+- [ ] Mem arena
 
 
 ***
