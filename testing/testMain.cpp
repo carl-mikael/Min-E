@@ -81,6 +81,8 @@ int main(int, char **)
 	assert(component_mem == component_ref);
 	assert(component2 == component_ref2);
 	LOG("It's wooooooooorking");
+	LOG_ARR("Transform2 pos: ", component_ref2->pos);
+	LOG_ARR("Transform2 bs: ", component_ref2->bs);
 
 	if (!mem::destroy_arena(book))
 	{

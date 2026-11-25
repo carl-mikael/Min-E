@@ -16,8 +16,18 @@
 #define LOG(msg)                                                               \
 	std::cout << __func__ << " " << __FILE__ << "::" << __LINE__ << ": "       \
 	          << msg << std::endl
+
+#define LOG_ARR(msg, base)                                                     \
+	std::cout << __func__ << " " << __FILE__ << "::" << __LINE__ << ": "       \
+	          << msg << ": ";                                                  \
+	for (size_t i{0}; i < sizeof(base) / sizeof(base[0]); ++i)                 \
+	{                                                                          \
+		std::cout << base[i];                                                  \
+	}                                                                          \
+	std::cout << std::endl
 #else
 #define LOG(msg)
+#define LOG_ARR(msg, base)
 #endif
 
 #ifdef DEBUG
