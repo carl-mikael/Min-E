@@ -26,7 +26,7 @@ int main(int, char **)
 	}
 
 	ecs::storage storage{book, components};
-	ecs::entity e{};
+	ecs::entity e{2432};
 
 	struct transform
 	{
@@ -45,7 +45,7 @@ int main(int, char **)
 	                      << component_mem->pos[2] << " bs: "
 	                      << component_mem->bs[0] << component_mem->bs[1]);
 
-	ecs::entity e2{1};
+	ecs::entity e2{4};
 	transform *component2;
 	if (!ecs::allocate_component_chill(storage, e2, sizeof(transform),
 	                                   (void **)&component2))
