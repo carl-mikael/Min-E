@@ -27,10 +27,11 @@ kanban-plugin: board
 ## Now
 
 - [ ] At least these Components:
-	- [ ] Name/Tag
-	- [ ] Transform/Position
-	- [ ] Mesh
-	- [ ] Texture
+	- [x] Iterate over Name/Tag and log result
+	- [ ] Use pos for model matrix or offset
+	- [ ] Store draw info in mesh comp
+	- [ ] Update at least one entity's draw info, impacting rendering
+	- [ ] Store texture id on texture comp
 	- [ ] Player
 
 
