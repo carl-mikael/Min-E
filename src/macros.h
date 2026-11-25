@@ -15,19 +15,30 @@
 #include <iostream> // IWYU pragma: export
 #define LOG(msg)                                                               \
 	std::cout << __func__ << " " << __FILE__ << "::" << __LINE__ << ": "       \
-	          << msg << std::endl
+			  << msg << std::endl
 
 #define LOG_ARR(msg, base)                                                     \
 	std::cout << __func__ << " " << __FILE__ << "::" << __LINE__ << ": "       \
-	          << msg << ": ";                                                  \
+			  << msg << ": ";                                                  \
 	for (size_t i{0}; i < sizeof(base) / sizeof(base[0]); ++i)                 \
 	{                                                                          \
 		std::cout << base[i];                                                  \
 	}                                                                          \
 	std::cout << std::endl
+
+#define LOG_MEM(msg, base, len)                                                \
+	std::cout << __func__ << " " << __FILE__ << "::" << __LINE__ << ": "       \
+			  << msg << ": ";                                                  \
+	for (int i{0}; i < len; ++i)                                               \
+	{                                                                          \
+		std::cout << base[i];                                                  \
+	}                                                                          \
+	std::cout << std::endl
+
 #else
 #define LOG(msg)
 #define LOG_ARR(msg, base)
+#define LOG_MEM(msg, base, len)
 #endif
 
 #ifdef DEBUG
@@ -36,7 +47,7 @@
 	if (!condition)                                                            \
 	{                                                                          \
 		std::cout << __FILE__ << "::" << __LINE__ << " - " << msg              \
-		          << std::endl;                                                \
+				  << std::endl;                                                \
 		__debugbreak();                                                        \
 	}
 #else
