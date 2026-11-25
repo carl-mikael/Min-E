@@ -14,7 +14,8 @@
 #ifdef MINE_LOG
 #include <iostream> // IWYU pragma: export
 #define LOG(msg)                                                               \
-	std::cout << __FILE__ << "::" << __func__ << ": " << msg << std::endl
+	std::cout << __func__ << " " << __FILE__ << "::" << __LINE__ << ": "       \
+	          << msg << std::endl
 #else
 #define LOG(msg)
 #endif
@@ -25,7 +26,7 @@
 	if (!condition)                                                            \
 	{                                                                          \
 		std::cout << __FILE__ << "::" << __LINE__ << " - " << msg              \
-				  << std::endl;                                                \
+		          << std::endl;                                                \
 		__debugbreak();                                                        \
 	}
 #else
