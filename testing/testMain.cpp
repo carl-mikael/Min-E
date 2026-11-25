@@ -4,8 +4,8 @@
 #include "../src/util/arena.h"
 #include "../src/util/ecs.h"
 
+#include <cassert>
 #include <cstdint>
-#include <string_view>
 
 int main(int, char **)
 {
@@ -41,9 +41,21 @@ int main(int, char **)
 		return -1;
 	}
 	new (component_mem) transform{{1, 2, 3}, {4, 5}};
-	LOG("1 - Component pos: " << component_mem->pos[0] << component_mem->pos[1]
-	                          << component_mem->pos[2] << " bs: "
-	                          << component_mem->bs[0] << component_mem->bs[1]);
+	LOG("Component pos: " << component_mem->pos[0] << component_mem->pos[1]
+	                      << component_mem->pos[2] << " bs: "
+	                      << component_mem->bs[0] << component_mem->bs[1]);
+
+	ecs::entity e2{1};
+	transform *component2;
+	if (!ecs::allocate_component_chill(storage, e2, sizeof(transform),
+	                                   (void **)&component2))
+	{
+		return -1;
+	}
+	new (component2) transform{{6, 7, 8}, {9, 10}};
+	LOG("Component2 pos: " << component2->pos[0] << component2->pos[1]
+	                       << component2->pos[2] << " bs: " << component2->bs[0]
+	                       << component2->bs[1]);
 
 	transform *component_ref;
 	if (!ecs::get_component_chill(storage, e, sizeof(transform),
@@ -51,10 +63,24 @@ int main(int, char **)
 	{
 		return -1;
 	}
-
-	LOG("2 - Component pos: " << component_ref->pos[0] << component_ref->pos[1]
+	LOG("Component ref pos: " << component_ref->pos[0] << component_ref->pos[1]
 	                          << component_ref->pos[2] << " bs: "
 	                          << component_ref->bs[0] << component_ref->bs[1]);
+
+	transform *component_ref2;
+	if (!ecs::get_component_chill(storage, e2, sizeof(transform),
+	                              (void **)&component_ref2))
+	{
+		return -1;
+	}
+	LOG("Component ref2 pos: "
+	    << component_ref2->pos[0] << component_ref2->pos[1]
+	    << component_ref2->pos[2] << " bs: " << component_ref2->bs[0]
+	    << component_ref2->bs[1]);
+
+	assert(component_mem == component_ref);
+	assert(component2 == component_ref2);
+	LOG("It's wooooooooorking");
 
 	if (!mem::destroy_arena(book))
 	{
