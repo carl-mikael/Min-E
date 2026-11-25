@@ -153,6 +153,16 @@ bool mem::allocate_same_alignment(const size_t bytes, arena &in_arena,
 	return true;
 }
 
+bool mem::allocate_same_alignment_handle(
+	const size_t bytes, arena &in_arena, void **out_mem,
+	decltype(mem::arena::base) &out_mem_base) noexcept
+{
+	LOG("Test, typeid out_mem_base: " << typeid(out_mem_base).name());
+	out_mem_base = in_arena.base;
+
+	return mem::allocate_same_alignment(bytes, in_arena, out_mem);
+}
+
 bool mem::get_obj_at_chill(const arena &in_arena, const size_t obj_size,
                            const size_t index, void **out_obj) noexcept
 {
