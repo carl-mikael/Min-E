@@ -97,7 +97,7 @@ int main(int, char **)
 
 	std::vector<renderer::draw_command> draw_commands{};
 	am::scene_data scene{};
-	if (!am::load_scene("asset/scene/test.sid", scene))
+	if (!am::load_scene("asset/scene/scene1.sid", scene))
 	{
 		return -1;
 	}
@@ -140,8 +140,8 @@ int main(int, char **)
 
 	if (!renderer::upload_instance_offsets(
 			{.data = scene.objects_data.positions.data(),
-	         .bytes = scene.objects_data.positions.size() *
-	                  sizeof(scene.objects_data.positions[0])},
+			 .bytes = scene.objects_data.positions.size() *
+			          sizeof(scene.objects_data.positions[0])},
 			game_scene1.draw_info.offsets_handle))
 	{
 		return -1;
@@ -188,8 +188,8 @@ int main(int, char **)
 
 	renderer::upload_instance_offsets(
 		{.data = scene2.objects_data.positions.data(),
-	     .bytes = scene2.objects_data.positions.size() *
-	              sizeof(scene2.objects_data.positions[0])},
+		 .bytes = scene2.objects_data.positions.size() *
+		          sizeof(scene2.objects_data.positions[0])},
 		game_scene2.draw_info.offsets_handle);
 
 	std::vector<glm::mat4> model_matrices2(draw_commands2.size(),
@@ -321,7 +321,7 @@ int main(int, char **)
 				near, far);
 
 			glNamedBufferSubData(spcc->mubo->handle, 0, sizeof(glm::mat4),
-		                         glm::value_ptr(perspective));
+			                     glm::value_ptr(perspective));
 		});
 
 	input::bind_key(player_1, GLFW_KEY_F, GLFW_PRESS, &line_mode,
@@ -335,7 +335,7 @@ int main(int, char **)
 						bool *line_mode = (bool *)data;
 						*line_mode = !*line_mode;
 						glPolygonMode(GL_FRONT_AND_BACK,
-		                              *line_mode ? GL_LINE : GL_FILL);
+						              *line_mode ? GL_LINE : GL_FILL);
 					});
 
 	input::bind_key(
@@ -377,7 +377,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_S) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = 0;
 							}
@@ -390,7 +390,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_S) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = 1;
 							}
@@ -409,7 +409,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_W) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = 0;
 							}
@@ -422,7 +422,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_W) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = -1;
 							}
@@ -441,7 +441,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_D) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = 0;
 							}
@@ -454,7 +454,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_D) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = 1;
 							}
@@ -473,7 +473,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_A) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = 0;
 							}
@@ -486,7 +486,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_A) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = -1;
 							}
@@ -504,7 +504,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_E) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = 0;
 							}
@@ -517,7 +517,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_E) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = -1;
 							}
@@ -535,7 +535,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_Q) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = 0;
 							}
@@ -548,7 +548,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_Q) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = 1;
 							}
@@ -569,7 +569,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_LEFT) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = 0;
 							}
@@ -582,7 +582,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_LEFT) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = -1;
 							}
@@ -601,7 +601,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_RIGHT) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = 0;
 							}
@@ -614,7 +614,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_RIGHT) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->x = 1;
 							}
@@ -633,7 +633,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_DOWN) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = 0;
 							}
@@ -646,7 +646,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_DOWN) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = 1;
 							}
@@ -665,7 +665,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_UP) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = 0;
 							}
@@ -678,7 +678,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_UP) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								v3->z = -1;
 							}
@@ -697,7 +697,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_END) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = 0;
 							}
@@ -710,7 +710,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_END) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = -1;
 							}
@@ -729,7 +729,7 @@ int main(int, char **)
 						if (new_state == GLFW_PRESS)
 						{
 							if ((input::get_key_state(GLFW_KEY_RIGHT_SHIFT) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = 0;
 							}
@@ -742,7 +742,7 @@ int main(int, char **)
 						if (new_state == GLFW_RELEASE)
 						{
 							if ((input::get_key_state(GLFW_KEY_RIGHT_SHIFT) &
-			                     (GLFW_PRESS | GLFW_REPEAT)) != 0)
+							     (GLFW_PRESS | GLFW_REPEAT)) != 0)
 							{
 								yaw_input = 1;
 							}
@@ -813,7 +813,7 @@ int main(int, char **)
 			glm::vec3 movement =
 				movement_input *
 				static_cast<float>(movement_speed *
-			                       platform::delta_time(timer));
+				                   platform::delta_time(timer));
 
 			camera1 = glm::translate(camera1, movement);
 		}
@@ -824,7 +824,7 @@ int main(int, char **)
 			glm::vec3 movement2 =
 				movement_input2 *
 				static_cast<float>(movement_speed *
-			                       platform::delta_time(timer));
+				                   platform::delta_time(timer));
 
 			camera2 = glm::translate(camera2, movement2);
 		}
