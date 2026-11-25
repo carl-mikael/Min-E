@@ -1,6 +1,7 @@
 #include "ecs.h"
 #include "../macros.h"
 #include "arena.h"
+#include <cstring>
 
 bool ecs::get_component_chill(const storage &in_storage,
                               const entity &in_entity,
@@ -35,6 +36,26 @@ bool ecs::allocate_component_chill(storage &in_storage, const entity &in_entity,
                                    const size_t component_size,
                                    void **out_mem) noexcept
 {
-	// @WIP: Add component to components, save the "index" of its base, add it
-	// to bookkeeping
+	// @WIP : Add component to components,
+	// 	   save the "index" of its base,
+	// add it to bookkeeping
+	using arena_base_t = decltype(mem::arena::base);
+	arena_base_t mem_base;
+	const bool allocated_component = mem::allocate_same_alignment_handle(
+		component_size, in_storage.components, out_mem, mem_base);
+
+	if (!allocated_component)
+	{
+		LOG("Failed to allocate component");
+		return false;
+	}
+
+	arena_base_t component_idx = mem_base / component_size;
+
+	void *redirect_slot =
+		in_storage.bookkeeping.buffer + (sizeof(in_entity.id) * in_entity.id);
+
+	std::memcpy(redirect_slot, &component_idx, sizeof(component_idx));
+
+	return true;
 }
