@@ -78,7 +78,7 @@ target("Testing")
     set_languages("c++20")
     set_kind("binary")
 
-    add_files("src/util/arena.cpp")
+    add_files("src/util/**.cpp")
     add_files("testing/**.cpp")
 
     remove_files("src/main.cpp")

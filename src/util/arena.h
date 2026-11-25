@@ -26,16 +26,16 @@ bool allocate_same_alignment_handle(
 bool get_obj_at_chill(const arena &in_arena, const size_t obj_size,
                       const size_t index, void **out_obj) noexcept;
 
-inline void *get_obj_at(const arena &in_arena, const size_t obj_size,
-                        const size_t index) noexcept
+constexpr inline void *get_obj_at(const arena &in_arena, const size_t obj_size,
+                                  const size_t index) noexcept
 {
 	return in_arena.buffer + (obj_size * index);
 }
 
-inline bool obj_in_range(const arena &in_arena, const size_t obj_size,
-                         const size_t index) noexcept
+constexpr inline bool obj_in_range(const arena &in_arena, const size_t obj_size,
+                                   const size_t index) noexcept
 {
-	return obj_size * index + obj_size < in_arena.base;
+	return obj_size * index < in_arena.base;
 }
 
 } // namespace mem

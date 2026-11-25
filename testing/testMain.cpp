@@ -2,61 +2,71 @@
 
 #include "../src/macros.h"
 #include "../src/util/arena.h"
+#include "../src/util/ecs.h"
+
 #include <cstdint>
+#include <string_view>
 
-int main(int, char **) { LOG("Test main"); }
-
-int arena_example()
+int main(int, char **)
 {
-	LOG("Test main!");
-	mem::arena test_arena{};
+	LOG("Test main");
+	mem::arena book{};
 	constexpr size_t arena_size = 1 * (UINT16_MAX + 1);
-	if (!mem::create_arena(arena_size, test_arena))
+	if (!mem::create_arena(arena_size, book))
 	{
-		LOG("Failed creating arena");
-		return -1;
-	}
-	else
-	{
-		LOG("Successfully created arena");
-	}
-
-	void *mem;
-	if (!mem::allocate_same_alignment(3, test_arena, &mem))
-	{
-		LOG("Failed to alloacte");
+		LOG("Failed creating book arena");
 		return -1;
 	}
 
-	new (mem) char[]{"One"};
-	std::string_view one{(char *)test_arena.buffer,
-	                     (char *)(test_arena.buffer + 3)};
-
-	if (!mem::allocate_same_alignment(3, test_arena, &mem))
+	mem::arena components{};
+	if (!mem::create_arena(arena_size, components))
 	{
-		LOG("Failed to alloacte");
+		LOG("Failed creating components arena");
 		return -1;
 	}
-	char *str2 = new (mem) char[]{"Two"};
 
-	if (!mem::allocate_same_alignment(5, test_arena, &mem))
+	ecs::storage storage{book, components};
+	ecs::entity e{};
+
+	struct transform
 	{
-		LOG("Failed to alloacte");
+		float pos[3];
+		float bs[2];
+	};
+
+	transform *component_mem;
+	if (!ecs::allocate_component_chill(storage, e, sizeof(transform),
+	                                   (void **)&component_mem))
+	{
 		return -1;
 	}
-	char *str3 = new (mem) char[]{"Three"};
+	new (component_mem) transform{{1, 2, 3}, {4, 5}};
+	LOG("1 - Component pos: " << component_mem->pos[0] << component_mem->pos[1]
+	                          << component_mem->pos[2] << " bs: "
+	                          << component_mem->bs[0] << component_mem->bs[1]);
 
-	LOG("Str: " << one);
-	LOG("Str2: " << str2);
-	LOG("Str3: " << str3);
-
-	if (!mem::destroy_arena(test_arena))
+	transform *component_ref;
+	if (!ecs::get_component_chill(storage, e, sizeof(transform),
+	                              (void **)&component_ref))
 	{
-		LOG("Failed freeing arena");
 		return -1;
 	}
-	else
+
+	LOG("2 - Component pos: " << component_ref->pos[0] << component_ref->pos[1]
+	                          << component_ref->pos[2] << " bs: "
+	                          << component_ref->bs[0] << component_ref->bs[1]);
+
+	if (!mem::destroy_arena(book))
 	{
-		LOG("Successfully freed arena");
+		LOG("Failed freeing book arena");
+		return -1;
 	}
+
+	if (!mem::destroy_arena(components))
+	{
+		LOG("Failed freeing book arena");
+		return -1;
+	}
+
+	return 1;
 }

@@ -10,12 +10,12 @@ bool ecs::get_component_chill(const storage &in_storage,
 {
 	using entity_id_t = decltype(in_entity.id);
 
-	const bool component_idx_in_range = mem::obj_in_range(
-		in_storage.bookkeeping, sizeof(entity_id_t), in_entity.id);
+	const bool component_idx_in_range =
+		mem::obj_in_range(in_storage.components, component_size, in_entity.id);
 
 	if (!component_idx_in_range)
 	{
-		LOG("Component idx not in range");
+		LOG("Component idx not in range, component idx: " << in_entity.id);
 		return false;
 	}
 
