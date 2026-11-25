@@ -27,4 +27,13 @@ bool allocate_component_chill(storage &in_storage, const entity &in_entity,
                               const size_t component_size,
                               void **out_mem) noexcept;
 
+constexpr inline auto add_raw(storage &in_storage, const entity &in_entity,
+                              auto &&component) noexcept
+{
+	void *mem;
+	allocate_component_chill(in_storage, in_entity, sizeof(decltype(component)),
+	                         &mem);
+	return new (mem) auto(component);
+}
+
 } // namespace ecs
