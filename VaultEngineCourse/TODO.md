@@ -31,7 +31,7 @@ kanban-plugin: board
 
 ## Now
 
-- [ ] ECS
+- [ ] [[ECS]]
 
 
 ## Done

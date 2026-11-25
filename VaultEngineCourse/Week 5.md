@@ -1,3 +1,5 @@
+- decltype is my new best friend. So far I've used "multiple sources of truth", having the type of a field defined in the struct and hardcoding the type in sizeof:s.
+
 - I'll either have to use templating and perfect forwarding (I think it's called) for in place construction in the backend or allow the user to be "stupid" and use more mem then they allocated.
 ![[Pasted image 20261124221324.png]]
 Image shows the user (me) allocating 4 bytes, then using sizeof("This is fucked tho?"). Then doing the same thing again. And finally outputting the 2 strings, showing how they overlap.
