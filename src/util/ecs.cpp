@@ -36,9 +36,6 @@ bool ecs::allocate_component_chill(storage &in_storage, const entity &in_entity,
                                    const size_t component_size,
                                    void **out_mem) noexcept
 {
-	// @WIP : Add component to components,
-	// 	   save the "index" of its base,
-	// add it to bookkeeping
 	using arena_base_t = decltype(mem::arena::base);
 	arena_base_t mem_base;
 	const bool allocated_component = mem::allocate_same_alignment_handle(

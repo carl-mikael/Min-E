@@ -20,18 +20,18 @@ kanban-plugin: board
 
 ## Next
 
+- [ ] File format should handle ECS
+- [ ] [[ECS]]
+
+
+## Now
+
 - [ ] At least these Components:
 	- [ ] Name/Tag
 	- [ ] Transform/Position
 	- [ ] Mesh
 	- [ ] Texture
 	- [ ] Player
-- [ ] File format should handle ECS
-
-
-## Now
-
-- [ ] [[ECS]]
 
 
 ## Done
