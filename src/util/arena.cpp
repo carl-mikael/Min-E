@@ -17,7 +17,6 @@
 
 #ifdef DEBUG
 #include <string>
-#include <system_error>
 #endif
 
 bool mem::create_arena(const size_t capacity, arena &out_arena) noexcept
@@ -150,6 +149,21 @@ bool mem::allocate_same_alignment(const size_t bytes, arena &in_arena,
 	*out_mem = in_arena.buffer + in_arena.base;
 
 	in_arena.base = new_arena_base;
+
+	return true;
+}
+
+bool mem::get_obj_at_chill(const arena &in_arena, const size_t obj_size,
+                           const size_t index, void **out_obj) noexcept
+{
+	if (!mem::obj_in_range(in_arena, obj_size, index))
+	{
+		LOG("Obj is outside allocated space");
+		return false;
+	}
+
+	const size_t obj_base = obj_size * index;
+	*out_obj = (void *)(in_arena.buffer + obj_base);
 
 	return true;
 }

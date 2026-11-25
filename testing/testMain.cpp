@@ -4,7 +4,9 @@
 #include "../src/util/arena.h"
 #include <cstdint>
 
-int main(int, char **)
+int main(int, char **) { LOG("Test main"); }
+
+int arena_example()
 {
 	LOG("Test main!");
 	mem::arena test_arena{};
@@ -20,25 +22,33 @@ int main(int, char **)
 	}
 
 	void *mem;
-	constexpr uint32_t size = 4;
-	if (!mem::allocate_same_alignment(size, test_arena, &mem))
+	if (!mem::allocate_same_alignment(3, test_arena, &mem))
 	{
 		LOG("Failed to alloacte");
 		return -1;
 	}
 
-	char *str = new (mem) char[]{"This is fucked tho?"};
-	LOG("Str: " << str);
+	new (mem) char[]{"One"};
+	std::string_view one{(char *)test_arena.buffer,
+	                     (char *)(test_arena.buffer + 3)};
 
-	if (!mem::allocate_same_alignment(size, test_arena, &mem))
+	if (!mem::allocate_same_alignment(3, test_arena, &mem))
 	{
 		LOG("Failed to alloacte");
 		return -1;
 	}
+	char *str2 = new (mem) char[]{"Two"};
 
-	char *str2 = new (mem) char[]{"This is fucked tho?"};
-	LOG("Str: " << str);
+	if (!mem::allocate_same_alignment(5, test_arena, &mem))
+	{
+		LOG("Failed to alloacte");
+		return -1;
+	}
+	char *str3 = new (mem) char[]{"Three"};
+
+	LOG("Str: " << one);
 	LOG("Str2: " << str2);
+	LOG("Str3: " << str3);
 
 	if (!mem::destroy_arena(test_arena))
 	{
