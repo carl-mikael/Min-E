@@ -115,6 +115,12 @@ int main(int, char **)
 		LOG("Failed creating mesh_storage");
 		return -1;
 	}
+	ecs::storage transform_storage{};
+	if (!ecs::create_storage(arena_size, arena_size, transform_storage))
+	{
+		LOG("Failed creating transform_storage");
+		return -1;
+	}
 
 	uint32_t tot_instances{0};
 	const int nr_commands1{static_cast<int>(scene.objects_data.ids.size())};
@@ -127,7 +133,7 @@ int main(int, char **)
 		ecs::entity &entity = entities[i];
 		entity.id = i;
 
-		// Create command inplace using mesh_storage
+		// Create command/"mesh" inplace using mesh_storage
 		auto command =
 			ecs::add_raw(mesh_storage, entity, renderer::draw_command{});
 
@@ -143,14 +149,15 @@ int main(int, char **)
 		// instances of the same mesh data
 		command->instance_count = scene.objects_data.instance_counts[i];
 		tot_instances += command->instance_count;
+
+		// Create transform
+		auto _ = ecs::add_raw(transform_storage, entity, glm::mat4{1});
 	}
 	game_scene1.draw_info.nr_commands = nr_commands1;
 
-	std::vector<glm::mat4> model_matrices(nr_commands1, glm::mat4{1.0f});
-
 	renderer::float_view models_matrices_view{
-		.data = glm::value_ptr(model_matrices.front()),
-		.bytes = sizeof(glm::mat4) * model_matrices.size(),
+		.data = reinterpret_cast<float *>(transform_storage.components.buffer),
+		.bytes = transform_storage.components.base,
 	};
 
 	renderer::upload_matrices(models_matrices_view,
