@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 namespace mem
 {
@@ -10,6 +11,8 @@ struct arena
 	size_t base;
 	size_t capacity;
 };
+
+inline constexpr size_t MIN_ARENA_CAPACITY{UINT16_MAX + 1};
 
 bool create_arena(const size_t capacity, arena &out_arena) noexcept;
 
