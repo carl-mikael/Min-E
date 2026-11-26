@@ -373,12 +373,22 @@ int main(int, char **)
 
 			std::swap(*command1, *command2);
 
-			renderer::command_view cv{
+			renderer::command_view cv1{
 				.data = reinterpret_cast<renderer::draw_command *>(
 					smc.mesh_storage->components.buffer),
-				.bytes = smc.mesh_storage->components.base};
+				.bytes = sizeof(renderer::draw_command)};
 
-			renderer::update_draw_commands(cv, *smc.commands_handle);
+			const size_t last_comp_base = smc.mesh_storage->components.base -
+		                                  sizeof(renderer::draw_command);
+
+			renderer::command_view cv2{
+				.data = reinterpret_cast<renderer::draw_command *>(
+					smc.mesh_storage->components.buffer + last_comp_base),
+				.bytes = sizeof(renderer::draw_command)};
+
+			renderer::update_draw_commands(cv1, 0, *smc.commands_handle);
+			renderer::update_draw_commands(cv2, last_comp_base,
+		                                   *smc.commands_handle);
 		});
 #pragma endregion
 
