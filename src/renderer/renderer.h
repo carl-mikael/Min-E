@@ -61,6 +61,7 @@ struct command_view
 struct commands_handle
 {
 	uint32_t handle;
+	size_t capacity;
 };
 
 struct matrices_handle
@@ -99,6 +100,9 @@ bool upload_objects(const float_view &vertices, const indices_view &indices,
 
 [[nodiscard]]
 commands_handle upload_draw_commands(const command_view &commands) noexcept;
+bool update_draw_commands(
+	const command_view &commands,
+	const renderer::commands_handle &commands_handle) noexcept;
 
 void use_draw_commands(const commands_handle &handle) noexcept;
 

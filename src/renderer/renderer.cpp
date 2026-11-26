@@ -266,9 +266,25 @@ renderer::upload_draw_commands(const command_view &commands) noexcept
 	// upload draw commands
 	GLuint indirect_commands;
 	glCreateBuffers(1, &indirect_commands);
-	glNamedBufferStorage(indirect_commands, commands.bytes, commands.data, 0);
+	glNamedBufferStorage(indirect_commands, commands.bytes, commands.data,
+	                     GL_DYNAMIC_STORAGE_BIT);
 
-	return {.handle = indirect_commands};
+	return {.handle = indirect_commands, .capacity = commands.bytes};
+}
+
+bool renderer::update_draw_commands(
+	const command_view &commands,
+	const renderer::commands_handle &commands_handle) noexcept
+{
+	if (commands.bytes > commands_handle.capacity)
+	{
+		LOG("Can't fit that");
+		return false;
+	}
+
+	glNamedBufferSubData(commands_handle.handle, 0, commands.bytes,
+	                     commands.data);
+	return true;
 }
 
 void renderer::use_draw_commands(const commands_handle &handle) noexcept
