@@ -101,7 +101,7 @@ bool upload_objects(const float_view &vertices, const indices_view &indices,
 [[nodiscard]]
 commands_handle upload_draw_commands(const command_view &commands) noexcept;
 bool update_draw_commands(
-	const command_view &commands,
+	const command_view &commands, const size_t bytes_offset,
 	const renderer::commands_handle &commands_handle) noexcept;
 
 void use_draw_commands(const commands_handle &handle) noexcept;

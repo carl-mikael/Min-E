@@ -273,7 +273,7 @@ renderer::upload_draw_commands(const command_view &commands) noexcept
 }
 
 bool renderer::update_draw_commands(
-	const command_view &commands,
+	const command_view &commands, const size_t bytes_offset,
 	const renderer::commands_handle &commands_handle) noexcept
 {
 	if (commands.bytes > commands_handle.capacity)
@@ -282,7 +282,7 @@ bool renderer::update_draw_commands(
 		return false;
 	}
 
-	glNamedBufferSubData(commands_handle.handle, 0, commands.bytes,
+	glNamedBufferSubData(commands_handle.handle, bytes_offset, commands.bytes,
 	                     commands.data);
 	return true;
 }
