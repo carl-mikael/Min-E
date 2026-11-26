@@ -28,11 +28,12 @@ kanban-plugin: board
 
 - [ ] At least these Components:
 	- [x] Iterate over Name/Tag and log result
-	- [ ] Use pos for model matrix or offset
-	- [ ] Store draw info in mesh comp
-	- [ ] Update at least one entity's draw info, impacting rendering
+	- [x] Use pos for model matrix or offset
+	- [x] Store draw info in mesh comp
+	- [x] Update at least one entity's draw info, impacting rendering
 	- [ ] Store texture id on texture comp
 	- [ ] Player
+	- [ ] Create a procedure that works on all components of a type
 
 
 ## Done

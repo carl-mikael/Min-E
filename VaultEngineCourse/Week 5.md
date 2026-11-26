@@ -1,3 +1,5 @@
+- Switching "mesh" component, first with last. Swapping the data the components store and reuploading draw commands. Would be better to only replace the new data needed. I think it's because it's so much new stuff that I learn/realize something, and then forget about it. While implementing this I was thinking I can't replace data in the middle  using glNamedBufferSubStorage, even thought I use that to update/set view & projection, and same for matrices ubo. Fixed it.
+![[Switching'Mesh'Comp.mp4]]
 - decltype is my new best friend. So far I've used "multiple sources of truth", having the type of a field defined in the struct and hardcoding the type in sizeof:s.
 
 - I'll either have to use templating and perfect forwarding (I think it's called) for in place construction in the backend or allow the user to be "stupid" and use more mem then they allocated.

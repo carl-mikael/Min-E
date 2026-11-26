@@ -7,12 +7,11 @@
 #include "glm/ext/vector_float3.hpp"
 
 #include <cassert>
-#include <cstdint>
 
 int main(int, char **)
 {
 	LOG("Test main");
-	constexpr size_t arena_size = 1 * (UINT16_MAX + 1);
+	constexpr size_t arena_size = mem::MIN_ARENA_CAPACITY;
 	mem::arena transform_b{};
 	if (!mem::create_arena(arena_size, transform_b))
 	{
@@ -109,19 +108,14 @@ int main(int, char **)
 	e_name = ecs::add_raw(name_storage, e3, name{"Thre?"});
 	LOG_ARR("e3 name: ", e_name->value);
 
-	// e_name = ecs::add_raw(name_storage, e3, name{"Thre?"});
-	// LOG_ARR("e3 name: ", e_name->value);
+	auto *mesh_p =
+		ecs::add_raw(mesh_storage, e1, renderer::draw_command{36, 1, 0, 0, 0});
 
-	// Breaks if you try adding to e2 or e3. Add GOODERT/return false or handle
-	// it
-	// auto *mesh_p =
-	// 	ecs::add_raw(mesh_storage, e1, renderer::draw_command{36, 1, 0, 0, 0});
-
-	// LOG("e1 mesh index count: " << mesh_p->index_count);
-	// LOG("e1 mesh instance count: " << mesh_p->instance_count);
-	// LOG("e1 mesh first index: " << mesh_p->first_index);
-	// LOG("e1 mesh base vetex: " << mesh_p->base_vertex);
-	// LOG("e1 mesh base instance: " << mesh_p->base_instance);
+	LOG("e1 mesh index count: " << mesh_p->index_count);
+	LOG("e1 mesh instance count: " << mesh_p->instance_count);
+	LOG("e1 mesh first index: " << mesh_p->first_index);
+	LOG("e1 mesh base vetex: " << mesh_p->base_vertex);
+	LOG("e1 mesh base instance: " << mesh_p->base_instance);
 
 	for (size_t i{0};
 	     i < mem::get_index_of_end(name_storage.components, sizeof(name)); ++i)

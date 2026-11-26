@@ -1,0 +1,16 @@
+{
+	"nodes":[
+		{"id":"44128152123ed9b2","type":"text","text":"**models_data**\n- vertices: vector[vertex]\n- indices: vector[uint32_t]","x":20,"y":-300,"width":280,"height":120},
+		{"id":"f69d1128b4f40f96","type":"text","text":"**model_handles**\n- handles: vector[model_handle]","x":20,"y":-167,"width":291,"height":75},
+		{"id":"7024af7c8a7c3ca3","x":20,"y":-80,"width":240,"height":140,"type":"text","text":"\n \n **model_handle**\n- index_count: uint32_t\n- first_index: size_t\n- base_vertex: size_t"},
+		{"id":"e7a5f440d3bb3b35","x":40,"y":160,"width":270,"height":140,"type":"text","text":"**scene_data**\n- start_pos: float3\n- goal_pos: float3\n- objects_data: objects_data"},
+		{"id":"5bb86955c6604f33","type":"text","text":"**objects_data**\n- ids: vector[uint32_t]\n- instance_counts: vector[uint32_t]\n- positions: vector[float]","x":40,"y":320,"width":320,"height":165},
+		{"id":"5eea21549eed512a","type":"text","text":" am:**load_models**(file_paths)\n --\n Returns vertices and indices for all the models and a list of handles to each model's data","x":-340,"y":-272,"width":246,"height":210},
+		{"id":"1360e895517fd802","type":"text","text":" am:**load_scene**(file_path)\n --\n Returns start/goal pos and a list of object data.\n Object  data contains the information for each \"instance group/line\" in the scene file","x":-336,"y":117,"width":242,"height":226}
+	],
+	"edges":[
+		{"id":"3eba05c165265c34","fromNode":"5eea21549eed512a","fromSide":"right","toNode":"44128152123ed9b2","toSide":"left"},
+		{"id":"9288dd2ff5ee6a87","fromNode":"5eea21549eed512a","fromSide":"right","toNode":"f69d1128b4f40f96","toSide":"left"},
+		{"id":"b0d8868e82bd0c15","fromNode":"1360e895517fd802","fromSide":"right","toNode":"e7a5f440d3bb3b35","toSide":"left"}
+	]
+}
