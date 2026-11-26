@@ -47,4 +47,10 @@ get_index_of_end(const arena &in_arena, size_t element_size) noexcept
 	return in_arena.base / element_size;
 }
 
+constexpr inline decltype(mem::arena::base)
+get_last_e_idx(const arena &in_arena, size_t element_size) noexcept
+{
+	return get_index_of_end(in_arena, element_size) - 1;
+}
+
 } // namespace mem
