@@ -4,6 +4,8 @@
 #include "glm/matrix.hpp"
 #include "input/input.h"
 #include "renderer/renderer.h"
+#include "util/arena.h"
+#include "util/ecs.h"
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -96,7 +98,6 @@ int main(int, char **)
 	game_scene1.draw_info.instance_offsets_slot = instance_offsets_slot;
 	game_scene2.draw_info.instance_offsets_slot = instance_offsets_slot;
 
-	std::vector<renderer::draw_command> draw_commands{};
 	am::scene_data scene{};
 	if (!am::load_scene("asset/scene/scene1.sid", scene))
 	{
@@ -106,36 +107,58 @@ int main(int, char **)
 	std::memcpy(&game_scene1.start, scene.start_pos, sizeof(scene.start_pos));
 	std::memcpy(&game_scene1.goal, scene.goal_pos, sizeof(scene.goal_pos));
 
+	constexpr size_t arena_size{mem::MIN_ARENA_CAPACITY};
+	mem::arena mesh_arena{};
+	mem::arena mesh_book{};
+	mem::create_arena(arena_size, mesh_arena);
+	mem::create_arena(arena_size, mesh_book);
+
+	ecs::storage mesh_storage{mesh_book, mesh_arena};
+
 	uint32_t tot_instances{0};
-	for (size_t i{0}; i < scene.objects_data.ids.size(); ++i)
+	const int nr_commands1{static_cast<int>(scene.objects_data.ids.size())};
+
+	std::vector<ecs::entity> entities(nr_commands1);
+
+	for (int i{0}; i < nr_commands1; ++i)
 	{
-		renderer::draw_command command{};
+		// Create entity id
+		ecs::entity &entity = entities[i];
+		entity.id = i;
+
+		// Create command inplace using mesh_storage
+		auto command =
+			ecs::add_raw(mesh_storage, entity, renderer::draw_command{});
+
+		// Build the draw command
 		uint32_t model_idx = scene.objects_data.ids[i];
 		assert(model_idx < m_handles.handles.size());
 		const auto &m_handle = m_handles.handles[model_idx];
-		command.index_count = m_handle.index_count;
-		command.first_index = static_cast<uint32_t>(m_handle.first_index);
-		command.base_vertex = static_cast<uint32_t>(m_handle.base_vertex);
-		command.base_instance = tot_instances;
+		command->index_count = m_handle.index_count;
+		command->first_index = static_cast<uint32_t>(m_handle.first_index);
+		command->base_vertex = static_cast<uint32_t>(m_handle.base_vertex);
+		command->base_instance = tot_instances;
 		// Using i instead of model_idx allows for creating seperate
 		// instances of the same mesh data
-		command.instance_count = scene.objects_data.instance_counts[i];
-		tot_instances += command.instance_count;
-		draw_commands.push_back(command);
+		command->instance_count = scene.objects_data.instance_counts[i];
+		tot_instances += command->instance_count;
 	}
+	game_scene1.draw_info.nr_commands = nr_commands1;
 
-	game_scene1.draw_info.nr_commands = static_cast<int>(draw_commands.size());
+	std::vector<glm::mat4> model_matrices(nr_commands1, glm::mat4{1.0f});
 
-	std::vector<glm::mat4> model_matrices(draw_commands.size(),
-	                                      glm::mat4{1.0f});
 	renderer::float_view models_matrices_view{
 		.data = glm::value_ptr(model_matrices.front()),
 		.bytes = sizeof(glm::mat4) * model_matrices.size(),
 	};
 
-	renderer::command_view cv{.data = draw_commands.data(),
-	                          .bytes = sizeof(draw_commands[0]) *
-	                                   draw_commands.size()};
+	renderer::upload_matrices(models_matrices_view,
+	                          game_scene1.draw_info.matrices_handle);
+
+	renderer::command_view cv{.data =
+	                              reinterpret_cast<renderer::draw_command *>(
+									  mesh_storage.components.buffer),
+	                          .bytes = mesh_storage.components.base};
 
 	game_scene1.draw_info.commands_handle = renderer::upload_draw_commands(cv);
 
@@ -147,61 +170,6 @@ int main(int, char **)
 	{
 		return -1;
 	}
-
-	renderer::upload_matrices(models_matrices_view,
-	                          game_scene1.draw_info.matrices_handle);
-
-	std::vector<renderer::draw_command> draw_commands2{};
-	am::scene_data scene2{};
-	if (!am::load_scene("asset/scene/scene2.sid", scene2))
-	{
-		return -1;
-	}
-
-	std::memcpy(&game_scene2.start, scene2.start_pos, sizeof(scene2.start_pos));
-	std::memcpy(&game_scene2.goal, scene2.goal_pos, sizeof(scene2.goal_pos));
-
-	uint32_t tot_instances2{0};
-	for (size_t i{0}; i < scene2.objects_data.ids.size(); ++i)
-	{
-		renderer::draw_command command{};
-		uint32_t model_idx = scene2.objects_data.ids[i];
-		assert(model_idx < m_handles.handles.size());
-		const auto &m_handle = m_handles.handles[model_idx];
-		command.index_count = m_handle.index_count;
-		command.first_index = static_cast<uint32_t>(m_handle.first_index);
-		command.base_vertex = static_cast<uint32_t>(m_handle.base_vertex);
-		command.base_instance = tot_instances2;
-		// Using i instead of model_idx allows for creating seperate
-		// instances of the same mesh data
-		command.instance_count = scene2.objects_data.instance_counts[i];
-		tot_instances2 += command.instance_count;
-		draw_commands2.push_back(command);
-	}
-
-	game_scene2.draw_info.nr_commands = (int)draw_commands2.size();
-
-	renderer::command_view cv2{.data = draw_commands2.data(),
-	                           .bytes = sizeof(draw_commands2[0]) *
-	                                    draw_commands2.size()};
-
-	game_scene2.draw_info.commands_handle = renderer::upload_draw_commands(cv2);
-
-	renderer::upload_instance_offsets(
-		{.data = scene2.objects_data.positions.data(),
-	     .bytes = scene2.objects_data.positions.size() *
-	              sizeof(scene2.objects_data.positions[0])},
-		game_scene2.draw_info.offsets_handle);
-
-	std::vector<glm::mat4> model_matrices2(draw_commands2.size(),
-	                                       glm::mat4{1.0f});
-	renderer::float_view models_matrices_view2{
-		.data = glm::value_ptr(model_matrices2.front()),
-		.bytes = sizeof(glm::mat4) * model_matrices2.size(),
-	};
-
-	renderer::upload_matrices(models_matrices_view2,
-	                          game_scene2.draw_info.matrices_handle);
 
 	game_scene *current;
 	current = &game_scene1;
