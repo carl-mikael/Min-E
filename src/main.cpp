@@ -12,6 +12,7 @@
 #include <cstring>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #define STB_IMAGE_IMPLEMENTATION
 
@@ -108,10 +109,10 @@ int main(int, char **)
 	std::memcpy(&game_scene1.goal, scene.goal_pos, sizeof(scene.goal_pos));
 
 	constexpr size_t arena_size{mem::MIN_ARENA_CAPACITY};
-	mem::arena mesh_arena{};
 	mem::arena mesh_book{};
-	mem::create_arena(arena_size, mesh_arena);
+	mem::arena mesh_arena{};
 	mem::create_arena(arena_size, mesh_book);
+	mem::create_arena(arena_size, mesh_arena);
 
 	ecs::storage mesh_storage{mesh_book, mesh_arena};
 
@@ -262,6 +263,15 @@ int main(int, char **)
 	spcc.is_two_players = &is_two_players;
 	spcc.mubo = &mubo;
 	spcc.window = &window;
+
+	struct switch_mesh_ctx
+	{
+		ecs::storage *mesh_storage;
+		renderer::commands_handle *commands_handle;
+	} smc;
+	smc.mesh_storage = &mesh_storage;
+	smc.commands_handle = &current->draw_info.commands_handle;
+
 #pragma endregion
 
 #pragma region admin_input
@@ -335,6 +345,40 @@ int main(int, char **)
 				td->rend_obj_handle, current_p->draw_info.instance_offsets_slot,
 				current_p->draw_info.offsets_handle);
 			renderer::use_draw_commands(current_p->draw_info.commands_handle);
+		});
+
+	input::bind_key(
+		player_1, GLFW_KEY_M, GLFW_PRESS, (void *)&smc,
+		[](void *data, int new_state)
+		{
+			if (new_state != GLFW_PRESS)
+			{
+				return;
+			}
+
+			switch_mesh_ctx &smc = *(switch_mesh_ctx *)data;
+
+			renderer::draw_command *command1{};
+			mem::get_obj_at_chill(smc.mesh_storage->components,
+		                          sizeof(renderer::draw_command), 0,
+		                          (void **)&command1);
+
+			const size_t last_comp_index = mem::get_last_e_idx(
+				smc.mesh_storage->components, sizeof(renderer::draw_command));
+
+			renderer::draw_command *command2{};
+			mem::get_obj_at_chill(smc.mesh_storage->components,
+		                          sizeof(renderer::draw_command),
+		                          last_comp_index, (void **)&command2);
+
+			std::swap(*command1, *command2);
+
+			renderer::command_view cv{
+				.data = reinterpret_cast<renderer::draw_command *>(
+					smc.mesh_storage->components.buffer),
+				.bytes = smc.mesh_storage->components.base};
+
+			renderer::update_draw_commands(cv, *smc.commands_handle);
 		});
 #pragma endregion
 
