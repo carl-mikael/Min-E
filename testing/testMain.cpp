@@ -12,11 +12,23 @@
 int main(int, char **)
 {
 	LOG("Test main");
-	mem::arena book{};
 	constexpr size_t arena_size = 1 * (UINT16_MAX + 1);
-	if (!mem::create_arena(arena_size, book))
+	mem::arena transform_b{};
+	if (!mem::create_arena(arena_size, transform_b))
 	{
-		LOG("Failed creating book arena");
+		LOG("Failed creating transform book arena");
+		return -1;
+	}
+	mem::arena name_b{};
+	if (!mem::create_arena(arena_size, name_b))
+	{
+		LOG("Failed creating nname book arena");
+		return -1;
+	}
+	mem::arena mesh_b{};
+	if (!mem::create_arena(arena_size, mesh_b))
+	{
+		LOG("Failed creating mesh book arena");
 		return -1;
 	}
 
@@ -39,9 +51,9 @@ int main(int, char **)
 		return -1;
 	}
 
-	ecs::storage transform_storage{book, transform_a};
-	ecs::storage name_storage{book, name_a};
-	ecs::storage mesh_storage{book, mesh_a};
+	ecs::storage transform_storage{transform_b, transform_a};
+	ecs::storage name_storage{name_b, name_a};
+	ecs::storage mesh_storage{mesh_b, mesh_a};
 
 	ecs::entity e1{42};
 	ecs::entity e2{0};
@@ -111,22 +123,40 @@ int main(int, char **)
 	// LOG("e1 mesh base vetex: " << mesh_p->base_vertex);
 	// LOG("e1 mesh base instance: " << mesh_p->base_instance);
 
-	for (size_t i{0}; i < std::size(entities); ++i)
+	for (size_t i{0};
+	     i < mem::get_index_of_end(name_storage.components, sizeof(name)); ++i)
 	{
-		ecs::entity *e = entities[i];
-		auto *comp_idx = static_cast<decltype(ecs::entity::id) *>(
-			mem::get_obj_at(book, sizeof(ecs::entity::id), e->id));
+		// ecs::entity *e = entities[i];
+		// auto *comp_idx = static_cast<decltype(ecs::entity::id) *>(
+		// 	mem::get_obj_at(name_b, sizeof(ecs::entity::id), e->id));
 
-		auto *name_comp = static_cast<name *>(
-			mem::get_obj_at(name_a, sizeof(name), *comp_idx));
+		// auto *name_comp = static_cast<name *>(
+		// 	mem::get_obj_at(name_a, sizeof(name), *comp_idx));
 
-		LOG("Entity: " << e->id << " Name: " << name_comp->value);
+		const auto *name_comp = reinterpret_cast<name *>(
+			name_storage.components.buffer + (i * sizeof(name)));
+
+		LOG("Name: " << name_comp->value);
+
+		// LOG("Entity: " << e->id << " Name: " << name_comp->value);
 	}
 
 	// Free arenas
-	if (!mem::destroy_arena(book))
+	if (!mem::destroy_arena(transform_b))
 	{
 		LOG("Failed freeing book arena");
+		return -1;
+	}
+
+	if (!mem::destroy_arena(name_b))
+	{
+		LOG("Failed freeing names book arena");
+		return -1;
+	}
+
+	if (!mem::destroy_arena(mesh_b))
+	{
+		LOG("Failed freeing mesh book arena");
 		return -1;
 	}
 
@@ -147,6 +177,5 @@ int main(int, char **)
 		LOG("Failed freeing mesh arena");
 		return -1;
 	}
-
 	return 1;
 }

@@ -38,4 +38,10 @@ constexpr inline bool obj_in_range(const arena &in_arena, const size_t obj_size,
 	return obj_size * index < in_arena.base;
 }
 
+constexpr inline decltype(mem::arena::base)
+get_index_of_end(const arena &in_arena, size_t element_size) noexcept
+{
+	return in_arena.base / element_size;
+}
+
 } // namespace mem
