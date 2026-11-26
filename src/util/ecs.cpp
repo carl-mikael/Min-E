@@ -56,3 +56,11 @@ bool ecs::allocate_component_chill(storage &in_storage, const entity &in_entity,
 
 	return true;
 }
+
+bool ecs::create_storage(const size_t bookkeeping_capacity,
+                         const size_t components_capacity,
+                         storage &out_storage) noexcept
+{
+	return mem::create_arena(bookkeeping_capacity, out_storage.bookkeeping) &&
+	       mem::create_arena(components_capacity, out_storage.components);
+}

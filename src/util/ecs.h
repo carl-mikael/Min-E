@@ -27,6 +27,10 @@ bool allocate_component_chill(storage &in_storage, const entity &in_entity,
                               const size_t component_size,
                               void **out_mem) noexcept;
 
+bool create_storage(const size_t bookkeeping_capacity,
+                    const size_t components_capacity,
+                    storage &out_storage) noexcept;
+
 constexpr inline auto add_raw(storage &in_storage, const entity &in_entity,
                               auto &&component) noexcept
 {

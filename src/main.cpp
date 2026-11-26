@@ -109,12 +109,12 @@ int main(int, char **)
 	std::memcpy(&game_scene1.goal, scene.goal_pos, sizeof(scene.goal_pos));
 
 	constexpr size_t arena_size{mem::MIN_ARENA_CAPACITY};
-	mem::arena mesh_book{};
-	mem::arena mesh_arena{};
-	mem::create_arena(arena_size, mesh_book);
-	mem::create_arena(arena_size, mesh_arena);
-
-	ecs::storage mesh_storage{mesh_book, mesh_arena};
+	ecs::storage mesh_storage{};
+	if (!ecs::create_storage(arena_size, arena_size, mesh_storage))
+	{
+		LOG("Failed creating mesh_storage");
+		return -1;
+	}
 
 	uint32_t tot_instances{0};
 	const int nr_commands1{static_cast<int>(scene.objects_data.ids.size())};
