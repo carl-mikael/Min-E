@@ -145,12 +145,24 @@ int main(int, char **)
 		LOG("Failed creating texture_storage");
 		return -1;
 	}
+	ecs::storage player_storage{};
+	if (!ecs::create_storage(arena_size, arena_size, player_storage))
+	{
+		LOG("Failed creating player_storage");
+		return -1;
+	}
+
+	struct player_component
+	{
+		glm::vec3 movement;
+		float yaw;
+	};
 
 	uint32_t tot_instances{0};
-	const int nr_commands1{static_cast<int>(scene.objects_data.ids.size())};
-	std::vector<ecs::entity> entities(nr_commands1);
+	const int entity_count{static_cast<int>(scene.objects_data.ids.size())};
+	std::vector<ecs::entity> entities(entity_count);
 	// Construct entities
-	for (int i{0}; i < nr_commands1; ++i)
+	for (int i{0}; i < entity_count; ++i)
 	{
 		// Create entity id
 		ecs::entity &entity = entities[i];
@@ -182,7 +194,11 @@ int main(int, char **)
 		// texture_map
 		ecs::add_raw(texture_storage, entity, static_cast<uint32_t>(i));
 	}
-	game_scene1.draw_info.nr_commands = nr_commands1;
+
+	constexpr size_t player_entity = 0;
+	ecs::add_raw(player_storage, entities[player_entity], player_component{});
+
+	game_scene1.draw_info.nr_commands = entity_count;
 
 	renderer::upload_texture_map_data(
 		tex_map_ubo, 0, texture_storage.components.base,
@@ -898,7 +914,8 @@ int main(int, char **)
 		renderer::upload_view(mubo, glm::value_ptr(glm::inverse(camera1)));
 
 		renderer::update_matrices(
-			current->draw_info.matrices_handle, 0,
+			current->draw_info.matrices_handle,
+			sizeof(glm::mat4) * player_entity,
 			{.data = glm::value_ptr(camera2), .bytes = sizeof(glm::mat4)});
 
 		glClearColor(0.8f, 0.12f, 0.12f, 1.0f);
@@ -918,7 +935,8 @@ int main(int, char **)
 			renderer::upload_view(mubo, glm::value_ptr(glm::inverse(camera2)));
 
 			renderer::update_matrices(
-				current->draw_info.matrices_handle, 0,
+				current->draw_info.matrices_handle,
+				sizeof(glm::mat4) * player_entity,
 				{.data = glm::value_ptr(camera1), .bytes = sizeof(glm::mat4)});
 
 			glScissor(window.width / 2, 0, window.width / 2, window.height);
