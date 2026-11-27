@@ -1,7 +1,7 @@
 out vec3 world_pos;
 out vec3 normal;
 out vec2 uv;
-flat out int texture_idx;
+flat out uint texture_idx;
 
 // layout(location = ATTR_POS) in vec4 pos;
 layout(location = ATTR_POS) in vec3 vpos;
@@ -19,7 +19,7 @@ layout(std140, binding = BLOCK_MODELS) uniform Models {
 };
 
 layout(std140, binding = BLOCK_TEXTURE_MAP) uniform TextureMap {
-    int texture_map[MAX_TEXTURE_LAYERS];
+    uvec4 texture_map[MAX_TEXTURE_LAYERS];
 };
 
 void main()
@@ -29,5 +29,5 @@ void main()
     world_pos = vec3(models[gl_DrawID] * vec4(vpos, 1.0));
     normal = vnormal;
     uv = auv;
-    texture_idx = texture_map[gl_DrawID];
+    texture_idx = (texture_map[gl_DrawID >> 2][gl_DrawID % 4]);
 }

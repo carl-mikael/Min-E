@@ -2,7 +2,7 @@ out vec4 frag_color;
 in vec3 world_pos;
 in vec3 normal;
 in vec2 uv;
-flat in int texture_idx;
+flat in uint texture_idx;
 
 layout(binding = TEX3D) uniform sampler2DArray textures;
 

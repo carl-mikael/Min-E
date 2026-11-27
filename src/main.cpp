@@ -70,11 +70,12 @@ int main(int, char **)
 
 	struct alignas(16) very_long
 	{
-		int value;
+		uint32_t value;
+		uint32_t value2;
+		uint32_t value3;
+		uint32_t value4;
 	} texture_map_arr[]{
-		{0},
-		{1},
-		{2},
+		{2, 1, 0, 0},
 	};
 
 	GLuint tex_map;
