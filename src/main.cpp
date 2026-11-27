@@ -2,7 +2,6 @@
 #include "assetManager.h"
 #include "glm/geometric.hpp"
 #include "glm/matrix.hpp"
-#include "glslSemantics.h"
 #include "input/input.h"
 #include "renderer/renderer.h"
 #include "util/arena.h"
@@ -68,16 +67,7 @@ int main(int, char **)
 	                          std::size(texture_data_arr));
 	renderer::bind_texture3D(tex3d);
 
-	uint32_t texture_map_arr[]{
-		2,
-		1,
-		0,
-	};
-
 	renderer::texture_map_ubo tex_map_ubo = renderer::create_texture_map_ubo();
-	renderer::upload_texture_map_data(tex_map_ubo, 0, sizeof(texture_map_arr),
-	                                  texture_map_arr);
-
 #pragma endregion
 
 #pragma region game_scene
@@ -149,12 +139,17 @@ int main(int, char **)
 		LOG("Failed creating transform_storage");
 		return -1;
 	}
+	ecs::storage texture_storage{};
+	if (!ecs::create_storage(arena_size, arena_size, texture_storage))
+	{
+		LOG("Failed creating texture_storage");
+		return -1;
+	}
 
 	uint32_t tot_instances{0};
 	const int nr_commands1{static_cast<int>(scene.objects_data.ids.size())};
-
 	std::vector<ecs::entity> entities(nr_commands1);
-
+	// Construct entities
 	for (int i{0}; i < nr_commands1; ++i)
 	{
 		// Create entity id
@@ -180,8 +175,16 @@ int main(int, char **)
 
 		// Create transform
 		auto _ = ecs::add_raw(transform_storage, entity, glm::mat4{1});
+
+		// Create texture component. i=0 == first texture that's was loaded,
+		// etc.
+		ecs::add_raw(texture_storage, entity, i);
 	}
 	game_scene1.draw_info.nr_commands = nr_commands1;
+
+	renderer::upload_texture_map_data(
+		tex_map_ubo, 0, texture_storage.components.base,
+		reinterpret_cast<uint32_t *>(texture_storage.components.buffer));
 
 	renderer::float_view models_matrices_view{
 		.data = reinterpret_cast<float *>(transform_storage.components.buffer),
