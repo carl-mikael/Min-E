@@ -178,7 +178,9 @@ int main(int, char **)
 
 		// Create texture component. i=0 == first texture that's was loaded,
 		// etc.
-		ecs::add_raw(texture_storage, entity, i);
+		// i should have the same type as what's being stored in the vert shader
+		// texture_map
+		ecs::add_raw(texture_storage, entity, static_cast<uint32_t>(i));
 	}
 	game_scene1.draw_info.nr_commands = nr_commands1;
 
