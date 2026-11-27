@@ -109,6 +109,10 @@ void create_texture3D(const int width, const int height, const int format,
 bool upload_texture(const texture3D tex3d, const uint32_t index,
                     const unsigned char *tex_data) noexcept;
 
+bool upload_textures(const texture3D tex3d, const uint32_t offset,
+                     const unsigned char **tex_data_arr,
+                     const uint32_t count) noexcept;
+
 void bind_texture3D(const texture3D tex3d) noexcept;
 
 bool upload_objects(const float_view &vertices, const indices_view &indices,

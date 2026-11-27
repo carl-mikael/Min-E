@@ -255,6 +255,23 @@ bool renderer::upload_texture(const texture3D tex3d, const uint32_t index,
 	return true;
 }
 
+bool renderer::upload_textures(const texture3D tex3d, const uint32_t offset,
+                               const unsigned char **tex_data_arr,
+                               const uint32_t count) noexcept
+{
+	for (uint32_t i{0}; i < count; ++i)
+	{
+		const uint32_t idx = i + offset;
+		const bool success = upload_texture(tex3d, idx, tex_data_arr[i]);
+		if (!success)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 void renderer::bind_texture3D(const texture3D tex3d) noexcept
 {
 	glBindTextureUnit(TEX3D, tex3d.handle);

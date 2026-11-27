@@ -796,28 +796,19 @@ int main(int, char **)
 
 #pragma region texture
 	const char *texture_file = "asset/plank.jpg";
-
-	int width, height, nr_channels;
-	unsigned char *tex_data =
-		stbi_load(texture_file, &width, &height, &nr_channels, 0);
-
-	if (tex_data == nullptr)
-	{
-		LOG("Couldn't load texture at: " << texture_file);
-		return -1;
-	}
-	renderer::texture3D tex3d{};
-	renderer::create_texture3D(width, height, GL_RGB8, tex3d);
-	renderer::upload_texture(tex3d, 0, tex_data);
-
 	const char *texture_file2 = "asset/bamboo.jpg";
 
-	int width2, height2, nr_channels2;
-	tex_data = stbi_load(texture_file2, &width2, &height2, &nr_channels2, 0);
-	GOODERT(
-		(width == width2 && height == height2 && nr_channels == nr_channels2),
-		"They have different format");
-	renderer::upload_texture(tex3d, 1, tex_data);
+	int width, height, nr_channels;
+	const unsigned char *texture_data_arr[]{
+		stbi_load(texture_file, &width, &height, &nr_channels, 0),
+		stbi_load(texture_file2, &width, &height, &nr_channels, 0),
+	};
+
+	renderer::texture3D tex3d{};
+	renderer::create_texture3D(width, height, GL_RGB8, tex3d);
+
+	renderer::upload_textures(tex3d, 0, texture_data_arr,
+	                          std::size(texture_data_arr));
 
 	renderer::bind_texture3D(tex3d);
 #pragma endregion
