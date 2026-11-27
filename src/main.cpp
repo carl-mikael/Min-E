@@ -14,7 +14,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#define STB_IMAGE_IMPLEMENTATION
 
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
@@ -29,7 +28,6 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
-#include <stb_image.h>
 
 int main(int, char **)
 {
@@ -51,6 +49,26 @@ int main(int, char **)
 		LOG("platform::init failed");
 		return -1;
 	}
+
+#pragma region texture
+	constexpr int texture_size = 1024;
+	renderer::texture3D tex3d{};
+	renderer::create_texture3D(texture_size, texture_size, GL_RGB8, tex3d);
+
+	const char *textures[]{
+		"asset/model/plank.jpg",
+		"asset/model/bamboo.jpg",
+		"asset/model/panel.jpg",
+	};
+
+	const unsigned char *texture_data_arr[std::size(textures)];
+	am::load_textures(textures, std::size(textures), texture_data_arr);
+
+	renderer::upload_textures(tex3d, 0, texture_data_arr,
+	                          std::size(texture_data_arr));
+
+	renderer::bind_texture3D(tex3d);
+#pragma endregion
 
 #pragma region game_scene
 	const char *files[]{
@@ -793,38 +811,6 @@ int main(int, char **)
 	                 (double)window.height / 2);
 	glfwGetCursorPos(window.platform_window, &current_cursor_pos.x,
 	                 &current_cursor_pos.y);
-
-#pragma region texture
-	const char *textures[]{
-		"asset/model/plank.jpg",
-		"asset/model/bamboo.jpg",
-		"asset/model/panel.jpg",
-	};
-
-	int width, height, nr_channels;
-	const unsigned char *texture_data_arr[std::size(textures)];
-	for (size_t i{0}; i < std::size(textures); ++i)
-	{
-		const unsigned char *data =
-			stbi_load(textures[i], &width, &height, &nr_channels, 0);
-
-		if (data == nullptr)
-		{
-			LOG("Couldn't get texture from: " << textures[i]);
-			return -1;
-		}
-
-		texture_data_arr[i] = data;
-	}
-
-	renderer::texture3D tex3d{};
-	renderer::create_texture3D(width, height, GL_RGB8, tex3d);
-
-	renderer::upload_textures(tex3d, 0, texture_data_arr,
-	                          std::size(texture_data_arr));
-
-	renderer::bind_texture3D(tex3d);
-#pragma endregion
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);

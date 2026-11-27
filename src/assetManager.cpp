@@ -2,12 +2,14 @@
 #include "macros.h"
 #include "util/util.h"
 
+#define STB_IMAGE_IMPLEMENTATION
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <cassert>
 #include <cstdint>
 #include <fstream>
+#include <stb_image.h>
 #include <string_view>
 #include <vector>
 
@@ -202,6 +204,27 @@ bool am::load_scene(const char *file, scene_data &out_scene) noexcept
 		default:
 			break;
 		}
+	}
+
+	return true;
+}
+
+bool am::load_textures(const char *textures[], const size_t texture_count,
+                       const unsigned char *out_texture_data_arr[]) noexcept
+{
+	int width, height, nr_channels;
+	for (size_t i{0}; i < texture_count; ++i)
+	{
+		const unsigned char *data =
+			stbi_load(textures[i], &width, &height, &nr_channels, 0);
+
+		if (data == nullptr)
+		{
+			LOG("Couldn't get texture from: " << textures[i]);
+			return false;
+		}
+
+		out_texture_data_arr[i] = data;
 	}
 
 	return true;

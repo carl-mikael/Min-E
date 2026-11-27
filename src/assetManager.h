@@ -82,4 +82,7 @@ bool load_models(const char *files[], uint32_t file_count,
 // Load scene data from disk
 bool load_scene(const char *file, scene_data &out_scene) noexcept;
 
+bool load_textures(const char *textures[], const size_t texture_count,
+                   const unsigned char *out_texture_data_arr[]) noexcept;
+
 } // namespace am
