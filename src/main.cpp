@@ -2,6 +2,7 @@
 #include "assetManager.h"
 #include "glm/geometric.hpp"
 #include "glm/matrix.hpp"
+#include "glslSemantics.h"
 #include "input/input.h"
 #include "renderer/renderer.h"
 #include "util/arena.h"
@@ -63,11 +64,27 @@ int main(int, char **)
 
 	const unsigned char *texture_data_arr[std::size(textures)];
 	am::load_textures(textures, std::size(textures), texture_data_arr);
-
 	renderer::upload_textures(tex3d, 0, texture_data_arr,
 	                          std::size(texture_data_arr));
-
 	renderer::bind_texture3D(tex3d);
+
+	struct alignas(16) very_long
+	{
+		int value;
+	} texture_map_arr[]{
+		{0},
+		{1},
+		{2},
+	};
+
+	GLuint tex_map;
+	glCreateBuffers(1, &tex_map);
+	glNamedBufferStorage(tex_map, sizeof(texture_map_arr) * MAX_TEXTURE_LAYERS,
+	                     nullptr, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferSubData(tex_map, 0, sizeof(texture_map_arr), texture_map_arr);
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_TEXTURE_MAP, tex_map);
+
 #pragma endregion
 
 #pragma region game_scene

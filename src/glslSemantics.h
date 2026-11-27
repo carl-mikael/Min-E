@@ -24,6 +24,7 @@
 // Binding point
 #define BLOCK_MATRICES 0
 #define BLOCK_MODELS 1
+#define BLOCK_TEXTURE_MAP 2
 
 // 16 guaranteed texture slots per stage
 #define TEX2D 0
