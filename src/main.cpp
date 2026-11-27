@@ -311,7 +311,6 @@ int main(int, char **)
 	} smc;
 	smc.mesh_storage = &mesh_storage;
 	smc.commands_handle = &current->draw_info.commands_handle;
-
 #pragma endregion
 
 #pragma region admin_input
@@ -335,6 +334,15 @@ int main(int, char **)
 			LOG("Space! - Changing player count");
 			auto spcc = (switch_player_count_context *)data;
 			*spcc->is_two_players = !*spcc->is_two_players;
+
+			if (*spcc->is_two_players)
+			{
+				glEnable(GL_SCISSOR_TEST);
+			}
+			else
+			{
+				glDisable(GL_SCISSOR_TEST);
+			}
 
 			glm::mat4 perspective = glm::perspective(
 				fov, platform::get_aspect(*spcc->window, *spcc->is_two_players),
@@ -886,16 +894,7 @@ int main(int, char **)
 #pragma endregion
 
 #pragma region first-player
-		if (is_two_players)
-		{
-			glScissor(0, 0, window.width / 2, window.height);
-			glEnable(GL_SCISSOR_TEST);
-		}
-		else
-		{
-			glDisable(GL_SCISSOR_TEST);
-		}
-
+		glScissor(0, 0, window.width / (is_two_players ? 2 : 1), window.height);
 		renderer::upload_view(mubo, glm::value_ptr(glm::inverse(camera1)));
 
 		renderer::update_matrices(
@@ -911,11 +910,6 @@ int main(int, char **)
 		glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0,
 		                            current->draw_info.nr_commands,
 		                            sizeof(renderer::draw_command));
-
-		if (is_two_players)
-		{
-			glDisable(GL_SCISSOR_TEST);
-		}
 #pragma endregion
 
 #pragma region second player
@@ -928,7 +922,6 @@ int main(int, char **)
 				{.data = glm::value_ptr(camera1), .bytes = sizeof(glm::mat4)});
 
 			glScissor(window.width / 2, 0, window.width / 2, window.height);
-			glEnable(GL_SCISSOR_TEST);
 			glClearColor(0.12f, 0.8f, 0.12f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -936,8 +929,6 @@ int main(int, char **)
 			glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, 0,
 			                            current->draw_info.nr_commands,
 			                            sizeof(renderer::draw_command));
-
-			glDisable(GL_SCISSOR_TEST);
 		}
 #pragma endregion
 	}
