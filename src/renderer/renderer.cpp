@@ -86,6 +86,43 @@ bool create_shader(unsigned int *out_shader, const char *shader_path,
 
 	return true;
 }
+
+void set_texture_params(
+	decltype(renderer::texture2D::handle) tex_handle) noexcept
+{
+	glTextureParameteri(tex_handle, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTextureParameteri(tex_handle, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTextureParameteri(tex_handle, GL_TEXTURE_MIN_FILTER,
+	                    GL_LINEAR_MIPMAP_LINEAR);
+	glTextureParameteri(tex_handle, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
+constexpr bool get_texture_format(const int nr_channels,
+                                  GLenum &out_format) noexcept
+{
+
+	switch (nr_channels)
+	{
+	case 1:
+		out_format = GL_RED;
+		break;
+	case 3:
+		out_format = GL_RGB;
+		break;
+	case 4:
+		out_format = GL_RGBA;
+		break;
+	default:
+		out_format = GL_RED;
+		GOODERT(false, "You don't handle format with this many channels: "
+		                   << nr_channels);
+		return false;
+		break;
+	}
+
+	return true;
+}
+
 } // namespace
 
 bool renderer::create_program(const std::string_view &glsl_semantics,
@@ -151,8 +188,8 @@ renderer::camera_ubo renderer::create_matrix_ubo() noexcept
 	return mubo;
 }
 
-bool renderer::create_texture(const char *texture_path,
-                              texture_data &out_texture_info) noexcept
+bool renderer::create_texture2D(const char *texture_path,
+                                texture2D &out_texture_info) noexcept
 {
 	int width, height, nr_channels;
 	unsigned char *tex_data =
@@ -165,32 +202,10 @@ bool renderer::create_texture(const char *texture_path,
 	}
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &out_texture_info.handle);
-
-	glTextureParameteri(out_texture_info.handle, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTextureParameteri(out_texture_info.handle, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTextureParameteri(out_texture_info.handle, GL_TEXTURE_MIN_FILTER,
-	                    GL_LINEAR_MIPMAP_LINEAR);
-	glTextureParameteri(out_texture_info.handle, GL_TEXTURE_MAG_FILTER,
-	                    GL_LINEAR);
+	set_texture_params(out_texture_info.handle);
 
 	GLenum format;
-	if (nr_channels == 1)
-	{
-		format = GL_RED;
-	}
-	else if (nr_channels == 3)
-	{
-		format = GL_RGB8;
-	}
-	else if (nr_channels == 4)
-	{
-		format = GL_RGBA;
-	}
-	else
-	{
-		format = GL_RED;
-		LOG("Unknown format with ' " << nr_channels << "' using GL_RED");
-	}
+	get_texture_format(nr_channels, format);
 
 	glTextureStorage2D(out_texture_info.handle, 1, format, width, height);
 	glTextureSubImage2D(out_texture_info.handle, 0, 0, 0, width, height, GL_RGB,
@@ -199,9 +214,50 @@ bool renderer::create_texture(const char *texture_path,
 	return true;
 }
 
-void renderer::bind_texture(const texture_data &texture_info) noexcept
+void renderer::bind_texture2D(const texture2D &texture_info) noexcept
 {
 	glBindTextureUnit(TEX2D, texture_info.handle);
+}
+
+void renderer::create_texture3D(const int width, const int height,
+                                const int format, texture3D &out_tex3d) noexcept
+{
+	glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &out_tex3d.handle);
+	out_tex3d.width = width;
+	out_tex3d.height = height;
+	out_tex3d.format = format;
+
+	set_texture_params(out_tex3d.handle);
+
+	constexpr int mipmaps = 1;
+	glTextureStorage3D(out_tex3d.handle, mipmaps, out_tex3d.format,
+	                   out_tex3d.width, out_tex3d.height, MAX_TEXTURE_LAYERS);
+}
+
+bool renderer::upload_texture(const texture3D tex3d, const uint32_t index,
+                              const unsigned char *tex_data) noexcept
+{
+	// Layer is like index to a 2D texture in the 3D texture storage.
+	const bool index_in_range = index >= 0 && index < MAX_TEXTURE_LAYERS;
+	GOODERT((index_in_range),
+	        "The layer is out of range of the storage, layer: " << index);
+	if (!index_in_range)
+	{
+		LOG("Layer not in range");
+		return false;
+	}
+
+	// How many layers the image should use, I think.
+	constexpr int depth = 1;
+	glTextureSubImage3D(tex3d.handle, 0, 0, 0, index, tex3d.width, tex3d.height,
+	                    depth, GL_RGB, GL_UNSIGNED_BYTE, tex_data);
+
+	return true;
+}
+
+void renderer::bind_texture3D(const texture3D tex3d) noexcept
+{
+	glBindTextureUnit(TEX3D, tex3d.handle);
 }
 
 bool renderer::upload_objects(const float_view &vertices,

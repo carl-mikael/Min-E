@@ -20,9 +20,17 @@ struct camera_ubo
 	uint32_t handle;
 };
 
-struct texture_data
+struct texture2D
 {
 	uint32_t handle;
+};
+
+struct texture3D
+{
+	uint32_t handle;
+	int width;
+	int height;
+	int format;
 };
 
 struct float_view
@@ -90,10 +98,18 @@ void upload_view(camera_ubo mubo, const float *m44) noexcept;
 [[nodiscard]]
 camera_ubo create_matrix_ubo() noexcept;
 
-bool create_texture(const char *texture_path,
-                    texture_data &out_texture_info) noexcept;
+bool create_texture2D(const char *texture_path,
+                      texture2D &out_texture_info) noexcept;
 
-void bind_texture(const texture_data &texture_info) noexcept;
+void bind_texture2D(const texture2D &texture_info) noexcept;
+
+void create_texture3D(const int width, const int height, const int format,
+                      texture3D &out_tex3d) noexcept;
+
+bool upload_texture(const texture3D tex3d, const uint32_t index,
+                    const unsigned char *tex_data) noexcept;
+
+void bind_texture3D(const texture3D tex3d) noexcept;
 
 bool upload_objects(const float_view &vertices, const indices_view &indices,
                     slots &slots, handle &out_handle) noexcept;

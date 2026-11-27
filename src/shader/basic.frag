@@ -2,9 +2,9 @@ out vec4 frag_color;
 in vec3 world_pos;
 in vec3 normal;
 in vec2 uv;
+flat in int draw_id;
 
-// uniform vec3 COLOR;
-layout(binding = TEX2D) uniform sampler2D TEXTURE;
+layout(binding = TEX3D) uniform sampler2DArray textures;
 
 vec3 light_pos = vec3(0, 10, 5);
 vec3 light_color = vec3(1);
@@ -18,6 +18,6 @@ void main()
     vec3 light_dir = normalize(light_pos - world_pos);
     float diff = max(dot(norm, light_dir), 0.0);
     vec3 diffuse = diff * light_color;
-    vec3 result = (ambient + diffuse) * texture(TEXTURE, uv).xyz;
+    vec3 result = (ambient + diffuse) * texture(textures, vec3(uv, draw_id)).xyz;
     frag_color = vec4(result, 1.0);
 }

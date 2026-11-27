@@ -1,6 +1,7 @@
 out vec3 world_pos;
 out vec3 normal;
 out vec2 uv;
+flat out int draw_id;
 
 // layout(location = ATTR_POS) in vec4 pos;
 layout(location = ATTR_POS) in vec3 vpos;
@@ -23,4 +24,5 @@ void main()
     world_pos = vec3(models[gl_DrawID] * vec4(vpos, 1.0));
     normal = vnormal;
     uv = auv;
+    draw_id = gl_DrawID;
 }
