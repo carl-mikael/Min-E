@@ -184,8 +184,25 @@ renderer::camera_ubo renderer::create_matrix_ubo() noexcept
 	glNamedBufferStorage(ubo, 2 * M44Size, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_MATRICES, ubo);
-
 	return mubo;
+}
+
+renderer::texture_map_ubo renderer::create_texture_map_ubo() noexcept
+{
+	GLuint tex_map;
+	glCreateBuffers(1, &tex_map);
+	// Each element in an array in ubo that uses std140 is 16 bytes
+	glNamedBufferStorage(tex_map, 16 * MAX_TEXTURE_LAYERS, nullptr,
+	                     GL_DYNAMIC_STORAGE_BIT);
+	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_TEXTURE_MAP, tex_map);
+	return {.handle = tex_map};
+}
+
+void renderer::upload_texture_map_data(
+	const renderer::texture_map_ubo tex_map_ubo, const size_t offset,
+	const size_t bytes, const uint32_t *data) noexcept
+{
+	glNamedBufferSubData(tex_map_ubo.handle, offset, bytes, data);
 }
 
 bool renderer::create_texture2D(const char *texture_path,

@@ -20,6 +20,11 @@ struct camera_ubo
 	uint32_t handle;
 };
 
+struct texture_map_ubo
+{
+	uint32_t handle;
+};
+
 struct texture2D
 {
 	uint32_t handle;
@@ -97,6 +102,13 @@ void upload_view(camera_ubo mubo, const float *m44) noexcept;
 
 [[nodiscard]]
 camera_ubo create_matrix_ubo() noexcept;
+
+[[nodiscard]]
+texture_map_ubo create_texture_map_ubo() noexcept;
+
+void upload_texture_map_data(const texture_map_ubo tex_map_ubo,
+                             const size_t offset, const size_t bytes,
+                             const uint32_t *data) noexcept;
 
 bool create_texture2D(const char *texture_path,
                       texture2D &out_texture_info) noexcept;

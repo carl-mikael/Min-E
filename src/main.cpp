@@ -68,23 +68,15 @@ int main(int, char **)
 	                          std::size(texture_data_arr));
 	renderer::bind_texture3D(tex3d);
 
-	struct alignas(16) very_long
-	{
-		uint32_t value;
-		uint32_t value2;
-		uint32_t value3;
-		uint32_t value4;
-	} texture_map_arr[]{
-		{2, 1, 0, 0},
+	uint32_t texture_map_arr[]{
+		2,
+		1,
+		0,
 	};
 
-	GLuint tex_map;
-	glCreateBuffers(1, &tex_map);
-	glNamedBufferStorage(tex_map, sizeof(texture_map_arr) * MAX_TEXTURE_LAYERS,
-	                     nullptr, GL_DYNAMIC_STORAGE_BIT);
-	glNamedBufferSubData(tex_map, 0, sizeof(texture_map_arr), texture_map_arr);
-
-	glBindBufferBase(GL_UNIFORM_BUFFER, BLOCK_TEXTURE_MAP, tex_map);
+	renderer::texture_map_ubo tex_map_ubo = renderer::create_texture_map_ubo();
+	renderer::upload_texture_map_data(tex_map_ubo, 0, sizeof(texture_map_arr),
+	                                  texture_map_arr);
 
 #pragma endregion
 
