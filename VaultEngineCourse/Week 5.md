@@ -1,3 +1,15 @@
+- I didn't remember that an array of scalar had weird alignment rules using std140 for an ubo. If I understand correctly, each scalar typ in glsl is represented using 4 bytes. And for some reason that  I don't understand, each element in array[scalar] has the same alignment as a vec4 (16). This is crazy, I'm gonna see if maybe I can pack them. Maybe use modulo to unpack?
+- Tried this. Only using if in shader when testing. I think the data I get from texture_map is still just 4 bytes, so it won't work. Changed to ivec2 and it's working! Started by packing only 2, I'll make it 4 now.![[Pasted image 20261127144544.png]]
+
+- I'm lost when it comes to all texture params. Like format, I create 3D texture storage using GL_RGB8 but upload textures to it using GL_RGB?? I think layer is which mipmap to use.
+
+- Map textures using UBO, SSBO, or VBO? I'll start off just using gl_DrawID.
+	- VBO with divisor like with instance offsets
+	- UBO is like smaller but faster SSBO so I'll always start with UBO over SSBO.
+	- I think UBO is more flexible then VBO so I'll probably use that. But, tbh, I need to research more about how the approaches would differ.
+
+- I can't store sampler2DArray in ubo
+
 - Switching "mesh" component, first with last. Swapping the data the components store and reuploading draw commands. Would be better to only replace the new data needed. I think it's because it's so much new stuff that I learn/realize something, and then forget about it. While implementing this I was thinking I can't replace data in the middle  using glNamedBufferSubStorage, even thought I use that to update/set view & projection, and same for matrices ubo. Fixed it.
 ![[Switching'Mesh'Comp.mp4]]
 - decltype is my new best friend. So far I've used "multiple sources of truth", having the type of a field defined in the struct and hardcoding the type in sizeof:s.

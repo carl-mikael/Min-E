@@ -16,29 +16,34 @@ kanban-plugin: board
 - [ ] clang tidy
 - [ ] Window resizing
 - [ ] [[input system]]
+- [ ] Action queue instead of if-statements in engine loop
 
 
 ## Next
-
-- [ ] File format should handle ECS
-- [ ] [[ECS]]
-
-
-## Now
 
 - [ ] At least these Components:
 	- [x] Iterate over Name/Tag and log result
 	- [x] Use pos for model matrix or offset
 	- [x] Store draw info in mesh comp
 	- [x] Update at least one entity's draw info, impacting rendering
-	- [ ] Store texture id on texture comp
+	- [x] Store texture id on texture comp
 	- [ ] Player
 	- [ ] Create a procedure that works on all components of a type
+- [ ] [[ECS]]
+- [ ] Engine Overview
+
+
+## Now
+
+- [ ] update scene parser to parse sp as an object/entity for player or add token to add player entity and which model to use
 
 
 ## Done
 
 - [ ] Mem arena
+- [ ] Handle Multiple Textures
+	- [x] Store multiple textures
+	- [x] Pull and use from frag
 
 
 ***
