@@ -795,14 +795,27 @@ int main(int, char **)
 	                 &current_cursor_pos.y);
 
 #pragma region texture
-	const char *texture_file = "asset/plank.jpg";
-	const char *texture_file2 = "asset/bamboo.jpg";
+	const char *textures[]{
+		"asset/model/plank.jpg",
+		"asset/model/bamboo.jpg",
+		"asset/model/panel.jpg",
+	};
 
 	int width, height, nr_channels;
-	const unsigned char *texture_data_arr[]{
-		stbi_load(texture_file, &width, &height, &nr_channels, 0),
-		stbi_load(texture_file2, &width, &height, &nr_channels, 0),
-	};
+	const unsigned char *texture_data_arr[std::size(textures)];
+	for (size_t i{0}; i < std::size(textures); ++i)
+	{
+		const unsigned char *data =
+			stbi_load(textures[i], &width, &height, &nr_channels, 0);
+
+		if (data == nullptr)
+		{
+			LOG("Couldn't get texture from: " << textures[i]);
+			return -1;
+		}
+
+		texture_data_arr[i] = data;
+	}
 
 	renderer::texture3D tex3d{};
 	renderer::create_texture3D(width, height, GL_RGB8, tex3d);
